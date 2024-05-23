@@ -1,5 +1,6 @@
+from plugins.SDKController.main import SCSController as SCSController
 from plugins.TruckSimAPI.main import scsTelemetry as SCSTelemetry
-import plugins.SDKController.main as SCSController
+import plugins.ScreenCapture.main as ScreenCapture
 from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
@@ -7,6 +8,7 @@ import src.console as console
 import numpy as np
 import subprocess
 import traceback
+import keyboard
 import time
 import cv2
 import os
@@ -31,8 +33,11 @@ except:
 
 
 def Initialize():
-    global UseAI
-    global UseCUDA
+    global enabled
+    global enable_key
+    global enable_key_pressed
+    global last_enable_key_pressed
+
     global AIDevice
     global LoadAILabel
     global LoadAIProgress
@@ -50,21 +55,22 @@ def Initialize():
     global SDKController
     global TruckSimAPI
 
-    if 'UseAI' in globals():
-        if UseAI == False and settings.Get("NavigationDetection", "UseAI", False) == True:
-            if TorchAvailable == True:
-                LoadAIModel()
-            else:
-                print("NavigationDetectionAI not available due to missing dependencies.")
-                console.RestoreConsole()
-    UseAI = settings.Get("NavigationDetection", "UseAI", False)
-    UseCUDA = settings.Get("NavigationDetection", "UseCUDA", False)
-    AIDevice = torch.device('cuda' if torch.cuda.is_available() and UseCUDA == True else 'cpu')
+    enabled = True
+    enable_key = settings.Get("Steering", "EnableKey", "n")
+    enable_key_pressed = False
+    last_enable_key_pressed = False
+
+    if TorchAvailable == True:
+        LoadAIModel()
+    else:
+        print("NavigationDetectionAI not available due to missing dependencies.")
+        console.RestoreConsole()
+    AIDevice = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     LoadAILabel = "Loading..."
     LoadAIProgress = 0
 
-    map_topleft = settings.Get("NavigationDetection", "map_topleft", "unset")
-    map_bottomright = settings.Get("NavigationDetection", "map_bottomright", "unset")
+    map_topleft = settings.Get("NavigationDetectionAI", "map_topleft", "unset")
+    map_bottomright = settings.Get("NavigationDetectionAI", "map_bottomright", "unset")
 
     if map_topleft == "unset":
         map_topleft = None
@@ -80,6 +86,11 @@ def Initialize():
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
+
+    while TruckSimAPI.update()["scsValues"]["telemetryPluginRevision"] < 2:
+        time.sleep(0.1)
+
+    ScreenCapture.Initialize(settings.Get("ScreenCapture", "display", 0))
 
     cv2.namedWindow('Lane Assist', cv2.WINDOW_NORMAL)
     cv2.setWindowProperty('Lane Assist', cv2.WND_PROP_TOPMOST, 1)
@@ -352,17 +363,12 @@ def GetAIModelProperties():
         return ("UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN")
 
 
-if UseAI:
-    if TorchAvailable == True:
-        LoadAIModel()
-    else:
-        print("NavigationDetectionAI not available due to missing dependencies.")
-        console.RestoreConsole()
+def plugin():
+    global enabled
+    global enable_key
+    global enable_key_pressed
+    global last_enable_key_pressed
 
-
-def plugin(data):
-    global UseAI
-    global UseCUDA
     global AIDevice
     global LoadAILabel
     global LoadAIProgress
@@ -380,10 +386,14 @@ def plugin(data):
     global SDKController
     global TruckSimAPI
 
+    data = {}
     data["api"] = TruckSimAPI.update()
-    if data["scsValues"]["telemetryPluginRevision"] < 2:
+    if data["api"]["scsValues"]["telemetryPluginRevision"] < 2:
         print("TruckSimAPI is waiting for the game...")
-        return
+        time.sleep(0.1)
+        while TruckSimAPI.update()["scsValues"]["telemetryPluginRevision"] < 2:
+            time.sleep(0.1)
+    data["frame"] = ScreenCapture.plugin(imgtype="cropped")
 
     current_time = time.time()
 
@@ -413,7 +423,12 @@ def plugin(data):
         else:
             valid_frame = False
             return
-        
+
+        enable_key_pressed = keyboard.is_pressed(enable_key)
+        if enable_key_pressed == False and last_enable_key_pressed == True:
+            enabled = not enabled
+        last_enable_key_pressed = enable_key_pressed
+
         cv2.rectangle(frame, (0, 0), (round(frame.shape[1]/6), round(frame.shape[0]/3)), (0, 0, 0), -1)
         cv2.rectangle(frame, (frame.shape[1] ,0), (round(frame.shape[1]-frame.shape[1]/6), round(frame.shape[0]/3)), (0, 0, 0), -1)
         lower_red = np.array([0, 0, 160])
@@ -453,11 +468,11 @@ def plugin(data):
             indicator_right = False
 
         if left_indicator != indicator_left:
-            data["sdk"]["LeftBlinker"] = True
+            SCSController.lblinker = True
             indicator_left_wait_for_response = True
             indicator_left_response_timer = current_time
         if right_indicator != indicator_right:
-            data["sdk"]["RightBlinker"] = True
+            SCSController.rblinker = True
             indicator_right_wait_for_response = True
             indicator_right_response_timer = current_time
 
@@ -472,16 +487,10 @@ def plugin(data):
         indicator_last_left = left_indicator
         indicator_last_right = right_indicator
 
-        data["LaneDetection"] = {}
-        data["LaneDetection"]["difference"] = steering
+        SCSController.steering = steering
 
-        data["NavigationDetection"] = {}
-        if left_indicator == True or right_indicator == True:
-            data["NavigationDetection"]["turnincoming"] = True
-        else:
-            data["NavigationDetection"]["turnincoming"] = False
-
-        data["frame"] = frame
+        cv2.imshow("Lane Assist", frame)
+        cv2.waitKey(1)
 
     except Exception as e:
         exc = traceback.format_exc()
@@ -511,9 +520,9 @@ class UI():
             self.UI_lanechanging_speed.set(self.UI_lanechanging_speedSlider.get())
             self.UI_lanechanging_width.set(self.UI_lanechanging_widthSlider.get())
 
-            settings.CreateSettings("NavigationDetection", "offset", self.UI_offsetSlider.get())
-            settings.CreateSettings("NavigationDetection", "lanechanging_speed", self.UI_lanechanging_speedSlider.get())
-            settings.CreateSettings("NavigationDetection", "lanechanging_width", self.UI_lanechanging_widthSlider.get())
+            settings.CreateSettings("NavigationDetectionAI", "offset", self.UI_offsetSlider.get())
+            settings.CreateSettings("NavigationDetectionAI", "lanechanging_speed", self.UI_lanechanging_speedSlider.get())
+            settings.CreateSettings("NavigationDetectionAI", "lanechanging_width", self.UI_lanechanging_widthSlider.get())
 
             LoadSettings()
 

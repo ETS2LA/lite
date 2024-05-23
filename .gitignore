@@ -3,3 +3,6 @@
 
 # ignore settings
 /settings.json
+
+# ignore the ai models
+/plugins/NavigationDetectionAI/AIModel

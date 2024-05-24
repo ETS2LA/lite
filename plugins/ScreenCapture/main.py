@@ -1,11 +1,10 @@
-
 import src.variables as variables
 import src.settings as settings
 import numpy as np
 import cv2
 import mss
 
-display = settings.Get("ScreenCapture", "display", 0)
+display = settings.Get("ScreenCapture", "Display", 0)
 
 def Initialize(CamSetupDisplay:int = display):
     global sct
@@ -19,7 +18,7 @@ def Initialize(CamSetupDisplay:int = display):
     global cam_library
 
     sct = mss.mss()
-    display = settings.Get("ScreenCapture", "display", 0)
+    display = settings.Get("ScreenCapture", "Display", 0)
     monitor = sct.monitors[(display + 1)]
     monitor_x1 = monitor["left"]
     monitor_y1 = monitor["top"]
@@ -28,14 +27,16 @@ def Initialize(CamSetupDisplay:int = display):
     cam = None
     cam_library = None
 
-    if settings.Get("NavigationDetectionAI", "map_topleft", "unset") != "unset" and settings.Get("NavigationDetectionAI", "map_bottomright", "unset") != "unset":
-        monitor_x1 = settings.Get("NavigationDetectionAI", "map_topleft", "unset")[0]
-        monitor_y1 = settings.Get("NavigationDetectionAI", "map_topleft", "unset")[1]
-        monitor_x2 = settings.Get("NavigationDetectionAI", "map_bottomright", "unset")[0]
-        monitor_y2 = settings.Get("NavigationDetectionAI", "map_bottomright", "unset")[1]
+    if settings.Get("NavigationDetectionAI", "MapTopLeft", "unset") != "unset" and settings.Get("NavigationDetectionAI", "MapBottomRight", "unset") != "unset":
+        monitor_x1 = settings.Get("NavigationDetectionAI", "MapTopLeft", "unset")[0]
+        monitor_y1 = settings.Get("NavigationDetectionAI", "MapTopLeft", "unset")[1]
+        monitor_x2 = settings.Get("NavigationDetectionAI", "MapBottomRight", "unset")[0]
+        monitor_y2 = settings.Get("NavigationDetectionAI", "MapBottomRight", "unset")[1]
 
     try:
+
         if variables.OS == "nt":
+
             import bettercam
             try:
                 cam.stop()
@@ -57,10 +58,14 @@ def Initialize(CamSetupDisplay:int = display):
             cam.start()
             cam.get_latest_frame()
             cam_library = "BetterCam"
+
         else:
+
             display = CamSetupDisplay
             cam_library = "MSS"
+
     except:
+
         display = CamSetupDisplay
         cam_library = "MSS"
 
@@ -69,9 +74,11 @@ def plugin(imgtype:str = "both"):
     """imgtype: "both", "cropped", "full" """
 
     if variables.OS == "nt" and cam_library == "BetterCam":
+
         try:
+
             if cam == None:
-                Initialize(settings.Get("ScreenCapture", "display", 0))
+                Initialize(settings.Get("ScreenCapture", "Display", 0))
             img = cam.get_latest_frame()
             img = np.array(img)
             if imgtype == "both":
@@ -93,6 +100,7 @@ def plugin(imgtype:str = "both"):
     else:
 
         try:
+
             fullMonitor = sct.monitors[(display + 1)]
             img = np.array(sct.grab(fullMonitor))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

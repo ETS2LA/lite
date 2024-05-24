@@ -4,5 +4,6 @@
 # ignore settings
 /settings.json
 
-# ignore the ai models
+# ignore the AI model and YOLO files
 /plugins/NavigationDetectionAI/AIModel
+/plugins/NavigationDetectionAI/YOLOFiles

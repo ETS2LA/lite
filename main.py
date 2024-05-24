@@ -20,6 +20,8 @@ if remote_version != variables.VERSION:
     print(f"Changelog:\n{changelog}")
 
     def CloseUpaterWindow():
+        global answer
+        answer = "DoNotUpdate"
         variables.ROOT.destroy()
         variables.ROOT = None
 
@@ -65,7 +67,10 @@ if remote_version != variables.VERSION:
 
     while answer == None:
         start = time.time()
-        variables.ROOT.update()
+        try:
+            variables.ROOT.update()
+        except:
+            pass
         time_to_sleep = 1/60 - (time.time() - start)
         if time_to_sleep > 0:
             time.sleep(time_to_sleep)
@@ -77,7 +82,7 @@ if remote_version != variables.VERSION:
             os.system("git pull")
         except Exception as e:
             print("Failed to update: " + str(e))
-        CloseUpaterWindow()
+    CloseUpaterWindow()
 else:
     print("No update available, current version: " + variables.VERSION)
 

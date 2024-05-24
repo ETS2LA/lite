@@ -32,7 +32,7 @@ if remote_version != variables.VERSION:
 
     variables.ROOT = tkinter.Tk()
     variables.ROOT.title("ETS2LA-Lite - Updater")
-    variables.ROOT.geometry(f"{450}x{250}")
+    variables.ROOT.geometry(f"{450}x{250}+{int(settings.Get('UI', 'X', 0) + settings.Get('UI', 'Width', 700) / 2 - 225)}+{int(settings.Get('UI', 'Y', 0) + settings.Get('UI', 'Height', 400) / 2 - 125)}")
     variables.ROOT.update()
     sv_ttk.set_theme(settings.Get("UI", "Theme", "dark"), variables.ROOT)
     variables.ROOT.protocol("WM_DELETE_WINDOW", CloseUpaterWindow)

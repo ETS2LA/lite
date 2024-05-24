@@ -49,8 +49,22 @@ def createUI():
     tabControl = ttk.Notebook(variables.ROOT)
     tabControl.pack(expand = 1, fill ="both")
 
+    tab_MainMenu = ttk.Frame(tabControl)
+    tab_MainMenu.grid_columnconfigure(0, weight=2)
+    tabControl.add(tab_MainMenu, text ='MainMenu')
+
     tab_NavigationDetectionAI = ttk.Frame(tabControl)
     tabControl.add(tab_NavigationDetectionAI, text ='NavigationDetectionAI')
 
     tab_Steering = ttk.Frame(tabControl)
     tabControl.add(tab_Steering, text ='Steering')
+
+
+    uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", font=("Segoe UI", 15))
+    uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
+
+    def OpenMainSetupCallback():
+        def OpenMainSetupThread():
+            pass
+        threading.Thread(target=OpenMainSetupThread, daemon=True).start()
+    OpenMainSetupButton = uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: OpenMainSetupCallback(), row=4, column=0, sticky="n", pady=10)

@@ -15,7 +15,7 @@ if settings.Get("Console", "HideConsole", False):
 
 remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/version.txt").text.strip()
 changelog = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/changelog.txt").text.strip()
-if remote_version == variables.VERSION:
+if remote_version != variables.VERSION:
     print("An update is available: " + remote_version)
     print(f"Changelog:\n{changelog}")
 
@@ -30,7 +30,7 @@ if remote_version == variables.VERSION:
 
     variables.ROOT = tkinter.Tk()
     variables.ROOT.title("ETS2LA-Lite - Updater")
-    variables.ROOT.geometry(f"{400}x{200}")
+    variables.ROOT.geometry(f"{450}x{250}")
     variables.ROOT.update()
     sv_ttk.set_theme(settings.Get("UI", "Theme", "dark"), variables.ROOT)
     variables.ROOT.protocol("WM_DELETE_WINDOW", CloseUpaterWindow)
@@ -42,11 +42,25 @@ if remote_version == variables.VERSION:
         windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int(0x1C1C1C)), sizeof(c_int))
         variables.ROOT.iconbitmap(default=f"{variables.PATH}assets\\favicon.ico")
 
-    uicomponents.MakeLabel(variables.ROOT, "Update Available!", row=1, column=0, sticky="nw", font=("Segoe UI", 12), pady=0)
-    uicomponents.MakeLabel(variables.ROOT, "Changelog:", row=2, column=0, sticky="nw", font=("Segoe UI", 10), pady=0)
-    uicomponents.MakeLabel(variables.ROOT, changelog, row=3, column=0, sticky="nw", pady=15)
+    variables.ROOT.grid_rowconfigure(3, weight=1)
+    variables.ROOT.grid_columnconfigure(0, weight=1)
+
+    uicomponents.MakeLabel(variables.ROOT, "Update Available!", row=1, column=0, sticky="nw", font=("Segoe UI", 13), pady=0)
+    uicomponents.MakeLabel(variables.ROOT, "Changelog:", row=2, column=0, sticky="nw", font=("Segoe UI", 11), pady=0)
+    uicomponents.MakeLabel(variables.ROOT, str("\n".join([changelog[i:i+72] for i in range(0, len(changelog), 72)])).replace("\n ", "\n"), row=3, column=0, sticky="nw", columnspan=2, pady=15)
 
     answer = None
+
+    def Update_Callback():
+        global answer
+        answer = "Update"
+    OpenMainSetupButton = uicomponents.MakeButton(variables.ROOT, "Update", lambda: Update_Callback(), row=4, column=0, sticky="sw")
+
+    def DoNotUpdate_Callback():
+        global answer
+        answer = "DoNotUpdate"
+    OpenMainSetupButton = uicomponents.MakeButton(variables.ROOT, "Do Not Update", lambda: DoNotUpdate_Callback(), row=4, column=1, sticky="se")
+
     while answer == None:
         start = time.time()
         variables.ROOT.update()
@@ -54,12 +68,13 @@ if remote_version == variables.VERSION:
         if time_to_sleep > 0:
             time.sleep(time_to_sleep)
 
-    if answer == "Update" and False:
+    if answer == "Update":
         os.chdir(variables.PATH)
         os.system("git stash")
         os.system("git pull")
 else:
     print("No update available, current version: " + variables.VERSION)
+
 
 ui.initialize()
 ui.createUI()

@@ -349,6 +349,8 @@ def GetAIModelProperties():
 
 
 def plugin():
+    start = time.time()
+
     global enabled
     global enable_key
     global enable_key_pressed
@@ -382,27 +384,27 @@ def plugin():
         global IMG_HEIGHT
 
         try:
-            while AIModelUpdateThread.is_alive(): return
-            while AIModelLoadThread.is_alive(): return
+            while AIModelUpdateThread.is_alive(): return 0
+            while AIModelLoadThread.is_alive(): return 0
         except:
-            return
+            return 0
 
         try:
             frame = data["frame"]
             width = frame.shape[1]
             height = frame.shape[0]
         except:
-            return
+            return 0
 
-        if frame is None: return
-        if width <= 0 or width == None: return
-        if height <= 0 or height == None: return
+        if frame is None: return 0
+        if width <= 0 or width == None: return 0
+        if height <= 0 or height == None: return 0
 
         if isinstance(frame, np.ndarray) and frame.ndim == 3 and frame.size > 0:
             valid_frame = True
         else:
             valid_frame = False
-            return
+            return 0
 
         enable_key_pressed = keyboard.is_pressed(enable_key)
         if enable_key_pressed == False and last_enable_key_pressed == True:
@@ -425,7 +427,7 @@ def plugin():
             if IMG_WIDTH == "UNKNOWN" or IMG_HEIGHT == "UNKNOWN":
                 print(f"NavigationDetection - Unable to read the AI model image size. Make sure you didn't change the model file name. The code wont run the NavigationDetectionAI.")
                 console.RestoreConsole()
-                return
+                return 0
             AIFrame = preprocess_image(mask)
 
         output = [[0, 0, 0, 0, 0, 0, 0, 0]]
@@ -472,7 +474,7 @@ def plugin():
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 
         text, fontscale, thickness, text_width_enabled, text_height_enabled = get_text_size(text="Enabled" if enabled else "Disabled", text_width=width/1.1, max_text_height=height/11)
-        cv2.putText(frame, text, (5, 5 + text_height_enabled), cv2.FONT_HERSHEY_SIMPLEX, fontscale, (0, 255, 0) if enabled else (255, 0, 0), thickness, cv2.LINE_AA)
+        cv2.putText(frame, text, (5, 5 + text_height_enabled), cv2.FONT_HERSHEY_SIMPLEX, fontscale, (0, 255, 0) if enabled else (0, 0, 255), thickness, cv2.LINE_AA)
 
         currentDesired = steering
         actualSteering = -data["api"]["truckFloat"]["gameSteer"]
@@ -504,3 +506,5 @@ def plugin():
         SendCrashReport("NavigationDetection - Running AI Error.", str(exc))
         console.RestoreConsole()
         print("\033[91m" + f"NavigationDetection - Running AI Error: " + "\033[0m" + str(e))
+
+    return 1/(time.time() - start)

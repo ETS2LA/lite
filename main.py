@@ -93,17 +93,32 @@ else:
 ui.initialize()
 ui.createUI()
 
+import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 def run_thread():
-    import plugins.NavigationDetectionAI.main as NavigationDetectionAI
+    global FPS
     NavigationDetectionAI.Initialize()
     while variables.BREAK == False:
-        NavigationDetectionAI.plugin()
+        FPS = NavigationDetectionAI.plugin()
 
 threading.Thread(target=run_thread, daemon=True).start()
 
 
+FPS = 0
+FPS_UpdateTime = 0
+
 while variables.BREAK == False:
     start = time.time()
+
+    try:
+        ui.progresslabel.config(text=str(NavigationDetectionAI.LoadAILabel))
+        ui.progress["value"] = float(NavigationDetectionAI.LoadAIProgress)
+    except:
+        pass
+
+    if FPS_UpdateTime + 1 < time.time():
+        ui.tab_NavigationDetectionAI_FPS.config(text="FPS: " + str(round(FPS, 1)))
+        ui.tab_NavigationDetectionAI_FPS.update()
+        FPS_UpdateTime = time.time()
 
     variables.ROOT.update()
 

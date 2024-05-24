@@ -1,3 +1,4 @@
+import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 import src.uicomponents as uicomponents
 import src.variables as variables
 import src.settings as settings
@@ -59,6 +60,8 @@ def createUI():
     tabControl.add(tab_MainMenu, text ='Main Menu')
 
     tab_NavigationDetectionAI = ttk.Frame(tabControl)
+    tab_NavigationDetectionAI.grid_columnconfigure(0, weight=2)
+    tab_NavigationDetectionAI.grid_rowconfigure(12, weight=1)
     tabControl.add(tab_NavigationDetectionAI, text ='Navigation Detection AI')
 
     tab_Steering = ttk.Frame(tabControl)
@@ -79,10 +82,47 @@ def createUI():
                 widget.destroy()
             uicomponents.MakeLabel(tab_MainMenu, "Which setup method would you like to use?", row=1, column=0, sticky="n", font=("Segoe UI", 15))
             def AutomaticSetupCallback():
+                for widget in tab_MainMenu.winfo_children():
+                    widget.destroy()
+                InitializeMainMenu()
                 subprocess.Popen(["python", os.path.join(variables.PATH, "plugins", "NavigationDetectionAI", "automatic_setup.py")])
             uicomponents.MakeButton(tab_MainMenu, "Automatic Setup", lambda: AutomaticSetupCallback(), row=2, column=0, sticky="nw", padx=20, pady=30, width=35)
             def ManualSetupCallback():
+                for widget in tab_MainMenu.winfo_children():
+                    widget.destroy()
+                InitializeMainMenu()
                 subprocess.Popen(["python", os.path.join(variables.PATH, "plugins", "NavigationDetectionAI", "manual_setup.py")])
             uicomponents.MakeButton(tab_MainMenu, "Manual Setup", lambda: ManualSetupCallback(), row=2, column=0, sticky="ne", padx=20, pady=30, width=35)
         uicomponents.MakeButton(tab_MainMenu, "Open Navigation Detection AI Setup", lambda: OpenNavigationDetectionAISetupCallback(), row=5, column=0, sticky="n", pady=0, width=29)
     InitializeMainMenu()
+
+
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, "Navigation Detection AI", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
+    global tab_NavigationDetectionAI_FPS
+    tab_NavigationDetectionAI_FPS = uicomponents.MakeLabel(tab_NavigationDetectionAI, "FPS: --", row=1, column=0, sticky="ne", font=("Segoe UI", 13))
+
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, "AI model properties:", row=2, column=0, sticky="nw", pady=10, font=("Segoe UI", 12))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Epochs: {NavigationDetectionAI.GetAIModelProperties()[0]}", row=3, column=0, sticky="nw", font=("Segoe UI", 10))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Batch Size: {NavigationDetectionAI.GetAIModelProperties()[1]}", row=4, column=0, sticky="nw", font=("Segoe UI", 10))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Image Width: {NavigationDetectionAI.GetAIModelProperties()[2]}", row=4, column=0, sticky="nw", font=("Segoe UI", 10))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Image Height: {NavigationDetectionAI.GetAIModelProperties()[3]}", row=5, column=0, sticky="nw", font=("Segoe UI", 10))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Images/Data Points: {NavigationDetectionAI.GetAIModelProperties()[4]}", row=6, column=0, sticky="nw", font=("Segoe UI", 10))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Training Time: {NavigationDetectionAI.GetAIModelProperties()[5]}", row=7, column=0, sticky="nw", font=("Segoe UI", 10))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Training Date: {NavigationDetectionAI.GetAIModelProperties()[6]}", row=8, column=0, sticky="nw", font=("Segoe UI", 10))
+
+    global progresslabel
+    global progress
+    progresslabel = uicomponents.MakeLabel(tab_NavigationDetectionAI, "this is the lable", 12, 0, sticky="sw")
+    progress = ttk.Progressbar(tab_NavigationDetectionAI, orient="horizontal", length=268, mode="determinate")
+    progress.grid(row=13, column=0, sticky="sw", padx=5, pady=0)
+
+    def CheckForAIUpdates():
+        NavigationDetectionAI.CheckForAIModelUpdates()
+        while NavigationDetectionAI.AIModelUpdateThread.is_alive(): NavigationDetectionAI.time.sleep(0.1)
+        if NavigationDetectionAI.TorchAvailable == True:
+            NavigationDetectionAI.LoadAIModel()
+        else:
+            print("NavigationDetectionAI not available due to missing dependencies.")
+            console.RestoreConsole()
+
+    uicomponents.MakeButton(tab_NavigationDetectionAI, "Check for AI Model Updates", lambda: CheckForAIUpdates(), row=14, column=0, sticky="sw", width=30)

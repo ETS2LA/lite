@@ -7,3 +7,4 @@
 # ignore the AI model and YOLO files
 /plugins/NavigationDetectionAI/AIModel
 /plugins/NavigationDetectionAI/YOLOFiles
+/plugins/NavigationDetectionAI/YOLOv5_MapDetectionModel.pt

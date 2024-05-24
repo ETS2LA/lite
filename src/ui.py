@@ -4,9 +4,11 @@ import src.settings as settings
 import src.console as console
 
 from tkinter import ttk
+import subprocess
 import threading
 import tkinter
 import sv_ttk
+import os
 
 def initialize():
     width = settings.Get("UI", "Width", 700)
@@ -39,7 +41,10 @@ def close():
     settings.Create("UI", "Y", variables.ROOT.winfo_y())
     console.RestoreConsole()
     console.CloseConsole()
-    variables.ROOT.destroy()
+    try:
+        variables.ROOT.destroy()
+    except:
+        pass
     variables.BREAK = True
 
 def createUI():
@@ -51,20 +56,33 @@ def createUI():
 
     tab_MainMenu = ttk.Frame(tabControl)
     tab_MainMenu.grid_columnconfigure(0, weight=2)
-    tabControl.add(tab_MainMenu, text ='MainMenu')
+    tabControl.add(tab_MainMenu, text ='Main Menu')
 
     tab_NavigationDetectionAI = ttk.Frame(tabControl)
-    tabControl.add(tab_NavigationDetectionAI, text ='NavigationDetectionAI')
+    tabControl.add(tab_NavigationDetectionAI, text ='Navigation Detection AI')
 
     tab_Steering = ttk.Frame(tabControl)
     tabControl.add(tab_Steering, text ='Steering')
 
 
-    uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", font=("Segoe UI", 15))
-    uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
+    def InitializeMainMenu():
+        uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", font=("Segoe UI", 15))
+        uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
 
-    def OpenMainSetupCallback():
-        def OpenMainSetupThread():
-            pass
-        threading.Thread(target=OpenMainSetupThread, daemon=True).start()
-    OpenMainSetupButton = uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: OpenMainSetupCallback(), row=4, column=0, sticky="n", pady=10)
+        def OpenMainSetupCallback():
+            for widget in tab_MainMenu.winfo_children():
+                widget.destroy()
+        uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: OpenMainSetupCallback(), row=4, column=0, sticky="n", pady=30)
+
+        def OpenNavigationDetectionAISetupCallback():
+            for widget in tab_MainMenu.winfo_children():
+                widget.destroy()
+            uicomponents.MakeLabel(tab_MainMenu, "Which setup method would you like to use?", row=1, column=0, sticky="n", font=("Segoe UI", 15))
+            def AutomaticSetupCallback():
+                subprocess.Popen(["python", os.path.join(variables.PATH, "plugins", "NavigationDetectionAI", "automatic_setup.py")])
+            uicomponents.MakeButton(tab_MainMenu, "Automatic Setup", lambda: AutomaticSetupCallback(), row=2, column=0, sticky="nw", padx=20, pady=30, width=35)
+            def ManualSetupCallback():
+                subprocess.Popen(["python", os.path.join(variables.PATH, "plugins", "NavigationDetectionAI", "manual_setup.py")])
+            uicomponents.MakeButton(tab_MainMenu, "Manual Setup", lambda: ManualSetupCallback(), row=2, column=0, sticky="ne", padx=20, pady=30, width=35)
+        uicomponents.MakeButton(tab_MainMenu, "Open Navigation Detection AI Setup", lambda: OpenNavigationDetectionAISetupCallback(), row=5, column=0, sticky="n", pady=0, width=29)
+    InitializeMainMenu()

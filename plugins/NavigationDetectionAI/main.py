@@ -86,9 +86,6 @@ def Initialize():
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
 
-    while TruckSimAPI.update()["scsValues"]["telemetryPluginRevision"] < 2:
-        time.sleep(0.1)
-
     ScreenCapture.Initialize(settings.Get("ScreenCapture", "Display", 0))
 
 
@@ -376,11 +373,6 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    if data["api"]["scsValues"]["telemetryPluginRevision"] < 2:
-        print("TruckSimAPI is waiting for the game...")
-        time.sleep(0.1)
-        while TruckSimAPI.update()["scsValues"]["telemetryPluginRevision"] < 2:
-            time.sleep(0.1)
     data["frame"] = ScreenCapture.plugin(imgtype="cropped")
 
     current_time = time.time()
@@ -403,9 +395,9 @@ def plugin():
             return
 
         if frame is None: return
-        if width == 0 or width == None: return
-        if height == 0 or height == None: return
-        
+        if width <= 0 or width == None: return
+        if height <= 0 or height == None: return
+
         if isinstance(frame, np.ndarray) and frame.ndim == 3 and frame.size > 0:
             valid_frame = True
         else:
@@ -478,6 +470,9 @@ def plugin():
         SCSController.steering = steering
 
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
+
+        text, fontscale, thickness, text_width_enabled, text_height_enabled = get_text_size(text="Enabled" if enabled else "Disabled", text_width=width/1.1, max_text_height=height/11)
+        cv2.putText(frame, text, (5, 5 + text_height_enabled), cv2.FONT_HERSHEY_SIMPLEX, fontscale, (0, 255, 0) if enabled else (255, 0, 0), thickness, cv2.LINE_AA)
 
         currentDesired = steering
         actualSteering = -data["api"]["truckFloat"]["gameSteer"]

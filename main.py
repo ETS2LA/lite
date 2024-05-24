@@ -54,11 +54,13 @@ if remote_version != variables.VERSION:
     def Update_Callback():
         global answer
         answer = "Update"
+        print("Updating...")
     OpenMainSetupButton = uicomponents.MakeButton(variables.ROOT, "Update", lambda: Update_Callback(), row=4, column=0, sticky="sw")
 
     def DoNotUpdate_Callback():
         global answer
         answer = "DoNotUpdate"
+        print("Skipping update...")
     OpenMainSetupButton = uicomponents.MakeButton(variables.ROOT, "Do Not Update", lambda: DoNotUpdate_Callback(), row=4, column=1, sticky="se")
 
     while answer == None:
@@ -69,9 +71,13 @@ if remote_version != variables.VERSION:
             time.sleep(time_to_sleep)
 
     if answer == "Update":
-        os.chdir(variables.PATH)
-        os.system("git stash")
-        os.system("git pull")
+        try:
+            os.chdir(variables.PATH)
+            os.system("git stash")
+            os.system("git pull")
+        except Exception as e:
+            print("Failed to update: " + str(e))
+        CloseUpaterWindow()
 else:
     print("No update available, current version: " + variables.VERSION)
 

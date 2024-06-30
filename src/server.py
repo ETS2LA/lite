@@ -59,23 +59,6 @@ def SendCrashReport(type:str, message:str, additional=None):
         traceback.print_exc()
         print("Crash report sending failed.")
 
-def GetMotd():
-    """Get the message of the day from the main application server. This will be shown to the user when the app is opened.
-
-    Returns:
-        str: Message of the day
-    """
-
-    if not ALLOW_CRASH_REPORTS:
-        return "Please enable crash reporting to fetch MOTD."
-
-    try:
-        url = 'https://crash.tumppi066.fi/motd'
-        response = json.loads(requests.get(url, timeout=1).text)
-        return response["motd"]
-    except:
-        return "Could not get server message."
-
 def GetUserCount():
     """Get the amount of users using the app. This will be shown to the user when the app is opened.
 

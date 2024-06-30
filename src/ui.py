@@ -58,12 +58,13 @@ def createUI():
 
     tab_MainMenu = ttk.Frame(tabControl)
     tab_MainMenu.grid_columnconfigure(0, weight=2)
-    tabControl.add(tab_MainMenu, text ='Main Menu')
+    tab_MainMenu.grid_rowconfigure(10, weight=1)
+    tabControl.add(tab_MainMenu, text ='MainMenu')
 
     tab_NavigationDetectionAI = ttk.Frame(tabControl)
     tab_NavigationDetectionAI.grid_columnconfigure(0, weight=2)
     tab_NavigationDetectionAI.grid_rowconfigure(12, weight=1)
-    tabControl.add(tab_NavigationDetectionAI, text ='Navigation Detection AI')
+    tabControl.add(tab_NavigationDetectionAI, text ='NavigationDetectionAI')
 
     tab_Steering = ttk.Frame(tabControl)
     tab_Steering.grid_columnconfigure(0, weight=2)
@@ -71,7 +72,7 @@ def createUI():
 
 
     def InitializeMainMenu():
-        uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", font=("Segoe UI", 15))
+        uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", pady=13, font=("Segoe UI", 15))
         uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
 
         try:
@@ -91,12 +92,20 @@ def createUI():
         uicomponents.MakeButton(tab_MainMenu, "Open NavigationDetectionAI Setup", lambda: setup.OpenNavigationDetectionAISetupCallback(), row=6, column=0, sticky="n", pady=0, width=29)
         uicomponents.MakeLabel(tab_MainMenu, "", row=7, column=0, sticky="n", pady=5)
 
+        if settings.Get('CrashReports', 'AllowCrashReports') != None:
+            if settings.Get('CrashReports', 'AllowCrashReports'):
+                uicomponents.MakeLabel(tab_MainMenu, "Crash reporting is enabled.", row=8, column=0, fg="green")
+            else:
+                uicomponents.MakeLabel(tab_MainMenu, "Crash reporting is disabled.", row=8, column=0, fg="red")
+        else:
+            uicomponents.MakeLabel(tab_MainMenu, "", row=8, column=0)
+
         global UserCountLabel
-        UserCountLabel = uicomponents.MakeLabel(tab_MainMenu, f"Users online: {'Loading...' if settings.Get('CrashReports', 'AllowCrashReports') == True else 'Please enable crash reporting to fetch user count.'}", row=8, column=0, sticky="n", pady=0)
+        UserCountLabel = uicomponents.MakeLabel(tab_MainMenu, f"Users online: {'Loading...' if settings.Get('CrashReports', 'AllowCrashReports') == True else 'Please enable crash reporting to fetch user count.'}", row=9, column=0, sticky="s", pady=20, fg="gray")
     InitializeMainMenu()
 
 
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, "Navigation Detection AI", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
+    uicomponents.MakeLabel(tab_NavigationDetectionAI, "NavigationDetectionAI", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
     global tab_NavigationDetectionAI_FPS
     tab_NavigationDetectionAI_FPS = uicomponents.MakeLabel(tab_NavigationDetectionAI, "FPS: --", row=1, column=0, sticky="ne", font=("Segoe UI", 13))
 

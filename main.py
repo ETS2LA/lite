@@ -92,12 +92,8 @@ else:
     print("No update available, current version: " + variables.VERSION)
 
 helpers.RunEvery(60, lambda: server.Ping())
-def SetMainMenuUserCount():
-    ui.UserCountLabel.set(f"Users online: {server.GetUserCount()}")
-    ui.UserCountLabel.update()
 if settings.Get("CrashReports", "AllowCrashReports"):
-    helpers.RunEvery(300, lambda: SetMainMenuUserCount())
-
+    pass
 ui.initialize()
 ui.createUI()
 
@@ -113,6 +109,7 @@ threading.Thread(target=run_thread, daemon=True).start()
 
 FPS = 0
 FPS_UpdateTime = 0
+MainMenu_UpdateTime = 0
 
 while variables.BREAK == False:
     start = time.time()
@@ -129,6 +126,10 @@ while variables.BREAK == False:
         ui.tab_Steering_FPS.config(text="FPS: " + str(round(FPS, 1)))
         ui.tab_Steering_FPS.update()
         FPS_UpdateTime = time.time()
+    if MainMenu_UpdateTime + 300 < time.time():
+        if settings.Get("CrashReports", "AllowCrashReports"):
+            ui.UserCountLabel.config(text=f"Users online: {server.GetUserCount()}")
+        MainMenu_UpdateTime = time.time()
 
     variables.ROOT.update()
 
@@ -139,3 +140,4 @@ while variables.BREAK == False:
 
 if settings.Get("Console", "HideConsole", False):
     console.RestoreConsole()
+    console.CloseConsole()

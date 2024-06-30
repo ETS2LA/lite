@@ -81,10 +81,10 @@ def OpenMainSetupCallback():
             any_error = True
             pass # TODO: Add error handling
         if any_error == True:
-            uicomponents.MakeLabel(ui.tab_MainMenu, f"\nThe installation of the plugins could not be completed. Check the console for the manual setup instructions.", row=8, column=0, sticky="s")
+            uicomponents.MakeLabel(ui.tab_MainMenu, f"\nThe main setup could not be completed. Check the console for the manual setup instructions.", row=8, column=0, sticky="s")
             print(f"\nPlease do the setup manually by copying these files:\n{variables.PATH}assets\input_semantical.dll\n{variables.PATH}assets\scs-telemetry.dll\nto these folders (depending on your installed game):\nYOUR-STEAM-PATH\\steamapps\\common\\Euro Truck Simulator 2\\bin\\win_x64\\plugins\nYOUR-STEAM-PATH\\steamapps\\common\\American Truck Simulator\\bin\\win_x64\\plugins\nCreate the plugins folder if it does not exist.")
         else:
-            uicomponents.MakeLabel(ui.tab_MainMenu, "The plugin setup was completed successfully!", row=8, column=0, sticky="s")
+            uicomponents.MakeLabel(ui.tab_MainMenu, "The main setup was completed successfully!", row=8, column=0, sticky="s")
         uicomponents.MakeButton(ui.tab_MainMenu, "Exit", lambda: CloseSetupCallback(), row=9, column=0, sticky="s", pady=5, padx=5)
 
 

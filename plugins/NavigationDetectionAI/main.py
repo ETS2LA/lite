@@ -214,6 +214,7 @@ def CheckForAIModelUpdates():
                     print("\033[92m" + f"Checking for AI model updates..." + "\033[0m")
                     if settings.Get("NavigationDetectionAI", "LastUpdateCheck", 0) + 600 > time.time():
                         if settings.Get("NavigationDetectionAI", "LatestModel", "unset") == GetAIModelName():
+                            print("\033[92m" + f"No AI model updates available!" + "\033[0m")
                             return
 
                     url = "https://huggingface.co/Glas42/NavigationDetectionAI/tree/main/model"
@@ -258,6 +259,7 @@ def CheckForAIModelUpdates():
                         LoadAIProgress = 100
                         LoadAILabel = "No AI model updates available!"
                         print("\033[92m" + f"No AI model updates available!" + "\033[0m")
+                    settings.Create("NavigationDetectionAI", "LastUpdateCheck", time.time())
 
                 else:
 
@@ -453,27 +455,28 @@ def plugin():
             indicator_left = False
             indicator_right = False
 
-        if left_indicator != indicator_left:
-            SCSController.lblinker = True
-            indicator_left_wait_for_response = True
-            indicator_left_response_timer = current_time
-        if right_indicator != indicator_right:
-            SCSController.rblinker = True
-            indicator_right_wait_for_response = True
-            indicator_right_response_timer = current_time
+        if enabled == True:
+            if left_indicator != indicator_left and indicator_left_wait_for_response == False:
+                SDKController.lblinker = True
+                indicator_left_wait_for_response = True
+                indicator_left_response_timer = current_time
+            if right_indicator != indicator_right and indicator_right_wait_for_response == False:
+                SDKController.rblinker = True
+                indicator_right_wait_for_response = True
+                indicator_right_response_timer = current_time
 
-        if indicator_left != indicator_last_left:
-            indicator_left_wait_for_response = False
-        if indicator_right != indicator_last_right:
-            indicator_right_wait_for_response = False
-        if current_time - 1 > indicator_left_response_timer:
-            indicator_left_wait_for_response = False
-        if current_time - 1 > indicator_right_response_timer:
-            indicator_right_wait_for_response = False
+            if indicator_left != indicator_last_left:
+                indicator_left_wait_for_response = False
+            if indicator_right != indicator_last_right:
+                indicator_right_wait_for_response = False
+            if current_time - 1 > indicator_left_response_timer:
+                indicator_left_wait_for_response = False
+            if current_time - 1 > indicator_right_response_timer:
+                indicator_right_wait_for_response = False
         indicator_last_left = left_indicator
         indicator_last_right = right_indicator
 
-        SCSController.steering = steering
+        SDKController.steering = steering
 
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 

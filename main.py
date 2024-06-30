@@ -1,6 +1,8 @@
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.helpers as helpers
+import src.server as server
 import src.ui as ui
 
 import threading
@@ -89,6 +91,12 @@ if remote_version != variables.VERSION:
 else:
     print("No update available, current version: " + variables.VERSION)
 
+helpers.RunEvery(60, lambda: server.Ping())
+def SetMainMenuUserCount():
+    ui.UserCountLabel.set(f"Users online: {server.GetUserCount()}")
+    ui.UserCountLabel.update()
+if settings.Get("CrashReports", "AllowCrashReports"):
+    helpers.RunEvery(300, lambda: SetMainMenuUserCount())
 
 ui.initialize()
 ui.createUI()

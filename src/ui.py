@@ -74,8 +74,25 @@ def createUI():
         uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", font=("Segoe UI", 15))
         uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
 
-        uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: setup.OpenMainSetupCallback(), row=4, column=0, sticky="n", pady=30)
-        uicomponents.MakeButton(tab_MainMenu, "Open NavigationDetectionAI Setup", lambda: setup.OpenNavigationDetectionAISetupCallback(), row=5, column=0, sticky="n", pady=0, width=29)
+        try:
+            updateTime = str(variables.LASTUPDATE).split(" ")
+            updateTime = updateTime[1:]
+            months = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6, "Jul": 7, "Aug": 8, "Sep": 9, "Oct":10, "Nov": 11, "Dec": 12}
+            updateTime[0] = months[updateTime[0]]
+            updateText = f"{updateTime[1]}.{updateTime[0]}.{updateTime[3]} - {updateTime[2]} "
+        except:
+            import traceback
+            traceback.print_exc()
+            updateText = "-- Unknown --"
+        uicomponents.MakeLabel(tab_MainMenu, f"Released {updateText}", row=3, column=0, sticky="n", pady=0)
+
+        uicomponents.MakeLabel(tab_MainMenu, "", row=4, column=0, sticky="n", pady=5)
+        uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: setup.OpenMainSetupCallback(), row=5, column=0, sticky="n", pady=5)
+        uicomponents.MakeButton(tab_MainMenu, "Open NavigationDetectionAI Setup", lambda: setup.OpenNavigationDetectionAISetupCallback(), row=6, column=0, sticky="n", pady=0, width=29)
+        uicomponents.MakeLabel(tab_MainMenu, "", row=7, column=0, sticky="n", pady=5)
+
+        global UserCountLabel
+        UserCountLabel = uicomponents.MakeLabel(tab_MainMenu, f"Users online: {'Loading...' if settings.Get('CrashReports', 'AllowCrashReports') == True else 'Please enable crash reporting to fetch user count.'}", row=8, column=0, sticky="n", pady=0)
     InitializeMainMenu()
 
 
@@ -113,3 +130,23 @@ def createUI():
     uicomponents.MakeLabel(tab_Steering, "Steering", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
     global tab_Steering_FPS
     tab_Steering_FPS = uicomponents.MakeLabel(tab_Steering, "FPS: --", row=1, column=0, sticky="ne", font=("Segoe UI", 13))
+
+    OffsetSlider = tkinter.Scale(tab_Steering, from_=-5, to=5, resolution=0.01, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Offset", OffsetSlider.get()))
+    OffsetSlider.set(settings.Get("Steering", "Offset", 0))
+    OffsetSlider.grid(row=2, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
+    uicomponents.MakeLabel(tab_Steering, "Offset", row=2, column=0, padx=5, pady=22, sticky="nw")
+
+    OffsetSlider = tkinter.Scale(tab_Steering, from_=0, to=10, resolution=1, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Smoothness", OffsetSlider.get()))
+    OffsetSlider.set(settings.Get("Steering", "Smoothness", 3))
+    OffsetSlider.grid(row=3, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
+    uicomponents.MakeLabel(tab_Steering, "Smoothness", row=3, column=0, padx=5, pady=22, sticky="nw")
+
+    OffsetSlider = tkinter.Scale(tab_Steering, from_=0.1, to=2, resolution=0.01, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Sensitivity", OffsetSlider.get()))
+    OffsetSlider.set(settings.Get("Steering", "Sensitivity", 0.5))
+    OffsetSlider.grid(row=4, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
+    uicomponents.MakeLabel(tab_Steering, "Sensitivity", row=4, column=0, padx=5, pady=22, sticky="nw")
+
+    OffsetSlider = tkinter.Scale(tab_Steering, from_=0, to=1, resolution=0.01, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Maximum", OffsetSlider.get()))
+    OffsetSlider.set(settings.Get("Steering", "Maximum", 1))
+    OffsetSlider.grid(row=5, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
+    uicomponents.MakeLabel(tab_Steering, "Max Steering", row=5, column=0, padx=5, pady=22, sticky="nw")

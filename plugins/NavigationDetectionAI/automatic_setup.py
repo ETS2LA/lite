@@ -107,8 +107,7 @@ def make_loading_screen(text="NONE", color=(255, 255, 255), text_width=0.5*frame
     try:
         _, _, _, _ = cv2.getWindowImageRect(window_name)
     except:
-        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(window_name, round(frame_width/2), round(frame_height/2))
+        exit()
     text, fontscale, thickness, width, height = get_text_size(text, text_width, max_text_height)
     cv2.putText(frame, text, (round(frame_width / 2 - width / 2), round(frame_height / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, color, thickness, cv2.LINE_AA)
     cv2.imshow(window_name, frame)
@@ -495,7 +494,16 @@ while True:
             map_coords = None
             max_map_score = 0
 
-            results = model(frame)
+            try:
+                results = model(frame)
+            except:
+                for file in os.listdir(f"{path}plugins\\NavigationDetectionAI"):
+                    if file.endswith(".pt"):
+                        os.remove(f"{path}plugins\\NavigationDetectionAI\\{file}")
+                        break
+                import subprocess
+                subprocess.Popen(["python", os.path.join(path, "plugins", "NavigationDetectionAI", "automatic_setup.py")])
+                exit()
             boxes = results.pandas().xyxy[0]
             for _, box in boxes.iterrows():
                 label = box['name']

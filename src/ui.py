@@ -159,3 +159,5 @@ def createUI():
     OffsetSlider.set(settings.Get("Steering", "Maximum", 1))
     OffsetSlider.grid(row=5, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
     uicomponents.MakeLabel(tab_Steering, "Max Steering", row=5, column=0, padx=5, pady=22, sticky="nw")
+
+    uicomponents.MakeButton(tab_Steering, "Apply Changes", lambda: NavigationDetectionAI.UpdateSettings(), row=6, column=0, pady=20, sticky="s", width=30)

@@ -30,9 +30,10 @@ except:
     print("\033[91m" + f"NavigationDetection - PyTorch import Error:\n" + "\033[0m" + str(exc))
     console.RestoreConsole()
 
+global enabled
+enabled = True
 
 def Initialize():
-    global enabled
     global enable_key
     global enable_key_pressed
     global last_enable_key_pressed
@@ -44,6 +45,11 @@ def Initialize():
     global MapTopLeft
     global MapBottomRight
 
+    global SteeringOffset
+    global SteeringSmoothness
+    global SteeringSensitivity
+    global SteeringMaximum
+
     global indicator_last_left
     global indicator_last_right
     global indicator_left_wait_for_response
@@ -54,7 +60,6 @@ def Initialize():
     global SDKController
     global TruckSimAPI
 
-    enabled = True
     enable_key = settings.Get("Steering", "EnableKey", "n")
     enable_key_pressed = False
     last_enable_key_pressed = False
@@ -76,6 +81,11 @@ def Initialize():
     if MapBottomRight == "unset":
         MapBottomRight = None
 
+    SteeringOffset = settings.Get("Steering", "Offset", 0)
+    SteeringSmoothness = settings.Get("Steering", "Smoothness", 3)
+    SteeringSensitivity = settings.Get("Steering", "Sensitivity", 0.5)
+    SteeringMaximum = settings.Get("Steering", "Maximum", 1)
+
     indicator_last_left = False
     indicator_last_right = False
     indicator_left_wait_for_response = False
@@ -87,6 +97,18 @@ def Initialize():
     TruckSimAPI = SCSTelemetry()
 
     ScreenCapture.Initialize(settings.Get("ScreenCapture", "Display", 0))
+
+
+def UpdateSettings():
+    global SteeringOffset
+    global SteeringSmoothness
+    global SteeringSensitivity
+    global SteeringMaximum
+
+    SteeringOffset = settings.Get("Steering", "Offset", 0)
+    SteeringSmoothness = settings.Get("Steering", "Smoothness", 3)
+    SteeringSensitivity = settings.Get("Steering", "Sensitivity", 0.5)
+    SteeringMaximum = settings.Get("Steering", "Maximum", 1)
 
 
 def get_text_size(text="NONE", text_width=100, max_text_height=100):
@@ -378,6 +400,8 @@ def plugin():
 
     global SDKController
     global TruckSimAPI
+
+    print(f"Offset: {SteeringOffset}, Smoothness: {SteeringSmoothness}, Sensitivity: {SteeringSensitivity}, Maximum: {SteeringMaximum}")
 
     data = {}
     data["api"] = TruckSimAPI.update()

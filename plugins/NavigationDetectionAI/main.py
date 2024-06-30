@@ -142,7 +142,7 @@ def LoadAIModel():
                 CheckForAIModelUpdates()
                 while AIModelUpdateThread.is_alive(): time.sleep(0.1)
 
-                if GetAIModelName() == []:
+                if GetAIModelName() == "UNKNOWN":
                     return
 
                 LoadAIProgress = 0
@@ -212,6 +212,9 @@ def CheckForAIModelUpdates():
                     LoadAILabel = "Checking for AI model updates..."
 
                     print("\033[92m" + f"Checking for AI model updates..." + "\033[0m")
+                    if settings.Get("NavigationDetectionAI", "LastUpdateCheck", 0) + 600 > time.time():
+                        if settings.Get("NavigationDetectionAI", "LatestModel", "unset") == GetAIModelName():
+                            return
 
                     url = "https://huggingface.co/Glas42/NavigationDetectionAI/tree/main/model"
                     response = requests.get(url)
@@ -221,6 +224,7 @@ def CheckForAIModelUpdates():
                         href = link['href']
                         if href.startswith('/Glas42/NavigationDetectionAI/blob/main/model'):
                             LatestAIModel = href.split("/")[-1]
+                            settings.Create("NavigationDetectionAI", "LatestModel", LatestAIModel)
                             break
 
                     CurrentAIModel = GetAIModelName()

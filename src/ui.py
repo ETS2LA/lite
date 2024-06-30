@@ -3,13 +3,11 @@ import src.uicomponents as uicomponents
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.setup as setup
 
 from tkinter import ttk
-import subprocess
-import threading
 import tkinter
 import sv_ttk
-import os
 
 def initialize():
     width = settings.Get("UI", "Width", 700)
@@ -49,6 +47,9 @@ def close():
     variables.BREAK = True
 
 def createUI():
+    global InitializeMainMenu
+    global tab_MainMenu
+
     style = ttk.Style()
     style.layout("Tab",[('Notebook.tab',{'sticky':'nswe','children':[('Notebook.padding',{'side':'top','sticky':'nswe','children':[('Notebook.label',{'side':'top','sticky':''})],})],})])
 
@@ -65,6 +66,7 @@ def createUI():
     tabControl.add(tab_NavigationDetectionAI, text ='Navigation Detection AI')
 
     tab_Steering = ttk.Frame(tabControl)
+    tab_Steering.grid_columnconfigure(0, weight=2)
     tabControl.add(tab_Steering, text ='Steering')
 
 
@@ -72,28 +74,8 @@ def createUI():
         uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", font=("Segoe UI", 15))
         uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
 
-        def OpenMainSetupCallback():
-            for widget in tab_MainMenu.winfo_children():
-                widget.destroy()
-        uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: OpenMainSetupCallback(), row=4, column=0, sticky="n", pady=30)
-
-        def OpenNavigationDetectionAISetupCallback():
-            for widget in tab_MainMenu.winfo_children():
-                widget.destroy()
-            uicomponents.MakeLabel(tab_MainMenu, "Which setup method would you like to use?", row=1, column=0, sticky="n", font=("Segoe UI", 15))
-            def AutomaticSetupCallback():
-                for widget in tab_MainMenu.winfo_children():
-                    widget.destroy()
-                InitializeMainMenu()
-                subprocess.Popen(["python", os.path.join(variables.PATH, "plugins", "NavigationDetectionAI", "automatic_setup.py")])
-            uicomponents.MakeButton(tab_MainMenu, "Automatic Setup", lambda: AutomaticSetupCallback(), row=2, column=0, sticky="nw", padx=20, pady=30, width=35)
-            def ManualSetupCallback():
-                for widget in tab_MainMenu.winfo_children():
-                    widget.destroy()
-                InitializeMainMenu()
-                subprocess.Popen(["python", os.path.join(variables.PATH, "plugins", "NavigationDetectionAI", "manual_setup.py")])
-            uicomponents.MakeButton(tab_MainMenu, "Manual Setup", lambda: ManualSetupCallback(), row=2, column=0, sticky="ne", padx=20, pady=30, width=35)
-        uicomponents.MakeButton(tab_MainMenu, "Open Navigation Detection AI Setup", lambda: OpenNavigationDetectionAISetupCallback(), row=5, column=0, sticky="n", pady=0, width=29)
+        uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: setup.OpenMainSetupCallback(), row=4, column=0, sticky="n", pady=30)
+        uicomponents.MakeButton(tab_MainMenu, "Open NavigationDetectionAI Setup", lambda: setup.OpenNavigationDetectionAISetupCallback(), row=5, column=0, sticky="n", pady=0, width=29)
     InitializeMainMenu()
 
 
@@ -112,7 +94,7 @@ def createUI():
 
     global progresslabel
     global progress
-    progresslabel = uicomponents.MakeLabel(tab_NavigationDetectionAI, "this is the lable", 12, 0, sticky="sw")
+    progresslabel = uicomponents.MakeLabel(tab_NavigationDetectionAI, "Loading...", 12, 0, sticky="sw")
     progress = ttk.Progressbar(tab_NavigationDetectionAI, orient="horizontal", length=268, mode="determinate")
     progress.grid(row=13, column=0, sticky="sw", padx=5, pady=0)
 
@@ -126,3 +108,8 @@ def createUI():
             console.RestoreConsole()
 
     uicomponents.MakeButton(tab_NavigationDetectionAI, "Check for AI Model Updates", lambda: CheckForAIUpdates(), row=14, column=0, sticky="sw", width=30)
+
+
+    uicomponents.MakeLabel(tab_Steering, "Steering", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
+    global tab_Steering_FPS
+    tab_Steering_FPS = uicomponents.MakeLabel(tab_Steering, "FPS: --", row=1, column=0, sticky="ne", font=("Segoe UI", 13))

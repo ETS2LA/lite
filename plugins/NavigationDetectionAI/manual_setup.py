@@ -105,29 +105,8 @@ def screen_selection():
             window_x, window_y, window_width, window_height = cv2.getWindowImageRect(window_name)
             mouse_x, mouse_y = mouse.get_position()
             mouse_relative_window = mouse_x-window_x, mouse_y-window_y
-            last_window_size = (window_x, window_y, window_width, window_height)
-            last_mouse_position = (mouse_x, mouse_y)
         except:
-            try:
-                window_x, window_y, window_width, window_height = last_window_size
-            except:
-                window_x, window_y, window_width, window_height = (0, 0, 100, 100)
-            try:
-                mouse_x, mouse_y = last_mouse_position
-            except:
-                mouse_x, mouse_y = (0, 0)
-            mouse_relative_window = mouse_x-window_x, mouse_y-window_y
-            cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-            cv2.resizeWindow(window_name, round(frame_width/2), round(frame_height/2))
-            if os.name == "nt":
-                import win32gui, win32con
-                from ctypes import windll, byref, sizeof, c_int
-                hwnd = win32gui.FindWindow(None, window_name)
-                windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x000000)), sizeof(c_int))
-                icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-                hicon = win32gui.LoadImage(None, f"{path}assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
-                win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-                win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
+            exit()
 
         if window_width != 0 and window_height != 0:
             mouse_x = mouse_relative_window[0]/window_width
@@ -357,26 +336,7 @@ while True:
         last_window_size = (window_x, window_y, window_width, window_height)
         last_mouse_position = (mouse_x, mouse_y)
     except:
-        try:
-            window_x, window_y, window_width, window_height = last_window_size
-        except:
-            window_x, window_y, window_width, window_height = (0, 0, 100, 100)
-        try:
-            mouse_x, mouse_y = last_mouse_position
-        except:
-            mouse_x, mouse_y = (0, 0)
-        mouse_relative_window = mouse_x-window_x, mouse_y-window_y
-        cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
-        cv2.resizeWindow(window_name, round(frame_width/2), round(frame_height/2))
-        if os.name == "nt":
-            import win32gui, win32con
-            from ctypes import windll, byref, sizeof, c_int
-            hwnd = win32gui.FindWindow(None, window_name)
-            windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x000000)), sizeof(c_int))
-            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-            hicon = win32gui.LoadImage(None, f"{path}assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
-            win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-            win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
+        exit()
 
     if window_width != 0 and window_height != 0:
         mouse_x = mouse_relative_window[0]/window_width

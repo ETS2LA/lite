@@ -118,6 +118,8 @@ while variables.BREAK == False:
     if FPS_UpdateTime + 1 < time.time():
         ui.tab_NavigationDetectionAI_FPS.config(text="FPS: " + str(round(FPS, 1)))
         ui.tab_NavigationDetectionAI_FPS.update()
+        ui.tab_Steering_FPS.config(text="FPS: " + str(round(FPS, 1)))
+        ui.tab_Steering_FPS.update()
         FPS_UpdateTime = time.time()
 
     variables.ROOT.update()

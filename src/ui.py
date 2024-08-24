@@ -2,8 +2,10 @@ import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 import src.uicomponents as uicomponents
 import src.variables as variables
 import src.settings as settings
+from src.classes import Button, Label
 import src.console as console
 import src.setup as setup
+from typing import cast
 
 import numpy as np
 import ctypes
@@ -92,64 +94,63 @@ def HandleUI():
         return
 
     for i, tab in enumerate(variables.TABS):
-        variables.ITEMS.append({
-            "type": "button",
-            "text": tab,
-            "x1": i / len(variables.TABS) * variables.WIDTH + 5,
-            "y1": 0,
-            "x2": (i + 1) / len(variables.TABS) * variables.WIDTH - 5,
-            "y2": 45,
-            "round_corners": 10,
-            "buttoncolor": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
-            "buttonhovercolor": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
-            "buttonselectedcolor": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
-            "buttonselectedhovercolor": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
-            "buttonselected": variables.TAB == tab,
-            "textcolor": (255, 255, 255),
-            "fontsize": 12})
+        variables.ITEMS.append(Button(
+            text=tab,
+            x1=i / len(variables.TABS) * variables.WIDTH + 5,
+            y1=0,
+            x2=(i + 1) / len(variables.TABS) * variables.WIDTH - 5,
+            y2=45,
+            textColor=(255, 255, 255),
+            fontSize=12,
+            round_corners=10,
+            buttonColor=(47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
+            buttonHoverColor=(41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
+            buttonSelectedColor=(28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
+            buttonSelectedHoverColor=(28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
+            buttonSelected = variables.TAB == tab
+        ))
 
     if variables.PAGE == "Update":
-        variables.ITEMS.append({
-            "type": "label",
-            "text": "Update Available!",
-            "x1": 0.5 * variables.WIDTH - 100,
-            "y1": 60,
-            "x2": 0.5 * variables.WIDTH + 100,
-            "y2": 90,
-            "textcolor": (255, 255, 255),
-            "fontsize": 12
-        })
+        variables.ITEMS.append(Label(
+            text="Update Available!",
+            x1=0.5 * variables.WIDTH - 100,
+            y1=60,
+            x2=0.5 * variables.WIDTH + 100,
+            y2=90,
+            textColor=(255, 255, 255),
+            fontSize=12
+        ))
 
-        variables.ITEMS.append({
-            "type": "button",
-            "text": "Update",
-            "x1": 0.75 * variables.WIDTH - 100,
-            "y1": 120,
-            "x2": 0.75 * variables.WIDTH + 100,
-            "y2": 160,
-            "round_corners": 10,
-            "buttoncolor": (47, 47, 47),
-            "buttonhovercolor": (67, 67, 67),
-            "buttonselectedcolor": (67, 67, 67),
-            "textcolor": (255, 255, 255),
-            "fontsize": 12})
+        variables.ITEMS.append(Button(
+            text="Update",
+            x1=0.75 * variables.WIDTH - 100,
+            y1=120,
+            x2=0.75 * variables.WIDTH + 100,
+            y2=160,
+            round_corners=10,
+            buttonColor=(47, 47, 47),
+            buttonHoverColor=(67, 67, 67),
+            buttonSelectedColor=(67, 67, 67),
+            textColor=(255, 255, 255),
+            fontSize=12
+        ))
 
-        variables.ITEMS.append({
-            "type": "button",
-            "text": "Don't Update",
-            "x1": 0.25 * variables.WIDTH - 100,
-            "y1": 120,
-            "x2": 0.25 * variables.WIDTH + 100,
-            "y2": 160,
-            "round_corners": 10,
-            "buttoncolor": (47, 47, 47),
-            "buttonhovercolor": (67, 67, 67),
-            "buttonselectedcolor": (67, 67, 67),
-            "textcolor": (255, 255, 255),
-            "fontsize": 12})
+        variables.ITEMS.append(Button(
+            text="Don't Update",
+            x1=0.25 * variables.WIDTH - 100,
+            y1=120,
+            x2=0.25 * variables.WIDTH + 100,
+            y2=160,
+            round_corners=10,
+            buttonColor=(47, 47, 47),
+            buttonHoverColor=(67, 67, 67),
+            buttonSelectedColor=(67, 67, 67),
+            textColor=(255, 255, 255),
+            fontSize=12
+        ))
 
     for area in variables.AREAS:
-        if area[0] == "button":
+        if area[0] == Button:
             if (area[1] <= mouse_x * width <= area[3] and area[2] <= mouse_y * height <= area[4]) != area[5]:
                 area = (area[1], area[2], area[3], area[4], not area[5])
                 variables.RENDER_FRAME = True
@@ -157,26 +158,42 @@ def HandleUI():
     if variables.RENDER_FRAME or last_left_clicked != left_clicked:
         variables.RENDER_FRAME = False
         print("Rendering new frame!")
+        
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
+        
         if len(variables.ITEMS) > 0:
             for item in variables.ITEMS:
-                item_type = item["type"]
-                item.pop("type")
-                if item_type == "label":
-                    uicomponents.Label(**item)
-                if item_type == "button":
-                    pressed, hovered = uicomponents.Button(**item)
-                    variables.AREAS.append((item_type, item["x1"], item["y1"], item["x2"], item["y2"], pressed or hovered))
+                item_type = type(item)
+                
+                if item_type == Label:
+                    item = cast(Label, item) # will give the item intellisense
+                    uicomponents.DrawLabel(item)
+                    
+                if item_type == Button:
+                    item = cast(Button, item) # will give the item intellisense
+                    
+                    pressed, hovered = uicomponents.DrawButton(item)
+                    variables.AREAS.append((item_type, item.x1, item.y1, item.x2, item.y2, pressed or hovered))
 
                     if pressed:
                         variables.RENDER_FRAME = True
                         for tab in variables.TABS:
-                            if item["text"] == tab:
+                            if item.text == tab:
                                 variables.TAB = tab
         else:
-            uicomponents.Label(text="You landed on an empty page...", x1=0, y1=0, x2=width, y2=height, textcolor=(255, 255, 255), fontsize=12)
+            uicomponents.DrawLabel(Label(
+                text="You landed on an empty page...",
+                x1=0,
+                y1=0,
+                x2=variables.WIDTH,
+                y2=variables.HEIGHT,
+                textColor=(255, 255, 255),
+                fontSize=12
+            ))
+        
         variables.CACHED_FRAME = variables.FRAME.copy()
+    
     variables.ITEMS = []
 
     cv2.imshow(variables.NAME, variables.FRAME)

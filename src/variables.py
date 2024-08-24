@@ -1,3 +1,4 @@
+import src.settings as settings
 import subprocess
 import os
 
@@ -6,8 +7,25 @@ PATH = os.path.dirname(__file__).replace("src", "")
 OS = os.name
 with open(PATH + "version.txt") as f: VERSION = f.read()
 
-ROOT = None
+BACKGROUND = None
+THEME = None
+
+TABS = ["Menu", "NavigationDetectionAI", "Steering"]
+RENDER_FRAME = True
+CACHED_FRAME = None
+FRAME = None
+ITEMS = []
+AREAS = []
+
+X = settings.Get("UI", "X", 0)
+Y = settings.Get("UI", "Y", 0)
+WIDTH = settings.Get("UI", "Width", 700)
+HEIGHT = settings.Get("UI", "Height", 400)
+
 HWND = None
+PAGE = None
+TAB = "Menu"
+NAME = "ETS2LA-Lite"
 BREAK = False
 
 CONSOLENAME = None

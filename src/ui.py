@@ -5,159 +5,179 @@ import src.settings as settings
 import src.console as console
 import src.setup as setup
 
-from tkinter import ttk
-import tkinter
-import sv_ttk
+import numpy as np
+import ctypes
+import mouse
+import cv2
 
-def initialize():
+def InitializeUI():
     width = settings.Get("UI", "Width", 700)
     height = settings.Get("UI", "Height", 400)
     x = settings.Get("UI", "X", 0)
     y = settings.Get("UI", "Y", 0)
-    theme = settings.Get("UI", "Theme", "dark")
+    variables.THEME = settings.Get("UI", "Theme", "dark")
     resizable = settings.Get("UI", "Resizable", False)
+
+    # dark 1: 28, 28, 28
+    # dark 2: 47, 47, 47
+    # light 1: 250, 250, 250
+    # light 2: 231, 231, 231
+    variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
+    variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
+    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, 49), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
 
     if variables.OS == "nt":
         from ctypes import windll, byref, sizeof, c_int
+        import win32gui, win32con
 
-    variables.ROOT = tkinter.Tk()
-    variables.ROOT.title("ETS2LA-Lite")
-    variables.ROOT.geometry(f"{width}x{height}+{x}+{y}")
-    variables.ROOT.update()
-    sv_ttk.set_theme(theme, variables.ROOT)
-    variables.ROOT.protocol("WM_DELETE_WINDOW", close)
-    variables.ROOT.resizable(resizable, resizable)
+    cv2.namedWindow(variables.NAME, cv2.WINDOW_NORMAL)
+    cv2.resizeWindow(variables.NAME, width, height)
+    cv2.imshow(variables.NAME, variables.BACKGROUND)
+    cv2.waitKey(1)
 
     if variables.OS == "nt":
-        variables.HWND = windll.user32.GetParent(variables.ROOT.winfo_id())
-        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int(0x2F2F2F)), sizeof(c_int))
-        variables.ROOT.iconbitmap(default=f"{variables.PATH}assets\\favicon.ico")
+        variables.HWND = win32gui.FindWindow(None, variables.NAME)
+        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x2F2F2F) if variables.THEME == "dark" else (0xE7E7E7))), sizeof(c_int))
+        hicon = win32gui.LoadImage(None, f"{variables.PATH}assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
+        win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
+        win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
 
-def close():
-    settings.Create("UI", "Width", variables.ROOT.winfo_width())
-    settings.Create("UI", "Height", variables.ROOT.winfo_height())
-    settings.Create("UI", "X", variables.ROOT.winfo_x())
-    settings.Create("UI", "Y", variables.ROOT.winfo_y())
+def CloseUI():
+    settings.Create("UI", "X", variables.X)
+    settings.Create("UI", "Y", variables.Y)
+    settings.Create("UI", "Width", variables.WIDTH)
+    settings.Create("UI", "Height", variables.HEIGHT)
     console.RestoreConsole()
     console.CloseConsole()
     try:
-        variables.ROOT.destroy()
+        cv2.destroyWindow(variables.NAME)
     except:
         pass
     variables.BREAK = True
 
-def createUI():
-    global InitializeMainMenu
-    global tab_MainMenu
+def ResizeUI(width, height):
+    variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
+    variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
+    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, 49), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    variables.RENDER_FRAME = True
 
-    style = ttk.Style()
-    style.layout("Tab",[('Notebook.tab',{'sticky':'nswe','children':[('Notebook.padding',{'side':'top','sticky':'nswe','children':[('Notebook.label',{'side':'top','sticky':''})],})],})])
-
-    tabControl = ttk.Notebook(variables.ROOT)
-    tabControl.pack(expand = 1, fill ="both")
-
-    tab_MainMenu = ttk.Frame(tabControl)
-    tab_MainMenu.grid_columnconfigure(0, weight=2)
-    tab_MainMenu.grid_rowconfigure(10, weight=1)
-    tabControl.add(tab_MainMenu, text ='MainMenu')
-
-    tab_NavigationDetectionAI = ttk.Frame(tabControl)
-    tab_NavigationDetectionAI.grid_columnconfigure(0, weight=2)
-    tab_NavigationDetectionAI.grid_rowconfigure(12, weight=1)
-    tabControl.add(tab_NavigationDetectionAI, text ='NavigationDetectionAI')
-
-    tab_Steering = ttk.Frame(tabControl)
-    tab_Steering.grid_columnconfigure(0, weight=2)
-    tabControl.add(tab_Steering, text ='Steering')
-
-
-    def InitializeMainMenu():
-        uicomponents.MakeLabel(tab_MainMenu, "ETS2LA-Lite", row=1, column=0, sticky="n", pady=13, font=("Segoe UI", 15))
-        uicomponents.MakeLabel(tab_MainMenu, f"Version {variables.VERSION}", row=2, column=0, sticky="n", pady=0)
-
-        try:
-            updateTime = str(variables.LASTUPDATE).split(" ")
-            updateTime = updateTime[1:]
-            months = {"Jan": 1, "Feb": 2, "Mar": 3, "Apr": 4, "May": 5, "Jun": 6, "Jul": 7, "Aug": 8, "Sep": 9, "Oct":10, "Nov": 11, "Dec": 12}
-            updateTime[0] = months[updateTime[0]]
-            updateText = f"{updateTime[1]}.{updateTime[0]}.{updateTime[3]} - {updateTime[2]} "
-        except:
-            import traceback
-            traceback.print_exc()
-            updateText = "-- Unknown --"
-        uicomponents.MakeLabel(tab_MainMenu, f"Released {updateText}", row=3, column=0, sticky="n", pady=0)
-
-        uicomponents.MakeLabel(tab_MainMenu, "", row=4, column=0, sticky="n", pady=5)
-        uicomponents.MakeButton(tab_MainMenu, "Open Main Setup", lambda: setup.OpenMainSetupCallback(), row=5, column=0, sticky="n", pady=5)
-        uicomponents.MakeButton(tab_MainMenu, "Open NavigationDetectionAI Setup", lambda: setup.OpenNavigationDetectionAISetupCallback(), row=6, column=0, sticky="n", pady=0, width=29)
-        uicomponents.MakeLabel(tab_MainMenu, "", row=7, column=0, sticky="n", pady=5)
-
-        if settings.Get('CrashReports', 'AllowCrashReports') != None:
-            if settings.Get('CrashReports', 'AllowCrashReports'):
-                uicomponents.MakeLabel(tab_MainMenu, "Crash reporting is enabled.", row=8, column=0, fg="green")
-            else:
-                uicomponents.MakeLabel(tab_MainMenu, "Crash reporting is disabled.", row=8, column=0, fg="red")
+def HandleUI():
+    try:
+        x, y, width, height = cv2.getWindowImageRect(variables.NAME)
+        if (x, y, width, height) != (variables.X, variables.Y, variables.WIDTH, variables.HEIGHT):
+            variables.X, variables.Y, variables.WIDTH, variables.HEIGHT = x, y, width, height
+            ResizeUI(width, height)
+        mouse_x, mouse_y = mouse.get_position()
+        mouse_relative_window = mouse_x - x, mouse_y - y
+        if width != 0 and height != 0:
+            mouse_x = mouse_relative_window[0]/width
+            mouse_y = mouse_relative_window[1]/height
         else:
-            uicomponents.MakeLabel(tab_MainMenu, "", row=8, column=0)
+            mouse_x = 0
+            mouse_y = 0
+        last_left_clicked = uicomponents.left_clicked
+        last_right_clicked = uicomponents.right_clicked
+        left_clicked = ctypes.windll.user32.GetKeyState(0x01) & 0x8000 != 0 and ctypes.windll.user32.GetForegroundWindow() == ctypes.windll.user32.FindWindowW(None, variables.NAME)
+        right_clicked = ctypes.windll.user32.GetKeyState(0x02) & 0x8000 != 0 and ctypes.windll.user32.GetForegroundWindow() == ctypes.windll.user32.FindWindowW(None, variables.NAME)
+        uicomponents.frame_width = width
+        uicomponents.frame_height = height
+        uicomponents.mouse_x = mouse_x
+        uicomponents.mouse_y = mouse_y
+        uicomponents.last_left_clicked = uicomponents.left_clicked
+        uicomponents.last_right_clicked = uicomponents.right_clicked
+        uicomponents.left_clicked = left_clicked
+        uicomponents.right_clicked = right_clicked
+    except:
+        CloseUI()
+        return
 
-        global UserCountLabel
-        UserCountLabel = uicomponents.MakeLabel(tab_MainMenu, f"Users online: {'Loading...' if settings.Get('CrashReports', 'AllowCrashReports') == True else 'Please enable crash reporting to fetch user count.'}", row=9, column=0, sticky="s", pady=20, fg="gray")
-    InitializeMainMenu()
+    for i, tab in enumerate(variables.TABS):
+        variables.ITEMS.append({
+            "type": "button",
+            "text": tab,
+            "x1": i / len(variables.TABS) * variables.WIDTH + 5,
+            "y1": 0,
+            "x2": (i + 1) / len(variables.TABS) * variables.WIDTH - 5,
+            "y2": 45,
+            "round_corners": 10,
+            "buttoncolor": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
+            "buttonhovercolor": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
+            "buttonselectedcolor": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
+            "buttonselectedhovercolor": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
+            "buttonselected": variables.TAB == tab,
+            "textcolor": (255, 255, 255),
+            "fontsize": 12})
 
+    if variables.PAGE == "Update":
+        variables.ITEMS.append({
+            "type": "label",
+            "text": "Update Available!",
+            "x1": 0.5 * variables.WIDTH - 100,
+            "y1": 60,
+            "x2": 0.5 * variables.WIDTH + 100,
+            "y2": 90,
+            "textcolor": (255, 255, 255),
+            "fontsize": 12
+        })
 
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, "NavigationDetectionAI", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
-    global tab_NavigationDetectionAI_FPS
-    tab_NavigationDetectionAI_FPS = uicomponents.MakeLabel(tab_NavigationDetectionAI, "FPS: --", row=1, column=0, sticky="ne", font=("Segoe UI", 13))
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Update",
+            "x1": 0.75 * variables.WIDTH - 100,
+            "y1": 120,
+            "x2": 0.75 * variables.WIDTH + 100,
+            "y2": 160,
+            "round_corners": 10,
+            "buttoncolor": (47, 47, 47),
+            "buttonhovercolor": (67, 67, 67),
+            "buttonselectedcolor": (67, 67, 67),
+            "textcolor": (255, 255, 255),
+            "fontsize": 12})
 
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, "AI model properties:", row=2, column=0, sticky="nw", pady=10, font=("Segoe UI", 12))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Epochs: {NavigationDetectionAI.GetAIModelProperties()[0]}", row=3, column=0, sticky="nw", font=("Segoe UI", 10))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Batch Size: {NavigationDetectionAI.GetAIModelProperties()[1]}", row=4, column=0, sticky="nw", font=("Segoe UI", 10))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Image Width: {NavigationDetectionAI.GetAIModelProperties()[2]}", row=4, column=0, sticky="nw", font=("Segoe UI", 10))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Image Height: {NavigationDetectionAI.GetAIModelProperties()[3]}", row=5, column=0, sticky="nw", font=("Segoe UI", 10))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Images/Data Points: {NavigationDetectionAI.GetAIModelProperties()[4]}", row=6, column=0, sticky="nw", font=("Segoe UI", 10))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Training Time: {NavigationDetectionAI.GetAIModelProperties()[5]}", row=7, column=0, sticky="nw", font=("Segoe UI", 10))
-    uicomponents.MakeLabel(tab_NavigationDetectionAI, f"Training Date: {NavigationDetectionAI.GetAIModelProperties()[6]}", row=8, column=0, sticky="nw", font=("Segoe UI", 10))
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Don't Update",
+            "x1": 0.25 * variables.WIDTH - 100,
+            "y1": 120,
+            "x2": 0.25 * variables.WIDTH + 100,
+            "y2": 160,
+            "round_corners": 10,
+            "buttoncolor": (47, 47, 47),
+            "buttonhovercolor": (67, 67, 67),
+            "buttonselectedcolor": (67, 67, 67),
+            "textcolor": (255, 255, 255),
+            "fontsize": 12})
 
-    global progresslabel
-    global progress
-    progresslabel = uicomponents.MakeLabel(tab_NavigationDetectionAI, "Loading...", 12, 0, sticky="sw")
-    progress = ttk.Progressbar(tab_NavigationDetectionAI, orient="horizontal", length=268, mode="determinate")
-    progress.grid(row=13, column=0, sticky="sw", padx=5, pady=0)
+    for area in variables.AREAS:
+        if area[0] == "button":
+            if (area[1] <= mouse_x * width <= area[3] and area[2] <= mouse_y * height <= area[4]) != area[5]:
+                area = (area[1], area[2], area[3], area[4], not area[5])
+                variables.RENDER_FRAME = True
 
-    def CheckForAIUpdates():
-        NavigationDetectionAI.CheckForAIModelUpdates()
-        while NavigationDetectionAI.AIModelUpdateThread.is_alive(): NavigationDetectionAI.time.sleep(0.1)
-        if NavigationDetectionAI.TorchAvailable == True:
-            NavigationDetectionAI.LoadAIModel()
+    if variables.RENDER_FRAME or last_left_clicked != left_clicked:
+        variables.RENDER_FRAME = False
+        print("Rendering new frame!")
+        variables.FRAME = variables.BACKGROUND.copy()
+        variables.AREAS = []
+        if len(variables.ITEMS) > 0:
+            for item in variables.ITEMS:
+                item_type = item["type"]
+                item.pop("type")
+                if item_type == "label":
+                    uicomponents.Label(**item)
+                if item_type == "button":
+                    pressed, hovered = uicomponents.Button(**item)
+                    variables.AREAS.append((item_type, item["x1"], item["y1"], item["x2"], item["y2"], pressed or hovered))
+
+                    if pressed:
+                        variables.RENDER_FRAME = True
+                        for tab in variables.TABS:
+                            if item["text"] == tab:
+                                variables.TAB = tab
         else:
-            print("NavigationDetectionAI not available due to missing dependencies.")
-            console.RestoreConsole()
+            uicomponents.Label(text="You landed on an empty page...", x1=0, y1=0, x2=width, y2=height, textcolor=(255, 255, 255), fontsize=12)
+        variables.CACHED_FRAME = variables.FRAME.copy()
+    variables.ITEMS = []
 
-    uicomponents.MakeButton(tab_NavigationDetectionAI, "Check for AI Model Updates", lambda: CheckForAIUpdates(), row=14, column=0, sticky="sw", width=30)
-
-
-    uicomponents.MakeLabel(tab_Steering, "Steering", row=1, column=0, sticky="nw", font=("Segoe UI", 13))
-    global tab_Steering_FPS
-    tab_Steering_FPS = uicomponents.MakeLabel(tab_Steering, "FPS: --", row=1, column=0, sticky="ne", font=("Segoe UI", 13))
-
-    OffsetSlider = tkinter.Scale(tab_Steering, from_=-5, to=5, resolution=0.01, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Offset", OffsetSlider.get()))
-    OffsetSlider.set(settings.Get("Steering", "Offset", 0))
-    OffsetSlider.grid(row=2, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
-    uicomponents.MakeLabel(tab_Steering, "Offset", row=2, column=0, padx=5, pady=22, sticky="nw")
-
-    OffsetSlider = tkinter.Scale(tab_Steering, from_=0, to=10, resolution=1, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Smoothness", OffsetSlider.get()))
-    OffsetSlider.set(settings.Get("Steering", "Smoothness", 3))
-    OffsetSlider.grid(row=3, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
-    uicomponents.MakeLabel(tab_Steering, "Smoothness", row=3, column=0, padx=5, pady=22, sticky="nw")
-
-    OffsetSlider = tkinter.Scale(tab_Steering, from_=0.1, to=2, resolution=0.01, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Sensitivity", OffsetSlider.get()))
-    OffsetSlider.set(settings.Get("Steering", "Sensitivity", 0.5))
-    OffsetSlider.grid(row=4, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
-    uicomponents.MakeLabel(tab_Steering, "Sensitivity", row=4, column=0, padx=5, pady=22, sticky="nw")
-
-    OffsetSlider = tkinter.Scale(tab_Steering, from_=0, to=1, resolution=0.01, orient=tkinter.HORIZONTAL, length=580, command=lambda x: settings.Create("Steering", "Maximum", OffsetSlider.get()))
-    OffsetSlider.set(settings.Get("Steering", "Maximum", 1))
-    OffsetSlider.grid(row=5, column=0, padx=2, pady=0, columnspan=2, sticky="ne")
-    uicomponents.MakeLabel(tab_Steering, "Max Steering", row=5, column=0, padx=5, pady=22, sticky="nw")
-
-    uicomponents.MakeButton(tab_Steering, "Apply Changes", lambda: NavigationDetectionAI.UpdateSettings(), row=6, column=0, pady=20, sticky="s", width=30)
+    cv2.imshow(variables.NAME, variables.FRAME)
+    cv2.waitKey(1)

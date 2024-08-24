@@ -1,111 +1,63 @@
-import src.settings as settings
-from tkinter import ttk
-import tkinter as tk
+import src.variables as variables
+import cv2
 
-def MakeButton(parent, text:str, command, row:int, column:int, style:str="TButton", width:int=15, center:bool=False, padx:int=5, pady:int=5, state:str="!disabled", columnspan:int=1, rowspan:int=1, sticky:str="n"):
 
-    button = ttk.Button(parent, text=text, command=command, style=style, padding=10, width=width, state=state)
-    if not center:
-        button.grid(row=row, column=column, padx=padx, pady=pady, columnspan=columnspan, rowspan=rowspan, sticky=sticky)
+frame_width = None
+frame_height = None
+mouse_x = None
+mouse_y = None
+left_clicked = False
+right_clicked = False
+last_left_clicked = False
+last_right_clicked = False
+
+
+def GetTextSize(text="NONE", text_width=100, fontsize=12):
+    global frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    fontscale = 1
+    textsize, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontscale, 1)
+    width_current_text, height_current_text = textsize
+    max_count_current_text = 3
+    while width_current_text != text_width or height_current_text > fontsize:
+        fontscale *= min(text_width / textsize[0], fontsize / textsize[1])
+        textsize, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontscale, 1)
+        max_count_current_text -= 1
+        if max_count_current_text <= 0:
+            break
+    thickness = round(fontscale * 2)
+    if thickness <= 0:
+        thickness = 1
+    return text, fontscale, thickness, textsize[0], textsize[1]
+
+
+def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, textcolor=(255, 255, 255), fontsize=12):
+    global frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
+    cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, textcolor, thickness, cv2.LINE_AA)
+
+
+def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, round_corners=5, buttoncolor=(100, 100, 100), buttonhovercolor=(130, 130, 130), buttonselectedcolor=(160, 160, 160), buttonselectedhovercolor=(190, 190, 190), buttonselected=False, textcolor=(255, 255, 255), fontsize=12):
+    global frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2:
+        buttonhovered = True
     else:
-        button.grid(row=row, column=column, padx=padx, pady=pady, sticky="n", columnspan=columnspan, rowspan=rowspan)
-
-    return button
-
-
-def MakeCheckButton(parent, text:str, category:str, setting:str, row:int, column:int, width:int=17, padx:int=5, pady:int=5, values=[True, False], default=False, columnspan:int=1, callback=None):
-
-    variable = tk.BooleanVar()
-    value = settings.Get(category, setting)
-
-    if value == None:
-        value = default
-        settings.Create(category, setting, value)
-        variable.set(value)
-    else:
-        variable.set(value)
-
-    if callback != None:
-        def ButtonPressed():
-            settings.Create(category, setting, values[0] if variable.get() else values[1])
-            callback()
-    else:
-        def ButtonPressed():
-            settings.Create(category, setting, values[0] if variable.get() else values[1])
-
-    button = ttk.Checkbutton(parent, text=text, variable=variable, command=lambda: ButtonPressed(), width=width)
-    button.grid(row=row, column=column, padx=padx, pady=pady, sticky="w", columnspan=columnspan)
-
-    return variable
-
-
-def MakeComboEntry(parent, text:str, category:str, setting:str, row: int, column: int, width: int=10, padx: int=5, pady: int=5, labelwidth:int=15, isFloat:bool=False, isString:bool=False, value="", sticky:str="w", labelSticky:str="w", labelPadX:int=10):
-
-    label = ttk.Label(parent, text=text, width=labelwidth).grid(row=row, column=column, sticky=labelSticky, padx=labelPadX)
-
-    if not isFloat and not isString:
-        var = tk.IntVar()
-
-        setting = settings.Get(category, setting)
-        if setting == None:
-            var.set(value)
-            settings.Create(category, setting, value)
+        buttonhovered = False
+    if buttonselected == True:
+        if buttonhovered == True:
+            cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttonselectedhovercolor, round_corners, cv2.LINE_AA)
+            cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttonselectedhovercolor, -1, cv2.LINE_AA)
         else:
-            var.set(setting)
-
-    elif isString:
-        var = tk.StringVar()
-        
-        setting = settings.Get(category, setting)
-        if setting == None:
-            var.set(value)
-            settings.Create(category, setting, value)
-        else:
-            var.set(setting)
-
+            cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttonselectedcolor, round_corners, cv2.LINE_AA)
+            cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttonselectedcolor, -1, cv2.LINE_AA)
+    elif buttonhovered == True:
+        cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttonhovercolor, round_corners, cv2.LINE_AA)
+        cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttonhovercolor, -1, cv2.LINE_AA)
     else:
-        var = tk.DoubleVar()
-
-        setting = settings.Get(category, setting)
-        if setting == None:
-            var.set(value)
-            settings.Create(category, setting, value)
-        else:
-            var.set(setting)
-
-    entry = ttk.Entry(parent, textvariable=var, width=width, validatecommand=lambda: settings.Create(category, setting, var.get())).grid(row=row, column=column+1, sticky=sticky, padx=padx, pady=pady)
-
-    return var
-
-
-def MakeLabel(parent, text:str, row:int, column:int, font=("Segoe UI", 10), pady:int=5, padx:int=5, columnspan:int=1, sticky:str="n", fg:str="", bg:str=""):
-
-    if text == "":
-        var = tk.StringVar()
-        var.set(text)
-
-        if fg != "" and bg != "":
-            label = ttk.Label(parent, font=font, textvariable=var, background=bg, foreground=fg)
-        elif fg != "":
-            label = ttk.Label(parent, font=font, textvariable=var, foreground=fg)
-        elif bg != "":
-            label = ttk.Label(parent, font=font, textvariable=var, background=bg)
-        else: 
-            label = ttk.Label(parent, font=font, textvariable=var)
-
-        label.grid(row=row, column=column, columnspan=columnspan, padx=padx, pady=pady, sticky=sticky)
-
-        return var
+        cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttoncolor, round_corners, cv2.LINE_AA)
+        cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), buttoncolor, -1, cv2.LINE_AA)
+    text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
+    cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, textcolor, thickness, cv2.LINE_AA)
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True:
+        return True, buttonhovered
     else:
-        if fg != "" and bg != "":
-            label = ttk.Label(parent, font=font, text=text, background=bg, foreground=fg)
-        elif fg != "":
-            label = ttk.Label(parent, font=font, text=text, foreground=fg)
-        elif bg != "":
-            label = ttk.Label(parent, font=font, text=text, background=bg)
-        else:
-            label = ttk.Label(parent, font=font, text=text)
-
-        label.grid(row=row, column=column, columnspan=columnspan, padx=padx, pady=pady, sticky=sticky)
-
-        return label
+        return False, buttonhovered

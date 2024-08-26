@@ -175,7 +175,7 @@ def LoadAIModel():
                 ModelFileCorrupted = False
 
                 try:
-                    AIModel = torch.jit.load(os.path.join(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel", GetAIModelName()), map_location=AIDevice)
+                    AIModel = torch.jit.load(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", GetAIModelName()), map_location=AIDevice)
                     AIModel.eval()
                 except:
                     ModelFileCorrupted = True
@@ -257,7 +257,7 @@ def CheckForAIModelUpdates():
                         DeleteAllAIModels()
                         response = requests.get(f"https://huggingface.co/Glas42/NavigationDetectionAI/resolve/main/model/{LatestAIModel}?download=true", stream=True)
                         last_progress = 0
-                        with open(os.path.join(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel", f"{LatestAIModel}"), "wb") as modelfile:
+                        with open(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", f"{LatestAIModel}"), "wb") as modelfile:
                             total_size = int(response.headers.get('content-length', 0))
                             downloaded_size = 0
                             chunk_size = 1024
@@ -310,8 +310,8 @@ def CheckForAIModelUpdates():
 
 def ModelFolderExists():
     try:
-        if os.path.exists(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel") == False:
-            os.makedirs(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel")
+        if os.path.exists(f"{variables.PATH}cache/NavigationDetectionAI") == False:
+            os.makedirs(f"{variables.PATH}cache/NavigationDetectionAI")
     except Exception as ex:
         exc = traceback.format_exc()
         SendCrashReport("NavigationDetection - Error in function ModelFolderExists.", str(exc))
@@ -322,7 +322,7 @@ def ModelFolderExists():
 def GetAIModelName():
     try:
         ModelFolderExists()
-        for file in os.listdir(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel"):
+        for file in os.listdir(f"{variables.PATH}cache/NavigationDetectionAI"):
             if file.endswith(".pt"):
                 return file
         return "UNKNOWN"
@@ -337,9 +337,9 @@ def GetAIModelName():
 def DeleteAllAIModels():
     try:
         ModelFolderExists()
-        for file in os.listdir(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel"):
+        for file in os.listdir(f"{variables.PATH}cache/NavigationDetectionAI"):
             if file.endswith(".pt"):
-                os.remove(os.path.join(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel", file))
+                os.remove(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", file))
     except PermissionError as ex:
         global TorchAvailable
         TorchAvailable = False
@@ -379,7 +379,7 @@ def GetAIModelProperties():
         MODEL_TRAINING_DATE = "UNKNOWN"
         if GetAIModelName() == "UNKNOWN" or TorchAvailable == False:
             return
-        torch.jit.load(os.path.join(f"{variables.PATH}plugins/NavigationDetectionAI/AIModel", GetAIModelName()), _extra_files=MODEL_METADATA, map_location=AIDevice)
+        torch.jit.load(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", GetAIModelName()), _extra_files=MODEL_METADATA, map_location=AIDevice)
         MODEL_METADATA = str(MODEL_METADATA["data"]).replace('b"(', '').replace(')"', '').replace("'", "").split(", ")
         for var in MODEL_METADATA:
             if "image_width" in var:
@@ -431,8 +431,6 @@ def plugin():
 
     global SDKController
     global TruckSimAPI
-
-    print(f"Offset: {SteeringOffset}, Smoothness: {SteeringSmoothness}, Sensitivity: {SteeringSensitivity}, Maximum: {SteeringMaximum}")
 
     data = {}
     data["api"] = TruckSimAPI.update()

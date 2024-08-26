@@ -3,6 +3,7 @@ import src.uicomponents as uicomponents
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.updater as updater
 import src.setup as setup
 
 import numpy as np
@@ -15,7 +16,6 @@ def InitializeUI():
     height = settings.Get("UI", "Height", 400)
     x = settings.Get("UI", "X", 0)
     y = settings.Get("UI", "Y", 0)
-    resizable = settings.Get("UI", "Resizable", False)
 
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
@@ -49,7 +49,30 @@ def CloseUI():
 def ResizeUI(width, height):
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
-    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    if variables.TITLE_BAR_HEIGHT > 0:
+        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    variables.CANVAS_BOTTOM = height - 1 - variables.TITLE_BAR_HEIGHT
+    variables.CANVAS_RIGHT = width - 1
+    variables.RENDER_FRAME = True
+
+def SetTitleBarHeight(title_bar_height):
+    try:
+        x, y, width, height = cv2.getWindowImageRect(variables.NAME)
+    except:
+        CloseUI()
+        return
+    variables.TITLE_BAR_HEIGHT = title_bar_height
+    variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
+    variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
+    if title_bar_height > 0:
+        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    if variables.OS == "nt":
+        if title_bar_height == 0:
+            from ctypes import windll, byref, sizeof, c_int
+            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x1C1C1C) if variables.THEME == "dark" else (0xFAFAFA))), sizeof(c_int))
+        else:
+            from ctypes import windll, byref, sizeof, c_int
+            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x2F2F2F) if variables.THEME == "dark" else (0xE7E7E7))), sizeof(c_int))
     variables.CANVAS_BOTTOM = height - 1 - variables.TITLE_BAR_HEIGHT
     variables.CANVAS_RIGHT = width - 1
     variables.RENDER_FRAME = True
@@ -86,24 +109,26 @@ def HandleUI():
         CloseUI()
         return
 
-    for i, tab in enumerate(variables.TABS):
-        variables.ITEMS.append({
-            "type": "button",
-            "text": tab,
-            "x1": i / len(variables.TABS) * variables.CANVAS_RIGHT + 5,
-            "y1": -variables.TITLE_BAR_HEIGHT + 5,
-            "x2": (i + 1) / len(variables.TABS) * variables.CANVAS_RIGHT - 5,
-            "y2": -5,
-            "button_selected": variables.TAB == tab,
-            "button_color": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
-            "button_hover_color": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
-            "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
-            "button_selected_hover_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250)})
+    if variables.TITLE_BAR_HEIGHT > 0:
+        for i, tab in enumerate(variables.TABS):
+            variables.ITEMS.append({
+                "type": "button",
+                "text": tab,
+                "function": None,
+                "x1": i / len(variables.TABS) * variables.CANVAS_RIGHT + 5,
+                "y1": -variables.TITLE_BAR_HEIGHT + 6,
+                "x2": (i + 1) / len(variables.TABS) * variables.CANVAS_RIGHT - 5,
+                "y2": -6,
+                "button_selected": variables.TAB == tab,
+                "button_color": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
+                "button_hover_color": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
+                "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
+                "button_selected_hover_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250)})
 
     if variables.PAGE == "Update":
         variables.ITEMS.append({
             "type": "label",
-            "text": "Update Available",
+            "text": "Update Available:",
             "x1": 0.5 * variables.CANVAS_RIGHT - 100,
             "y1": 10,
             "x2": 0.5 * variables.CANVAS_RIGHT + 100,
@@ -112,30 +137,30 @@ def HandleUI():
         variables.ITEMS.append({
             "type": "button",
             "text": "Update",
-            "x1": 0.75 * variables.CANVAS_RIGHT - 100,
-            "y1": 70,
-            "x2": 0.75 * variables.CANVAS_RIGHT + 100,
-            "y2": 110})
+            "function": lambda: updater.Update(),
+            "x1": variables.CANVAS_RIGHT / 2 + 10,
+            "y1": variables.CANVAS_BOTTOM - 70,
+            "x2": variables.CANVAS_RIGHT - 20,
+            "y2": variables.CANVAS_BOTTOM - 20})
 
         variables.ITEMS.append({
             "type": "button",
             "text": "Don't Update",
-            "x1": 0.25 * variables.CANVAS_RIGHT - 100,
-            "y1": 70,
-            "x2": 0.25 * variables.CANVAS_RIGHT + 100,
-            "y2": 110})
+            "function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu")},
+            "x1": 20,
+            "y1": variables.CANVAS_BOTTOM - 70,
+            "x2": variables.CANVAS_RIGHT / 2 - 10,
+            "y2": variables.CANVAS_BOTTOM - 20})
 
     if last_right_clicked == True and right_clicked == False:
         variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
-
-    if last_left_clicked == True and left_clicked == False:
-        variables.CONTEXT_MENU = [False, 0, 0]
 
     if variables.CONTEXT_MENU:
         if variables.CONTEXT_MENU[0]:
             variables.ITEMS.append({
                 "type": "button",
                 "text": "Restart",
+                "function": None,
                 "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
                 "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT,
                 "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
@@ -143,6 +168,7 @@ def HandleUI():
             variables.ITEMS.append({
                 "type": "button",
                 "text": "Close",
+                "function": lambda: CloseUI(),
                 "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
                 "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 35,
                 "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
@@ -150,10 +176,14 @@ def HandleUI():
             variables.ITEMS.append({
                 "type": "button",
                 "text": "Search for updates",
+                "function": lambda: updater.CheckForUpdates(),
                 "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
                 "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 70,
                 "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
                 "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 100})
+
+    if variables.PAGE == "Menu":
+        ...
 
     for area in variables.AREAS:
         if area[0] == "button" or area[0] == "buttonlist":
@@ -174,6 +204,9 @@ def HandleUI():
         for item in variables.ITEMS:
             item_type = item["type"]
             item.pop("type")
+            if item_type == "button":
+                item_function = item["function"]
+                item.pop("function")
 
             if item_type == "label":
                 uicomponents.Label(**item)
@@ -183,18 +216,15 @@ def HandleUI():
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
                 if pressed:
-                    variables.RENDER_FRAME = True
-                    for tab in variables.TABS:
-                        if item["text"] == tab:
-                            variables.TAB = tab
-                    if item["text"] == "Close":
-                        CloseUI()
-                    if item["text"] == "Restart":
-                        pass
-                    if item["text"] == "Search for updates":
-                        pass
+                    if item_function is not None:
+                        item_function()
+                    else:
+                        variables.RENDER_FRAME = True
+                        for tab in variables.TABS:
+                            if item["text"] == tab:
+                                variables.TAB = tab
 
-        if len(variables.ITEMS) < len(variables.TABS) + 1:
+        if len(variables.ITEMS) < len(variables.TABS) + 1 and variables.TITLE_BAR_HEIGHT != 0:
             uicomponents.Label(
                 text="\n\nYou landed on an empty page...\nPlease report how you got here!\n\n",
                 x1=0,
@@ -203,6 +233,9 @@ def HandleUI():
                 y2=variables.CANVAS_BOTTOM)
 
         variables.CACHED_FRAME = variables.FRAME.copy()
+
+    if last_left_clicked == True and left_clicked == False:
+        variables.CONTEXT_MENU = [False, 0, 0]
 
     variables.ITEMS = []
 

@@ -2,10 +2,8 @@ import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 import src.uicomponents as uicomponents
 import src.variables as variables
 import src.settings as settings
-from src.classes import Button, Label
 import src.console as console
 import src.setup as setup
-from typing import cast
 
 import numpy as np
 import ctypes
@@ -17,7 +15,6 @@ def InitializeUI():
     height = settings.Get("UI", "Height", 400)
     x = settings.Get("UI", "X", 0)
     y = settings.Get("UI", "Y", 0)
-    variables.THEME = settings.Get("UI", "Theme", "dark")
     resizable = settings.Get("UI", "Resizable", False)
 
     # dark 1: 28, 28, 28
@@ -79,8 +76,10 @@ def HandleUI():
             mouse_y = 0
         last_left_clicked = uicomponents.left_clicked
         last_right_clicked = uicomponents.right_clicked
-        left_clicked = ctypes.windll.user32.GetKeyState(0x01) & 0x8000 != 0 and ctypes.windll.user32.GetForegroundWindow() == ctypes.windll.user32.FindWindowW(None, variables.NAME)
-        right_clicked = ctypes.windll.user32.GetKeyState(0x02) & 0x8000 != 0 and ctypes.windll.user32.GetForegroundWindow() == ctypes.windll.user32.FindWindowW(None, variables.NAME)
+        foreground_window = ctypes.windll.user32.GetForegroundWindow() == ctypes.windll.user32.FindWindowW(None, variables.NAME)
+        left_clicked = ctypes.windll.user32.GetKeyState(0x01) & 0x8000 != 0 and foreground_window
+        right_clicked = ctypes.windll.user32.GetKeyState(0x02) & 0x8000 != 0 and foreground_window
+        uicomponents.foreground_window = foreground_window
         uicomponents.frame_width = width
         uicomponents.frame_height = height
         uicomponents.mouse_x = mouse_x
@@ -94,106 +93,117 @@ def HandleUI():
         return
 
     for i, tab in enumerate(variables.TABS):
-        variables.ITEMS.append(Button(
-            text=tab,
-            x1=i / len(variables.TABS) * variables.WIDTH + 5,
-            y1=0,
-            x2=(i + 1) / len(variables.TABS) * variables.WIDTH - 5,
-            y2=45,
-            textColor=(255, 255, 255),
-            fontSize=12,
-            round_corners=10,
-            buttonColor=(47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
-            buttonHoverColor=(41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
-            buttonSelectedColor=(28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
-            buttonSelectedHoverColor=(28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
-            buttonSelected = variables.TAB == tab
-        ))
+        variables.ITEMS.append({
+            "type": "button",
+            "text": tab,
+            "x1": i / len(variables.TABS) * variables.WIDTH + 5,
+            "y1": 0,
+            "x2": (i + 1) / len(variables.TABS) * variables.WIDTH - 5,
+            "y2": 45,
+            "button_selected": variables.TAB == tab,
+            "button_color": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
+            "button_hover_color": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
+            "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
+            "button_selected_hover_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250)})
 
     if variables.PAGE == "Update":
-        variables.ITEMS.append(Label(
-            text="Update Available!",
-            x1=0.5 * variables.WIDTH - 100,
-            y1=60,
-            x2=0.5 * variables.WIDTH + 100,
-            y2=90,
-            textColor=(255, 255, 255),
-            fontSize=12
-        ))
+        variables.ITEMS.append({
+            "type": "label",
+            "text": "Update Available",
+            "x1": 0.5 * variables.WIDTH - 100,
+            "y1": 60,
+            "x2": 0.5 * variables.WIDTH + 100,
+            "y2": 90})
 
-        variables.ITEMS.append(Button(
-            text="Update",
-            x1=0.75 * variables.WIDTH - 100,
-            y1=120,
-            x2=0.75 * variables.WIDTH + 100,
-            y2=160,
-            round_corners=10,
-            buttonColor=(47, 47, 47),
-            buttonHoverColor=(67, 67, 67),
-            buttonSelectedColor=(67, 67, 67),
-            textColor=(255, 255, 255),
-            fontSize=12
-        ))
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Update",
+            "x1": 0.75 * variables.WIDTH - 100,
+            "y1": 120,
+            "x2": 0.75 * variables.WIDTH + 100,
+            "y2": 160})
 
-        variables.ITEMS.append(Button(
-            text="Don't Update",
-            x1=0.25 * variables.WIDTH - 100,
-            y1=120,
-            x2=0.25 * variables.WIDTH + 100,
-            y2=160,
-            round_corners=10,
-            buttonColor=(47, 47, 47),
-            buttonHoverColor=(67, 67, 67),
-            buttonSelectedColor=(67, 67, 67),
-            textColor=(255, 255, 255),
-            fontSize=12
-        ))
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Don't Update",
+            "x1": 0.25 * variables.WIDTH - 100,
+            "y1": 120,
+            "x2": 0.25 * variables.WIDTH + 100,
+            "y2": 160})
 
     for area in variables.AREAS:
-        if area[0] == Button:
+        if area[0] == "button" or area[0] == "buttonlist":
             if (area[1] <= mouse_x * width <= area[3] and area[2] <= mouse_y * height <= area[4]) != area[5]:
                 area = (area[1], area[2], area[3], area[4], not area[5])
                 variables.RENDER_FRAME = True
 
-    if variables.RENDER_FRAME or last_left_clicked != left_clicked:
+    if foreground_window == False:
+        variables.RENDER_FRAME = False
+
+    if variables.RENDER_FRAME or last_left_clicked != left_clicked or last_right_clicked != right_clicked:
         variables.RENDER_FRAME = False
         print("Rendering new frame!")
-        
+
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
-        
+
+        if last_left_clicked == True and left_clicked == False:
+            variables.CONTEXT_MENU = [False, 0, 0]
+
+        if last_right_clicked == True and right_clicked == False:
+            variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
+
+        if variables.CONTEXT_MENU:
+            if variables.CONTEXT_MENU[0]:
+                variables.ITEMS.append({
+                    "type": "button",
+                    "text": "Restart",
+                    "x1": variables.CONTEXT_MENU[1] * variables.WIDTH,
+                    "y1": variables.CONTEXT_MENU[2] * variables.HEIGHT,
+                    "x2": variables.CONTEXT_MENU[1] * variables.WIDTH + 200,
+                    "y2": variables.CONTEXT_MENU[2] * variables.HEIGHT + 30})
+                variables.ITEMS.append({
+                    "type": "button",
+                    "text": "Close",
+                    "x1": variables.CONTEXT_MENU[1] * variables.WIDTH,
+                    "y1": variables.CONTEXT_MENU[2] * variables.HEIGHT + 35,
+                    "x2": variables.CONTEXT_MENU[1] * variables.WIDTH + 200,
+                    "y2": variables.CONTEXT_MENU[2] * variables.HEIGHT + 65})
+                variables.ITEMS.append({
+                    "type": "button",
+                    "text": "Search for updates",
+                    "x1": variables.CONTEXT_MENU[1] * variables.WIDTH,
+                    "y1": variables.CONTEXT_MENU[2] * variables.HEIGHT + 70,
+                    "x2": variables.CONTEXT_MENU[1] * variables.WIDTH + 200,
+                    "y2": variables.CONTEXT_MENU[2] * variables.HEIGHT + 100})
+
         if len(variables.ITEMS) > 0:
             for item in variables.ITEMS:
-                item_type = type(item)
-                
-                if item_type == Label:
-                    item = cast(Label, item) # will give the item intellisense
-                    uicomponents.DrawLabel(item)
-                    
-                if item_type == Button:
-                    item = cast(Button, item) # will give the item intellisense
-                    
-                    pressed, hovered = uicomponents.DrawButton(item)
-                    variables.AREAS.append((item_type, item.x1, item.y1, item.x2, item.y2, pressed or hovered))
+                item_type = item["type"]
+                item.pop("type")
+
+                if item_type == "label":
+                    uicomponents.Label(**item)
+
+                if item_type == "button":
+                    pressed, hovered = uicomponents.Button(**item)
+                    variables.AREAS.append((item_type, item["x1"], item["y1"], item["x2"], item["y2"], pressed or hovered))
 
                     if pressed:
                         variables.RENDER_FRAME = True
                         for tab in variables.TABS:
-                            if item.text == tab:
+                            if item["text"] == tab:
                                 variables.TAB = tab
         else:
-            uicomponents.DrawLabel(Label(
+            uicomponents.Label(
                 text="You landed on an empty page...",
                 x1=0,
                 y1=0,
                 x2=variables.WIDTH,
-                y2=variables.HEIGHT,
-                textColor=(255, 255, 255),
-                fontSize=12
-            ))
-        
+                y2=variables.HEIGHT)
+
         variables.CACHED_FRAME = variables.FRAME.copy()
-    
+
     variables.ITEMS = []
 
     cv2.imshow(variables.NAME, variables.FRAME)

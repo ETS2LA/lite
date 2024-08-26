@@ -10,16 +10,19 @@ with open(PATH + "version.txt") as f: VERSION = f.read()
 THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None
 
+FONT_SIZE = 11
+TITLE_BAR_HEIGHT = 50
 TEXT_COLOR = (255, 255, 255) if THEME == "dark" else (0, 0, 0)
 BUTTON_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
 BUTTON_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 BUTTON_SELECTED_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)
 BUTTON_SELECTED_HOVER_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)
 
-CONTEXT_MENU = [False, 0, 0]
 
 TABS = ["Menu", "NavigationDetectionAI", "Steering"]
-FONT_SIZE = 11
+CANVAS_BOTTOM = settings.Get("UI", "Height", 400) - TITLE_BAR_HEIGHT - 1
+CANVAS_RIGHT = settings.Get("UI", "Width", 700) - 1
+CONTEXT_MENU = [False, 0, 0]
 RENDER_FRAME = True
 CACHED_FRAME = None
 FRAME = None

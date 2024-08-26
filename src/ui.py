@@ -17,13 +17,9 @@ def InitializeUI():
     y = settings.Get("UI", "Y", 0)
     resizable = settings.Get("UI", "Resizable", False)
 
-    # dark 1: 28, 28, 28
-    # dark 2: 47, 47, 47
-    # light 1: 250, 250, 250
-    # light 2: 231, 231, 231
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
-    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, 49), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
 
     if variables.OS == "nt":
         from ctypes import windll, byref, sizeof, c_int
@@ -48,16 +44,14 @@ def CloseUI():
     settings.Create("UI", "Height", variables.HEIGHT)
     console.RestoreConsole()
     console.CloseConsole()
-    try:
-        cv2.destroyWindow(variables.NAME)
-    except:
-        pass
     variables.BREAK = True
 
 def ResizeUI(width, height):
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
-    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, 49), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    variables.CANVAS_BOTTOM = height - 1 - variables.TITLE_BAR_HEIGHT
+    variables.CANVAS_RIGHT = width - 1
     variables.RENDER_FRAME = True
 
 def HandleUI():
@@ -96,39 +90,39 @@ def HandleUI():
         variables.ITEMS.append({
             "type": "button",
             "text": tab,
-            "x1": i / len(variables.TABS) * variables.WIDTH + 5,
-            "y1": 0,
-            "x2": (i + 1) / len(variables.TABS) * variables.WIDTH - 5,
-            "y2": 45,
+            "x1": i / len(variables.TABS) * variables.CANVAS_RIGHT + 5,
+            "y1": -variables.TITLE_BAR_HEIGHT + 5,
+            "x2": (i + 1) / len(variables.TABS) * variables.CANVAS_RIGHT - 5,
+            "y2": -5,
             "button_selected": variables.TAB == tab,
             "button_color": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
             "button_hover_color": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
             "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
             "button_selected_hover_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250)})
 
-    if variables.PAGE == "Update":
+    if variables.PAGE == "Update1":
         variables.ITEMS.append({
             "type": "label",
             "text": "Update Available",
-            "x1": 0.5 * variables.WIDTH - 100,
+            "x1": 0.5 * variables.CANVAS_RIGHT - 100,
             "y1": 60,
-            "x2": 0.5 * variables.WIDTH + 100,
+            "x2": 0.5 * variables.CANVAS_RIGHT + 100,
             "y2": 90})
 
         variables.ITEMS.append({
             "type": "button",
             "text": "Update",
-            "x1": 0.75 * variables.WIDTH - 100,
+            "x1": 0.75 * variables.CANVAS_RIGHT - 100,
             "y1": 120,
-            "x2": 0.75 * variables.WIDTH + 100,
+            "x2": 0.75 * variables.CANVAS_RIGHT + 100,
             "y2": 160})
 
         variables.ITEMS.append({
             "type": "button",
             "text": "Don't Update",
-            "x1": 0.25 * variables.WIDTH - 100,
+            "x1": 0.25 * variables.CANVAS_RIGHT - 100,
             "y1": 120,
-            "x2": 0.25 * variables.WIDTH + 100,
+            "x2": 0.25 * variables.CANVAS_RIGHT + 100,
             "y2": 160})
 
     for area in variables.AREAS:
@@ -137,7 +131,7 @@ def HandleUI():
                 area = (area[1], area[2], area[3], area[4], not area[5])
                 variables.RENDER_FRAME = True
 
-    if foreground_window == False:
+    if foreground_window == False and variables.CACHED_FRAME is not None:
         variables.RENDER_FRAME = False
 
     if variables.RENDER_FRAME or last_left_clicked != left_clicked or last_right_clicked != right_clicked:
@@ -147,9 +141,6 @@ def HandleUI():
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
 
-        if last_left_clicked == True and left_clicked == False:
-            variables.CONTEXT_MENU = [False, 0, 0]
-
         if last_right_clicked == True and right_clicked == False:
             variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
 
@@ -158,53 +149,60 @@ def HandleUI():
                 variables.ITEMS.append({
                     "type": "button",
                     "text": "Restart",
-                    "x1": variables.CONTEXT_MENU[1] * variables.WIDTH,
-                    "y1": variables.CONTEXT_MENU[2] * variables.HEIGHT,
-                    "x2": variables.CONTEXT_MENU[1] * variables.WIDTH + 200,
-                    "y2": variables.CONTEXT_MENU[2] * variables.HEIGHT + 30})
+                    "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                    "y1": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM,
+                    "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                    "y2": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 30})
                 variables.ITEMS.append({
                     "type": "button",
                     "text": "Close",
-                    "x1": variables.CONTEXT_MENU[1] * variables.WIDTH,
-                    "y1": variables.CONTEXT_MENU[2] * variables.HEIGHT + 35,
-                    "x2": variables.CONTEXT_MENU[1] * variables.WIDTH + 200,
-                    "y2": variables.CONTEXT_MENU[2] * variables.HEIGHT + 65})
+                    "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                    "y1": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 35,
+                    "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                    "y2": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 65})
                 variables.ITEMS.append({
                     "type": "button",
                     "text": "Search for updates",
-                    "x1": variables.CONTEXT_MENU[1] * variables.WIDTH,
-                    "y1": variables.CONTEXT_MENU[2] * variables.HEIGHT + 70,
-                    "x2": variables.CONTEXT_MENU[1] * variables.WIDTH + 200,
-                    "y2": variables.CONTEXT_MENU[2] * variables.HEIGHT + 100})
+                    "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                    "y1": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 70,
+                    "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                    "y2": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 100})
 
-        if len(variables.ITEMS) > 0:
-            for item in variables.ITEMS:
-                item_type = item["type"]
-                item.pop("type")
+        for item in variables.ITEMS:
+            item_type = item["type"]
+            item.pop("type")
 
-                if item_type == "label":
-                    uicomponents.Label(**item)
+            if item_type == "label":
+                uicomponents.Label(**item)
 
-                if item_type == "button":
-                    pressed, hovered = uicomponents.Button(**item)
-                    variables.AREAS.append((item_type, item["x1"], item["y1"], item["x2"], item["y2"], pressed or hovered))
+            if item_type == "button":
+                pressed, hovered = uicomponents.Button(**item)
+                variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
-                    if pressed:
-                        variables.RENDER_FRAME = True
-                        for tab in variables.TABS:
-                            if item["text"] == tab:
-                                variables.TAB = tab
-        else:
+                if pressed:
+                    variables.RENDER_FRAME = True
+                    for tab in variables.TABS:
+                        if item["text"] == tab:
+                            variables.TAB = tab
+                    if item["text"] == "Close":
+                        variables.CONTEXT_MENU = [False, 0, 0]
+                        CloseUI()
+                    if item["text"] == "Restart":
+                        variables.CONTEXT_MENU = [False, 0, 0]
+                    if item["text"] == "Search for updates":
+                        variables.CONTEXT_MENU = [False, 0, 0]
+
+        if len(variables.ITEMS) < len(variables.TABS) + 1:
             uicomponents.Label(
-                text="You landed on an empty page...",
+                text="\n\nYou landed on an empty page...\nPlease report how you got here!\n\n",
                 x1=0,
                 y1=0,
-                x2=variables.WIDTH,
-                y2=variables.HEIGHT)
+                x2=variables.CANVAS_RIGHT - 1,
+                y2=variables.CANVAS_BOTTOM)
 
         variables.CACHED_FRAME = variables.FRAME.copy()
 
     variables.ITEMS = []
 
-    cv2.imshow(variables.NAME, variables.FRAME)
+    cv2.imshow(variables.NAME, variables.CACHED_FRAME)
     cv2.waitKey(1)

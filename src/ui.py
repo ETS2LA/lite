@@ -100,30 +100,60 @@ def HandleUI():
             "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
             "button_selected_hover_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250)})
 
-    if variables.PAGE == "Update1":
+    if variables.PAGE == "Update":
         variables.ITEMS.append({
             "type": "label",
             "text": "Update Available",
             "x1": 0.5 * variables.CANVAS_RIGHT - 100,
-            "y1": 60,
+            "y1": 10,
             "x2": 0.5 * variables.CANVAS_RIGHT + 100,
-            "y2": 90})
+            "y2": 40})
 
         variables.ITEMS.append({
             "type": "button",
             "text": "Update",
             "x1": 0.75 * variables.CANVAS_RIGHT - 100,
-            "y1": 120,
+            "y1": 70,
             "x2": 0.75 * variables.CANVAS_RIGHT + 100,
-            "y2": 160})
+            "y2": 110})
 
         variables.ITEMS.append({
             "type": "button",
             "text": "Don't Update",
             "x1": 0.25 * variables.CANVAS_RIGHT - 100,
-            "y1": 120,
+            "y1": 70,
             "x2": 0.25 * variables.CANVAS_RIGHT + 100,
-            "y2": 160})
+            "y2": 110})
+
+    if last_right_clicked == True and right_clicked == False:
+        variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
+
+    if last_left_clicked == True and left_clicked == False:
+        variables.CONTEXT_MENU = [False, 0, 0]
+
+    if variables.CONTEXT_MENU:
+        if variables.CONTEXT_MENU[0]:
+            variables.ITEMS.append({
+                "type": "button",
+                "text": "Restart",
+                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT,
+                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 30})
+            variables.ITEMS.append({
+                "type": "button",
+                "text": "Close",
+                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 35,
+                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 65})
+            variables.ITEMS.append({
+                "type": "button",
+                "text": "Search for updates",
+                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 70,
+                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 100})
 
     for area in variables.AREAS:
         if area[0] == "button" or area[0] == "buttonlist":
@@ -140,33 +170,6 @@ def HandleUI():
 
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
-
-        if last_right_clicked == True and right_clicked == False:
-            variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
-
-        if variables.CONTEXT_MENU:
-            if variables.CONTEXT_MENU[0]:
-                variables.ITEMS.append({
-                    "type": "button",
-                    "text": "Restart",
-                    "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-                    "y1": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM,
-                    "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-                    "y2": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 30})
-                variables.ITEMS.append({
-                    "type": "button",
-                    "text": "Close",
-                    "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-                    "y1": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 35,
-                    "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-                    "y2": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 65})
-                variables.ITEMS.append({
-                    "type": "button",
-                    "text": "Search for updates",
-                    "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-                    "y1": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 70,
-                    "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-                    "y2": variables.CONTEXT_MENU[2] * variables.CANVAS_BOTTOM + 100})
 
         for item in variables.ITEMS:
             item_type = item["type"]
@@ -185,12 +188,11 @@ def HandleUI():
                         if item["text"] == tab:
                             variables.TAB = tab
                     if item["text"] == "Close":
-                        variables.CONTEXT_MENU = [False, 0, 0]
                         CloseUI()
                     if item["text"] == "Restart":
-                        variables.CONTEXT_MENU = [False, 0, 0]
+                        pass
                     if item["text"] == "Search for updates":
-                        variables.CONTEXT_MENU = [False, 0, 0]
+                        pass
 
         if len(variables.ITEMS) < len(variables.TABS) + 1:
             uicomponents.Label(

@@ -1,2 +1,13 @@
-torch
-torchvision
+deep-translator
+opencv-python
+torchvision==0.18.1
+setuptools
+torchaudio==2.3.1
+bettercam
+keyboard
+requests
+pywin32
+mouse
+numpy==1.26.4
+torch==2.3.1
+mss

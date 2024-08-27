@@ -1,15 +1,3 @@
-import subprocess
-import os
-
-path = __file__.replace("\\", "/").replace("main.py", "")
-result = subprocess.run("cd " + path + "venv/Scripts & ./activate.bat & cd " + path + " & pip list", shell=True, capture_output=True, text=True)
-modules = result.stdout
-for module in modules.splitlines():
-    if "torch " in module:
-        pass
-if "VIRTUAL_ENV" in os.environ:
-    print("We are in a virtual environment")
-
 import src.variables as variables
 import src.settings as settings
 import src.console as console

@@ -24,6 +24,14 @@ def Initialize():
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
     cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
 
+    variables.CONTEXT_MENU_ITEMS = [
+        {"name": "Restart",
+        "function": lambda: {Restart(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
+        {"name": "Close",
+        "function": lambda: lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
+        {"name": "Search for updates",
+        "function": lambda: {updater.CheckForUpdates(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}}]
+
     if variables.OS == "nt":
         from ctypes import windll, byref, sizeof, c_int
         import win32gui, win32con
@@ -214,30 +222,17 @@ def Update():
             "y2": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT * 1.5 - 5})
 
     if variables.CONTEXT_MENU[0]:
-        variables.ITEMS.append({
-            "type": "button",
-            "text": "Restart",
-            "function": lambda: {Restart(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)},
-            "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-            "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT,
-            "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-            "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 30})
-        variables.ITEMS.append({
-            "type": "button",
-            "text": "Close",
-            "function": lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)},
-            "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-            "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 35,
-            "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-            "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 65})
-        variables.ITEMS.append({
-            "type": "button",
-            "text": "Search for updates",
-            "function": lambda: {updater.CheckForUpdates(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)},
-            "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-            "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 70,
-            "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-            "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 100})
+        offset = 0
+        for item in variables.CONTEXT_MENU_ITEMS:
+            variables.ITEMS.append({
+                "type": "button",
+                "text": item["name"],
+                "function": item["function"],
+                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + offset,
+                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + offset + 30})
+            offset += 35
 
     for area in variables.AREAS:
         if area[0] == "button" or area[0] == "buttonlist":
@@ -269,7 +264,7 @@ def Update():
                 pressed, hovered = uicomponents.Button(**item)
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
-                if pressed:
+                if pressed and (variables.CONTEXT_MENU[0] == False or item["text"] in str(variables.CONTEXT_MENU_ITEMS)):
                     if item_function is not None:
                         item_function()
                     else:

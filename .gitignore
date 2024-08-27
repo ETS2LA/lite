@@ -4,5 +4,8 @@
 # ignore the app cache
 /cache
 
+# ignore the venv
+/venv
+
 # ignore the settings
 /settings.json

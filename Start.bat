@@ -1,9 +1,9 @@
 @echo off
 cd %~dp0
-
-if exist venv (\python venv\Scripts\activate.bat)
-else (\python -m venv venv)
-\python venv\Scripts\activate.bat
-cd %~dp0
+if not exist venv (
+    echo Creating venv...
+    python -m venv venv
+)
+call venv\Scripts\activate
 python main.py
 pause

@@ -11,6 +11,6 @@ The app has only been tested on Windows, but we're open to contributions to supp
 
 ### How to Install the app
 
-1. Install Python 3.11.x from [here](https://www.python.org/downloads/windows/)
+1. Download Python 3.11.x from [here](https://www.python.org/downloads/windows/) and install it
 2. Clone or [download](https://github.com/ETS2LA/lite/archive/refs/heads/main.zip) this repository
 3. Run the Start.bat script, it will automatically create a virtual environment and install the required packages

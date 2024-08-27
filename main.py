@@ -8,12 +8,11 @@ import src.ui as ui
 
 import threading
 import time
-import os
 
 if settings.Get("Console", "HideConsole", False):
     console.HideConsole()
 
-ui.InitializeUI()
+ui.Initialize()
 updater.CheckForUpdates()
 helpers.RunEvery(60, lambda: server.Ping())
 
@@ -35,7 +34,7 @@ MainMenu_UpdateTime = 0
 while variables.BREAK == False:
     start = time.time()
 
-    ui.HandleUI()
+    ui.Update()
 
     time_to_sleep = 1/60 - (time.time() - start)
     if time_to_sleep > 0:

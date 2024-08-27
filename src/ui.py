@@ -11,7 +11,7 @@ import ctypes
 import mouse
 import cv2
 
-def InitializeUI():
+def Initialize():
     width = settings.Get("UI", "Width", 700)
     height = settings.Get("UI", "Height", 400)
     x = settings.Get("UI", "X", 0)
@@ -37,16 +37,7 @@ def InitializeUI():
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
 
-def CloseUI():
-    settings.Create("UI", "X", variables.X)
-    settings.Create("UI", "Y", variables.Y)
-    settings.Create("UI", "Width", variables.WIDTH)
-    settings.Create("UI", "Height", variables.HEIGHT)
-    console.RestoreConsole()
-    console.CloseConsole()
-    variables.BREAK = True
-
-def ResizeUI(width, height):
+def Resize(width, height):
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
     if variables.TITLE_BAR_HEIGHT > 0:
@@ -55,11 +46,23 @@ def ResizeUI(width, height):
     variables.CANVAS_RIGHT = width - 1
     variables.RENDER_FRAME = True
 
+def Restart():
+    ...
+
+def Close():
+    settings.Create("UI", "X", variables.X)
+    settings.Create("UI", "Y", variables.Y)
+    settings.Create("UI", "Width", variables.WIDTH)
+    settings.Create("UI", "Height", variables.HEIGHT)
+    console.RestoreConsole()
+    console.CloseConsole()
+    variables.BREAK = True
+
 def SetTitleBarHeight(title_bar_height):
     try:
         x, y, width, height = cv2.getWindowImageRect(variables.NAME)
     except:
-        CloseUI()
+        Close()
         return
     variables.TITLE_BAR_HEIGHT = title_bar_height
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
@@ -77,12 +80,12 @@ def SetTitleBarHeight(title_bar_height):
     variables.CANVAS_RIGHT = width - 1
     variables.RENDER_FRAME = True
 
-def HandleUI():
+def Update():
     try:
         x, y, width, height = cv2.getWindowImageRect(variables.NAME)
         if (x, y, width, height) != (variables.X, variables.Y, variables.WIDTH, variables.HEIGHT):
             variables.X, variables.Y, variables.WIDTH, variables.HEIGHT = x, y, width, height
-            ResizeUI(width, height)
+            Resize(width, height)
         mouse_x, mouse_y = mouse.get_position()
         mouse_relative_window = mouse_x - x, mouse_y - y
         if width != 0 and height != 0:
@@ -106,7 +109,7 @@ def HandleUI():
         uicomponents.left_clicked = left_clicked
         uicomponents.right_clicked = right_clicked
     except:
-        CloseUI()
+        Close()
         return
 
     if variables.TITLE_BAR_HEIGHT > 0:
@@ -168,7 +171,7 @@ def HandleUI():
             variables.ITEMS.append({
                 "type": "button",
                 "text": "Close",
-                "function": lambda: CloseUI(),
+                "function": lambda: Close(),
                 "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
                 "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 35,
                 "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,

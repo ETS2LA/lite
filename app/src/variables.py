@@ -38,9 +38,9 @@ WIDTH = settings.Get("UI", "Width", 700)
 HEIGHT = settings.Get("UI", "Height", 400)
 
 HWND = None
-PAGE = None
 TAB = "Menu"
 NAME = "ETS2LA-Lite"
+PAGE = settings.Get("UI", "Page", "Menu")
 BREAK = False
 
 CONSOLENAME = None

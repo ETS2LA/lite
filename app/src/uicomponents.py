@@ -46,7 +46,7 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window:
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         button_hovered = True
     else:
         button_hovered = False 

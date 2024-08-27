@@ -28,9 +28,9 @@ def Initialize():
         {"name": "Restart",
         "function": lambda: {Restart(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
         {"name": "Close",
-        "function": lambda: lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
+        "function": lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
         {"name": "Search for updates",
-        "function": lambda: {updater.CheckForUpdates(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}}]
+        "function": lambda: {updater.CheckForUpdates(False), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}}]
 
     if variables.OS == "nt":
         from ctypes import windll, byref, sizeof, c_int
@@ -48,6 +48,8 @@ def Initialize():
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
 
+    Update()
+
 def Resize(width, height):
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
@@ -58,7 +60,7 @@ def Resize(width, height):
     variables.RENDER_FRAME = True
 
 def Restart():
-    subprocess.Popen(f"Start.bat", cwd=variables.PATH, creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen(f"{variables.PATH}Start.bat", cwd=variables.PATH, creationflags=subprocess.CREATE_NEW_CONSOLE)
     Close()
 
 def Close():

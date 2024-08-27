@@ -21,9 +21,6 @@ updater.CheckForUpdates()
 helpers.RunEvery(60, lambda: server.Ping())
 server.variables.USERCOUNT = server.GetUserCount()
 
-if variables.PAGE != "Update":
-    variables.PAGE = settings.Get("UI", "Page", "Menu")
-
 import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 def run_thread():
     global FPS

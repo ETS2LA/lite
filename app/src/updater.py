@@ -6,7 +6,7 @@ import requests
 import time
 import os
 
-def CheckForUpdates():
+def CheckForUpdates(do_ui_update = True):
     print("check")
     if float(settings.Get("Updater", "LastRemoteCheck", "0")) + 600 < time.time():
         try:
@@ -27,6 +27,8 @@ def CheckForUpdates():
     if remote_version != variables.VERSION:
         variables.PAGE = "Update"
         ui.SetTitleBarHeight(0)
+        if do_ui_update:
+            ui.Update()
 
 def Update():
     try:

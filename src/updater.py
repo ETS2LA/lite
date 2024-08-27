@@ -7,6 +7,7 @@ import time
 import os
 
 def CheckForUpdates():
+    print("check")
     if float(settings.Get("Updater", "LastRemoteCheck", 0)) + 600 < time.time():
         remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/version.txt").text.strip()
         changelog = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/changelog.txt").text.strip()
@@ -25,7 +26,8 @@ def CheckForUpdates():
 def Update():
     try:
         os.chdir(variables.PATH)
-        os.system("git stash")
-        os.system("git pull")
-    except Exception as e:
-        print("Failed to update: " + str(e))
+        os.system("git stash >nul 2>&1")
+        os.system("git pull >nul 2>&1")
+    except:
+        pass
+    ui.Restart()

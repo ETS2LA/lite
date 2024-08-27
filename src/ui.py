@@ -165,38 +165,45 @@ def Update():
             "x2": variables.CANVAS_RIGHT / 2 - 10,
             "y2": variables.CANVAS_BOTTOM - 20})
 
+    elif variables.PAGE == "Menu":
+        variables.ITEMS.append({
+            "type": "label",
+            "text": f"ETS2LA-Lite v{variables.VERSION}",
+            "fontsize": variables.FONT_SIZE * 1.3,
+            "x1": 0,
+            "y1": 5,
+            "x2": variables.CANVAS_RIGHT,
+            "y2": variables.TITLE_BAR_HEIGHT - 5})
+
     if last_right_clicked == True and right_clicked == False:
         variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
+        variables.RENDER_FRAME = True
 
-    if variables.CONTEXT_MENU:
-        if variables.CONTEXT_MENU[0]:
-            variables.ITEMS.append({
-                "type": "button",
-                "text": "Restart",
-                "function": lambda: Restart(),
-                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT,
-                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 30})
-            variables.ITEMS.append({
-                "type": "button",
-                "text": "Close",
-                "function": lambda: Close(),
-                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 35,
-                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 65})
-            variables.ITEMS.append({
-                "type": "button",
-                "text": "Search for updates",
-                "function": lambda: updater.CheckForUpdates(),
-                "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
-                "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 70,
-                "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
-                "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 100})
-
-    if variables.PAGE == "Menu":
-        ...
+    if variables.CONTEXT_MENU[0]:
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Restart",
+            "function": lambda: {Restart(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)},
+            "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+            "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT,
+            "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+            "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 30})
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Close",
+            "function": lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)},
+            "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+            "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 35,
+            "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+            "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 65})
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Search for updates",
+            "function": lambda: {updater.CheckForUpdates(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)},
+            "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
+            "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 70,
+            "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,
+            "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + 100})
 
     for area in variables.AREAS:
         if area[0] == "button" or area[0] == "buttonlist":
@@ -207,7 +214,7 @@ def Update():
     if foreground_window == False and variables.CACHED_FRAME is not None:
         variables.RENDER_FRAME = False
 
-    if variables.RENDER_FRAME or last_left_clicked != left_clicked or last_right_clicked != right_clicked:
+    if variables.RENDER_FRAME:
         variables.RENDER_FRAME = False
         print("Rendering new frame!")
 
@@ -236,6 +243,7 @@ def Update():
                         for tab in variables.TABS:
                             if item["text"] == tab:
                                 variables.TAB = tab
+                                variables.PAGE = tab
 
         if len(variables.ITEMS) < len(variables.TABS) + 1 and variables.TITLE_BAR_HEIGHT != 0:
             uicomponents.Label(

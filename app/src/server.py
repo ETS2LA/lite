@@ -81,8 +81,8 @@ def Ping():
         last_ping = float(settings.Get("CrashReports", "last_ping", 0))
         current_time = time.time()
         if last_ping + 59 < current_time:
-            url = 'https://crash.tumppi066.fi/ping'
-            requests.get(url, timeout=1)
             settings.Set("CrashReports", "last_ping", str(current_time))
+            requests.get("https://crash.tumppi066.fi/ping", timeout=1)
+            variables.USERCOUNT = GetUserCount()
     except:
         pass

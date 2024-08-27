@@ -1,0 +1,25 @@
+{
+      "Updater": {
+            "Changelog": "fixed updater",
+            "LastRemoteCheck": "1724779518.9079142",
+            "RemoteVersion": "0.0.1"
+      },
+      "CrashReports": {
+            "last_ping": "1724779925.5493891",
+            "AllowCrashReports": true
+      },
+      "UI": {
+            "Theme": "dark",
+            "Height": 350,
+            "Width": 681,
+            "X": 586,
+            "Y": 133,
+            "Page": "Menu"
+      },
+      "ScreenCapture": {
+            "Display": 0
+      },
+      "Console": {
+            "HideConsole": false
+      }
+}

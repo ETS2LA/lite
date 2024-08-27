@@ -4,10 +4,12 @@ import src.variables as variables
 import src.settings as settings
 import src.console as console
 import src.updater as updater
+import src.server as server
 import src.setup as setup
 
 import numpy as np
 import subprocess
+import webbrowser
 import ctypes
 import mouse
 import cv2
@@ -34,7 +36,7 @@ def Initialize():
     if variables.OS == "nt":
         variables.HWND = win32gui.FindWindow(None, variables.NAME)
         windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x2F2F2F) if variables.THEME == "dark" else (0xE7E7E7))), sizeof(c_int))
-        hicon = win32gui.LoadImage(None, f"{variables.PATH}assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
+        hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
 
@@ -175,9 +177,41 @@ def Update():
             "x2": variables.CANVAS_RIGHT,
             "y2": variables.TITLE_BAR_HEIGHT - 5})
 
-    if last_right_clicked == True and right_clicked == False:
-        variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
-        variables.RENDER_FRAME = True
+        variables.ITEMS.append({
+            "type": "label",
+            "text": f"Users online: {variables.USERCOUNT}",
+            "text_color": (128, 128, 128),
+            "x1": 0,
+            "y1": variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT + 5,
+            "x2": variables.CANVAS_RIGHT,
+            "y2": variables.CANVAS_BOTTOM - 5})
+
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Open ETS2LA Website",
+            "function": lambda: webbrowser.open("https://ets2la.com"),
+            "x1": variables.CANVAS_RIGHT * 0.25,
+            "y1": variables.CANVAS_BOTTOM / 2 - variables.TITLE_BAR_HEIGHT * 1.5 + 5,
+            "x2": variables.CANVAS_RIGHT * 0.75,
+            "y2": variables.CANVAS_BOTTOM / 2 - variables.TITLE_BAR_HEIGHT / 2 - 5})
+
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Open GitHub Website",
+            "function": lambda: webbrowser.open("https://github.com/ETS2LA"),
+            "x1": variables.CANVAS_RIGHT * 0.25,
+            "y1": variables.CANVAS_BOTTOM / 2 - variables.TITLE_BAR_HEIGHT / 2 + 5,
+            "x2": variables.CANVAS_RIGHT * 0.75,
+            "y2": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT / 2 - 5})
+
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Open ETS2LA Discord",
+            "function": lambda: webbrowser.open("https://discord.gg/ETS2LA"),
+            "x1": variables.CANVAS_RIGHT * 0.25,
+            "y1": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT / 2 + 5,
+            "x2": variables.CANVAS_RIGHT * 0.75,
+            "y2": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT * 1.5 - 5})
 
     if variables.CONTEXT_MENU[0]:
         variables.ITEMS.append({
@@ -214,7 +248,7 @@ def Update():
     if foreground_window == False and variables.CACHED_FRAME is not None:
         variables.RENDER_FRAME = False
 
-    if variables.RENDER_FRAME:
+    if variables.RENDER_FRAME or last_left_clicked != left_clicked:
         variables.RENDER_FRAME = False
         print("Rendering new frame!")
 
@@ -244,6 +278,7 @@ def Update():
                             if item["text"] == tab:
                                 variables.TAB = tab
                                 variables.PAGE = tab
+                                settings.Set("UI", "Page", tab)
 
         if len(variables.ITEMS) < len(variables.TABS) + 1 and variables.TITLE_BAR_HEIGHT != 0:
             uicomponents.Label(
@@ -255,8 +290,13 @@ def Update():
 
         variables.CACHED_FRAME = variables.FRAME.copy()
 
-    if last_left_clicked == True and left_clicked == False:
-        variables.CONTEXT_MENU = [False, 0, 0]
+        if last_left_clicked == True and left_clicked == False:
+            variables.CONTEXT_MENU = [False, mouse_x, mouse_y]
+            variables.RENDER_FRAME = True
+
+    if last_right_clicked == True and right_clicked == False:
+        variables.CONTEXT_MENU = [True, mouse_x, mouse_y]
+        variables.RENDER_FRAME = True
 
     variables.ITEMS = []
 

@@ -12,6 +12,8 @@ import subprocess
 import webbrowser
 import ctypes
 import mouse
+import math
+import time
 import cv2
 
 def Initialize():
@@ -19,6 +21,10 @@ def Initialize():
     height = settings.Get("UI", "Height", 400)
     x = settings.Get("UI", "X", 0)
     y = settings.Get("UI", "Y", 0)
+
+    if width < 50 or height < 50:
+        width = 700
+        height = 400
 
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
     variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
@@ -95,6 +101,7 @@ def SetTitleBarHeight(title_bar_height):
     variables.RENDER_FRAME = True
 
 def Update():
+    current_time = time.time()
     try:
         x, y, width, height = cv2.getWindowImageRect(variables.NAME)
         if (x, y, width, height) != (variables.X, variables.Y, variables.WIDTH, variables.HEIGHT):
@@ -236,6 +243,26 @@ def Update():
                 "y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + offset + 30})
             offset += 35
 
+    if variables.LAST_POPUP[0] != variables.POPUP:
+        if variables.LAST_POPUP[0][0] == None:
+            variables.LAST_POPUP = variables.POPUP, current_time
+            variables.POPUP_SHOW_VALUE = 1
+        else:
+            variables.LAST_POPUP = variables.POPUP, current_time - 1
+            variables.POPUP_SHOW_VALUE = 0
+        variables.RENDER_FRAME = True
+    elif variables.POPUP[0] != None and variables.LAST_POPUP[1] + 5 < current_time:
+        variables.POPUP = [None, 0, 0.5]
+        variables.LAST_POPUP = [None, 0, 0.5], 0
+        variables.POPUP_SHOW_VALUE = 1
+        variables.RENDER_FRAME = True
+    elif variables.POPUP[0] != None and variables.LAST_POPUP[1] + 4.5 < current_time:
+        variables.POPUP_SHOW_VALUE = -(math.cos(math.pi * ((current_time - variables.LAST_POPUP[1] - 4.5) * 2)) - 1) / 2
+        variables.RENDER_FRAME = True
+    elif variables.LAST_POPUP[1] + 0.5 > current_time:
+        variables.POPUP_SHOW_VALUE = math.pow(2, 10 * (1 - (current_time - variables.LAST_POPUP[1]) * 2) - 10)
+        variables.RENDER_FRAME = True
+
     for area in variables.AREAS:
         if area[0] == "button" or area[0] == "buttonlist":
             if (area[1] <= mouse_x * width <= area[3] and area[2] <= mouse_y * height <= area[4]) != area[5]:
@@ -286,16 +313,20 @@ def Update():
                 y2=variables.CANVAS_BOTTOM)
 
         if variables.POPUP[0] != None:
+            x1 = variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2)
+            y1 = variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT + variables.TITLE_BAR_HEIGHT * variables.POPUP_SHOW_VALUE
+            x2 = variables.CANVAS_RIGHT * (0.5 + variables.POPUP[2] / 2)
+            y2 = variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT * 0.25 + variables.TITLE_BAR_HEIGHT * variables.POPUP_SHOW_VALUE
             uicomponents.Button(
                 text=str(variables.POPUP[0]),
-                x1=variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2),
-                y1=variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT,
-                x2=variables.CANVAS_RIGHT * (0.5 + variables.POPUP[2] / 2),
-                y2=variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT * 0.25)
+                x1=x1,
+                y1=y1,
+                x2=x2,
+                y2=y2)
             if variables.POPUP[1] > 0:
                 cv2.line(variables.FRAME,
-                        (round(variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2) + round(variables.TITLE_BAR_HEIGHT / 20) / 2), round(variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT - variables.TITLE_BAR_HEIGHT * 0.25 + variables.TITLE_BAR_HEIGHT / 40)),
-                        (round(variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2) - round(variables.TITLE_BAR_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT - variables.TITLE_BAR_HEIGHT * 0.25 + variables.TITLE_BAR_HEIGHT / 40)),
+                        (round(x1 + round(variables.TITLE_BAR_HEIGHT / 20) / 2), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),
+                        (round(x1 - round(variables.TITLE_BAR_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),
                         (255, 200, 87), round(variables.TITLE_BAR_HEIGHT / 20))
 
         variables.CACHED_FRAME = variables.FRAME.copy()

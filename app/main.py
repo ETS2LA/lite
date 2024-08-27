@@ -32,17 +32,9 @@ def run_thread():
 FPS = 0
 FPS_UpdateTime = 0
 MainMenu_UpdateTime = 0
-last_POPUP = variables.POPUP, 0
 
 while variables.BREAK == False:
     start = time.time()
-
-    if last_POPUP[0] != variables.POPUP:
-        last_POPUP = variables.POPUP, start
-        variables.RENDER_FRAME = True
-    elif variables.POPUP[0] != None and last_POPUP[1] + 5 < start:
-        variables.POPUP = [None, 0, 0.5]
-        variables.RENDER_FRAME = True
 
     ui.Update()
 

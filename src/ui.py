@@ -52,10 +52,10 @@ def Restart():
     Close()
 
 def Close():
-    settings.Create("UI", "X", variables.X)
-    settings.Create("UI", "Y", variables.Y)
-    settings.Create("UI", "Width", variables.WIDTH)
-    settings.Create("UI", "Height", variables.HEIGHT)
+    settings.Set("UI", "X", variables.X)
+    settings.Set("UI", "Y", variables.Y)
+    settings.Set("UI", "Width", variables.WIDTH)
+    settings.Set("UI", "Height", variables.HEIGHT)
     console.RestoreConsole()
     console.CloseConsole()
     variables.BREAK = True
@@ -133,11 +133,19 @@ def Update():
     if variables.PAGE == "Update":
         variables.ITEMS.append({
             "type": "label",
-            "text": "Update Available:",
-            "x1": 0.5 * variables.CANVAS_RIGHT - 100,
+            "text": f"Update Available:\n{variables.VERSION} -> {variables.REMOTE_VERSION}",
+            "x1": 0,
             "y1": 10,
-            "x2": 0.5 * variables.CANVAS_RIGHT + 100,
-            "y2": 40})
+            "x2": variables.CANVAS_RIGHT,
+            "y2": 50})
+
+        variables.ITEMS.append({
+            "type": "label",
+            "text": f"Changelog:\n\n{variables.CHANGELOG}\n\n",
+            "x1": 0,
+            "y1": 60,
+            "x2": variables.CANVAS_RIGHT,
+            "y2": variables.CANVAS_BOTTOM - 90})
 
         variables.ITEMS.append({
             "type": "button",

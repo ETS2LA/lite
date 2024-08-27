@@ -8,9 +8,9 @@ ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
 if ALLOW_CRASH_REPORTS == None:
     if input("Do you want to allow crash reports to be sent to the developers? This will help us fix bugs faster.\n\nCrash reports are anonymous and will not contain any personal information").lower() == "yes":
         ALLOW_CRASH_REPORTS = True
-        settings.Create("CrashReports", "AllowCrashReports", True)
+        settings.Set("CrashReports", "AllowCrashReports", True)
     else:
-        settings.Create("CrashReports", "AllowCrashReports", False)
+        settings.Set("CrashReports", "AllowCrashReports", False)
         ALLOW_CRASH_REPORTS = False
 
 def SendCrashReport(type:str, message:str, additional=None):
@@ -83,6 +83,6 @@ def Ping():
         if last_ping + 59 < current_time:
             url = 'https://crash.tumppi066.fi/ping'
             requests.get(url, timeout=1)
-            settings.Create("CrashReports", "last_ping", str(current_time))
+            settings.Set("CrashReports", "last_ping", str(current_time))
     except:
         pass

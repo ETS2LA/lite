@@ -244,7 +244,7 @@ def CheckForAIModelUpdates():
                         href = link['href']
                         if href.startswith('/Glas42/NavigationDetectionAI/blob/main/model'):
                             LatestAIModel = href.split("/")[-1]
-                            settings.Create("NavigationDetectionAI", "LatestModel", LatestAIModel)
+                            settings.Set("NavigationDetectionAI", "LatestModel", LatestAIModel)
                             break
 
                     CurrentAIModel = GetAIModelName()
@@ -278,7 +278,7 @@ def CheckForAIModelUpdates():
                         LoadAIProgress = 100
                         LoadAILabel = "No AI model updates available!"
                         print("\033[92m" + f"No AI model updates available!" + "\033[0m")
-                    settings.Create("NavigationDetectionAI", "LastUpdateCheck", time.time())
+                    settings.Set("NavigationDetectionAI", "LastUpdateCheck", time.time())
 
                 else:
 

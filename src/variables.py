@@ -6,6 +6,8 @@ PATH = os.path.dirname(__file__).replace("src", "")
 
 OS = os.name
 with open(PATH + "version.txt") as f: VERSION = f.read()
+REMOTE_VERSION = None
+CHANGELOG = None
 
 THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None

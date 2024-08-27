@@ -48,8 +48,8 @@ echo Updating App
 echo ------------
 echo.
 
-git stash >nul 2>&1
-git pull >nul 2>&1
+git stash
+git pull
 
 echo.
 echo App Updated

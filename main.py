@@ -8,6 +8,10 @@ import src.ui as ui
 
 import threading
 import time
+import os
+
+os.system("cls" if variables.OS == "nt" else "clear")
+print("\nETS2LA-Lite\n-----------\n")
 
 if settings.Get("Console", "HideConsole", False):
     console.HideConsole()

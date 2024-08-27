@@ -7,7 +7,7 @@ import os
 def CheckForUpdates():
     remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/version.txt").text.strip()
     changelog = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/changelog.txt").text.strip()
-    if remote_version != variables.VERSION or True:
+    if remote_version != variables.VERSION:
         variables.PAGE = "Update"
         ui.SetTitleBarHeight(0)
 

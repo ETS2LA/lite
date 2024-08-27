@@ -6,7 +6,7 @@ import time
 
 ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
 if ALLOW_CRASH_REPORTS == None:
-    if input("Do you want to allow crash reports to be sent to the developers? This will help us fix bugs faster.\n\nCrash reports are anonymous and will not contain any personal information"):
+    if input("Do you want to allow crash reports to be sent to the developers? This will help us fix bugs faster.\n\nCrash reports are anonymous and will not contain any personal information").lower() == "yes":
         ALLOW_CRASH_REPORTS = True
         settings.Create("CrashReports", "AllowCrashReports", True)
     else:

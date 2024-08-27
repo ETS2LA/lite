@@ -7,6 +7,7 @@ import src.updater as updater
 import src.setup as setup
 
 import numpy as np
+import subprocess
 import ctypes
 import mouse
 import cv2
@@ -47,7 +48,8 @@ def Resize(width, height):
     variables.RENDER_FRAME = True
 
 def Restart():
-    ...
+    subprocess.Popen(f"Start.bat", cwd=variables.PATH, creationflags=subprocess.CREATE_NEW_CONSOLE)
+    Close()
 
 def Close():
     settings.Create("UI", "X", variables.X)
@@ -163,7 +165,7 @@ def Update():
             variables.ITEMS.append({
                 "type": "button",
                 "text": "Restart",
-                "function": None,
+                "function": lambda: Restart(),
                 "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
                 "y1": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT,
                 "x2": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT + 200,

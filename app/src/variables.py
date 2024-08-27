@@ -1,13 +1,12 @@
 import src.settings as settings
 import os
 
-PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__))).replace("\\", "/") + "/"
-
 OS = os.name
+PATH = os.path.dirname(os.path.dirname(os.path.dirname(__file__))).replace("\\", "/") + "/"
 with open(PATH + "config/version.txt") as f: VERSION = f.read()
 REMOTE_VERSION = None
 CHANGELOG = None
-USERCOUNT = 0
+USERCOUNT = "Loading"
 
 THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None

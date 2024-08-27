@@ -7,7 +7,6 @@ import time
 import os
 
 def CheckForUpdates(do_ui_update = True):
-    print("check")
     if float(settings.Get("Updater", "LastRemoteCheck", "0")) + 600 < time.time():
         try:
             remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/version.txt").text.strip()

@@ -242,7 +242,7 @@ def Update():
                 area = (area[1], area[2], area[3], area[4], not area[5])
                 variables.RENDER_FRAME = True
 
-    if foreground_window == False and variables.CACHED_FRAME is not None:
+    if foreground_window == False and variables.CACHED_FRAME is not None and variables.POPUP[0] == None:
         variables.RENDER_FRAME = False
 
     if variables.RENDER_FRAME or last_left_clicked != left_clicked:
@@ -284,6 +284,19 @@ def Update():
                 y1=0,
                 x2=variables.CANVAS_RIGHT - 1,
                 y2=variables.CANVAS_BOTTOM)
+
+        if variables.POPUP[0] != None:
+            uicomponents.Button(
+                text=str(variables.POPUP[0]),
+                x1=variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2),
+                y1=variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT,
+                x2=variables.CANVAS_RIGHT * (0.5 + variables.POPUP[2] / 2),
+                y2=variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT * 0.25)
+            if variables.POPUP[1] > 0:
+                cv2.line(variables.FRAME,
+                        (round(variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2) + round(variables.TITLE_BAR_HEIGHT / 20) / 2), round(variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT - variables.TITLE_BAR_HEIGHT * 0.25 + variables.TITLE_BAR_HEIGHT / 40)),
+                        (round(variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2) - round(variables.TITLE_BAR_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT - variables.TITLE_BAR_HEIGHT * 0.25 + variables.TITLE_BAR_HEIGHT / 40)),
+                        (255, 200, 87), round(variables.TITLE_BAR_HEIGHT / 20))
 
         variables.CACHED_FRAME = variables.FRAME.copy()
 

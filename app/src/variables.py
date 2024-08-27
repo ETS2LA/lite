@@ -28,6 +28,7 @@ CONTEXT_MENU_ITEMS = []
 CONTEXT_MENU = [False, 0, 0]
 RENDER_FRAME = True
 CACHED_FRAME = None
+POPUP = [None, 0, 0.5]
 FRAME = None
 ITEMS = []
 AREAS = []

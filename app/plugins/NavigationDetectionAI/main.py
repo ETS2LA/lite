@@ -39,8 +39,6 @@ def Initialize():
     global last_enable_key_pressed
 
     global AIDevice
-    global LoadAILabel
-    global LoadAIProgress
 
     global MapTopLeft
     global MapBottomRight
@@ -70,8 +68,7 @@ def Initialize():
         print("NavigationDetectionAI not available due to missing dependencies.")
         console.RestoreConsole()
     AIDevice = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    LoadAILabel = "Loading..."
-    LoadAIProgress = 0
+    variables.POPUP = ["Loading...", 0, 0.5]
 
     MapTopLeft = settings.Get("NavigationDetectionAI", "MapTopLeft", "unset")
     MapBottomRight = settings.Get("NavigationDetectionAI", "MapBottomRight", "unset")
@@ -154,8 +151,6 @@ def LoadAIModel():
     try:
         def LoadAIModelThread():
             try:
-                global LoadAILabel
-                global LoadAIProgress
                 global AIModel
                 global AIModelLoaded
 
@@ -165,10 +160,8 @@ def LoadAIModel():
                 if GetAIModelName() == "UNKNOWN":
                     return
 
-                LoadAIProgress = 0
-                LoadAILabel = "Loading the AI model..."
-
-                print("\033[92m" + f"Loading the AI model..." + "\033[0m")
+                variables.POPUP = ["Loading the AI model...", 0, 0.5]
+                print("\033[92m" + "Loading the AI model..." + "\033[0m")
 
                 GetAIModelProperties()
 
@@ -181,25 +174,22 @@ def LoadAIModel():
                     ModelFileCorrupted = True
 
                 if ModelFileCorrupted == False:
-                    print("\033[92m" + f"Successfully loaded the AI model!" + "\033[0m")
+                    variables.POPUP = ["Successfully loaded the AI model!", 100, 0.5]
+                    print("\033[92m" + "Successfully loaded the AI model!" + "\033[0m")
                     AIModelLoaded = True
-                    LoadAIProgress = 100
-                    LoadAILabel = "Successfully loaded the AI model!"
                 else:
-                    print("\033[91m" + f"Failed to load the AI model because the model file is corrupted." + "\033[0m")
+                    variables.POPUP = ["Failed to load the AI model because the model file is corrupted.", 0, 0.5]
+                    print("\033[91m" + "Failed to load the AI model because the model file is corrupted." + "\033[0m")
                     AIModelLoaded = False
-                    LoadAIProgress = 0
-                    LoadAILabel = "ERROR! Your AI model file is corrupted!"
                     time.sleep(3)
                     HandleCorruptedAIModel()
             except Exception as e:
                 exc = traceback.format_exc()
                 SendCrashReport("NavigationDetection - Loading AI Error.", str(exc))
                 console.RestoreConsole()
-                print("\033[91m" + f"Failed to load the AI model." + "\033[0m")
+                variables.POPUP = ["Failed to load the AI model!", 0, 0.5]
+                print("\033[91m" + "Failed to load the AI model!" + "\033[0m")
                 AIModelLoaded = False
-                LoadAIProgress = 0
-                LoadAILabel = "Failed to load the AI model!"
 
         global AIModelLoadThread
         AIModelLoadThread = threading.Thread(target=LoadAIModelThread)
@@ -217,9 +207,6 @@ def CheckForAIModelUpdates():
     try:
         def CheckForAIModelUpdatesThread():
             try:
-                global LoadAILabel
-                global LoadAIProgress
-
                 try:
                     response = requests.get("https://huggingface.co/", timeout=3)
                     response = response.status_code
@@ -227,10 +214,9 @@ def CheckForAIModelUpdates():
                     response = None
 
                 if response == 200:
-                    LoadAIProgress = 0
-                    LoadAILabel = "Checking for AI model updates..."
+                    variables.POPUP = ["Checking for AI model updates...", 0, 0.5]
+                    print("\033[92m" + "Checking for AI model updates..." + "\033[0m")
 
-                    print("\033[92m" + f"Checking for AI model updates..." + "\033[0m")
                     if settings.Get("NavigationDetectionAI", "LastUpdateCheck", 0) + 600 > time.time():
                         if settings.Get("NavigationDetectionAI", "LatestModel", "unset") == GetAIModelName():
                             print("\033[92m" + f"No AI model updates available!" + "\033[0m")
@@ -252,11 +238,10 @@ def CheckForAIModelUpdates():
                         CurrentAIModel = None
 
                     if str(LatestAIModel) != str(CurrentAIModel):
-                        LoadAILabel = "Updating AI model..."
-                        print("\033[92m" + f"Updating AI model..." + "\033[0m")
+                        variables.POPUP = ["Updating the AI model...", 0, 0.5]
+                        print("\033[92m" + "Updating the AI model..." + "\033[0m")
                         DeleteAllAIModels()
                         response = requests.get(f"https://huggingface.co/Glas42/NavigationDetectionAI/resolve/main/model/{LatestAIModel}?download=true", stream=True)
-                        last_progress = 0
                         with open(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", f"{LatestAIModel}"), "wb") as modelfile:
                             total_size = int(response.headers.get('content-length', 0))
                             downloaded_size = 0
@@ -264,37 +249,28 @@ def CheckForAIModelUpdates():
                             for data in response.iter_content(chunk_size=chunk_size):
                                 downloaded_size += len(data)
                                 modelfile.write(data)
-                                progress = (downloaded_size / total_size) * 100
-                                if round(last_progress) < round(progress):
-                                    progress_mb = downloaded_size / (1024 * 1024)
-                                    total_size_mb = total_size / (1024 * 1024)
-                                    LoadAIProgress = progress
-                                    LoadAILabel = f"Downloading AI model: {round(progress)}%"
-                                    last_progress = progress
-                        LoadAIProgress = 100
-                        LoadAILabel = "Successfully updated AI model!"
-                        print("\033[92m" + f"Successfully updated AI model!" + "\033[0m")
+                                progress = round((downloaded_size / total_size) * 100)
+                                variables.POPUP = [f"Downloading the AI model: {progress}%", progress, 0.5]
+                        variables.POPUP = ["Successfully updated the AI model!", 100, 0.5]
+                        print("\033[92m" + "Successfully updated the AI model!" + "\033[0m")
                     else:
-                        LoadAIProgress = 100
-                        LoadAILabel = "No AI model updates available!"
-                        print("\033[92m" + f"No AI model updates available!" + "\033[0m")
+                        variables.POPUP = ["No AI model updates available!", 100, 0.5]
+                        print("\033[92m" + "No AI model updates available!" + "\033[0m")
                     settings.Set("NavigationDetectionAI", "LastUpdateCheck", time.time())
 
                 else:
 
                     console.RestoreConsole()
-                    print("\033[91m" + f"Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + "\033[0m")
-                    LoadAIProgress = 0
-                    LoadAILabel = "Connection to https://huggingface.co/ is\nmost likely not available in your country.\nUnable to check for AI model updates."
+                    variables.POPUP = ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5]
+                    print("\033[91m" + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + "\033[0m")
 
             except Exception as ex:
                 exc = traceback.format_exc()
                 SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdatesThread.", str(exc))
                 print(f"NavigationDetection - Error in function CheckForAIModelUpdatesThread: {ex}")
                 console.RestoreConsole()
-                print("\033[91m" + f"Failed to check for AI model updates or update the AI model." + "\033[0m")
-                LoadAIProgress = 0
-                LoadAILabel = "Failed to check for AI model updates or update the AI model."
+                variables.POPUP = ["Failed to check for AI model updates or update the AI model.", 0, 0.5]
+                print("\033[91m" + "Failed to check for AI model updates or update the AI model." + "\033[0m")
 
         global AIModelUpdateThread
         AIModelUpdateThread = threading.Thread(target=CheckForAIModelUpdatesThread)
@@ -305,7 +281,8 @@ def CheckForAIModelUpdates():
         SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdates.", str(exc))
         print(f"NavigationDetection - Error in function CheckForAIModelUpdates: {ex}")
         console.RestoreConsole()
-        print("\033[91m" + f"Failed to check for AI model updates or update the AI model." + "\033[0m")
+        variables.POPUP = ["Failed to check for AI model updates or update the AI model.", 0, 0.5]
+        print("\033[91m" + "Failed to check for AI model updates or update the AI model." + "\033[0m")
 
 
 def ModelFolderExists():
@@ -343,7 +320,7 @@ def DeleteAllAIModels():
     except PermissionError as ex:
         global TorchAvailable
         TorchAvailable = False
-        settings.CreateSettings("NavigationDetection", "UseAI", False)
+        settings.Set("NavigationDetectionAI", "UseAI", False)
         print(f"NavigationDetection - PermissionError in function DeleteAllAIModels: {ex}")
         print("NavigationDetectionAI will be automatically disabled because the code cannot delete the AI model.")
         console.RestoreConsole()
@@ -416,8 +393,6 @@ def plugin():
     global last_enable_key_pressed
 
     global AIDevice
-    global LoadAILabel
-    global LoadAIProgress
 
     global MapTopLeft
     global MapBottomRight

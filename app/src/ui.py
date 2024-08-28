@@ -313,6 +313,10 @@ def Update():
                 y2=variables.CANVAS_BOTTOM)
 
         if variables.POPUP[0] != None:
+            if variables.POPUP_SHOW_VALUE < 0.01:
+                variables.POPUP_SHOW_VALUE = 0
+            elif variables.POPUP_SHOW_VALUE > 0.99:
+                variables.POPUP_SHOW_VALUE = 1
             x1 = variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2)
             y1 = variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT + variables.TITLE_BAR_HEIGHT * variables.POPUP_SHOW_VALUE
             x2 = variables.CANVAS_RIGHT * (0.5 + variables.POPUP[2] / 2)
@@ -322,7 +326,8 @@ def Update():
                 x1=x1,
                 y1=y1,
                 x2=x2,
-                y2=y2)
+                y2=y2,
+                button_hover_color=variables.BUTTON_COLOR)
             if variables.POPUP[1] > 0:
                 cv2.line(variables.FRAME,
                         (round(x1 + round(variables.TITLE_BAR_HEIGHT / 20) / 2), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),

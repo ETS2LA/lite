@@ -28,6 +28,8 @@ def CheckForUpdates(do_ui_update = True):
         ui.SetTitleBarHeight(0)
         if do_ui_update:
             ui.Update()
+    else:
+        variables.POPUP = ["No updates available.", 0, 0.5]
 
 def Update():
     try:

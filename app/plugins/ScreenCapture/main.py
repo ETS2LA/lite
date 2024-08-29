@@ -4,9 +4,7 @@ import numpy as np
 import cv2
 import mss
 
-display = settings.Get("ScreenCapture", "Display", 0)
-
-def Initialize(CamSetupDisplay:int = display):
+def Initialize():
     global sct
     global display
     global monitor
@@ -27,58 +25,104 @@ def Initialize(CamSetupDisplay:int = display):
     cam = None
     cam_library = None
 
-    if settings.Get("NavigationDetectionAI", "MapTopLeft", "unset") != "unset" and settings.Get("NavigationDetectionAI", "MapBottomRight", "unset") != "unset":
-        monitor_x1 = settings.Get("NavigationDetectionAI", "MapTopLeft", "unset")[0]
-        monitor_y1 = settings.Get("NavigationDetectionAI", "MapTopLeft", "unset")[1]
-        monitor_x2 = settings.Get("NavigationDetectionAI", "MapBottomRight", "unset")[0]
-        monitor_y2 = settings.Get("NavigationDetectionAI", "MapBottomRight", "unset")[1]
-
     try:
 
         if variables.OS == "nt":
 
-            import bettercam
             try:
-                cam.stop()
+
+                from windows_capture import WindowsCapture, Frame, InternalCaptureControl
+                capture = WindowsCapture(
+                    cursor_capture=False,
+                    draw_border=False,
+                    monitor_index=display + 1,
+                    window_name=None,
+                )
+                global WindowsCaptureFrame
+                global StopWindowsCapture
+                StopWindowsCapture = False
+                @capture.event
+                def on_frame_arrived(frame: Frame, capture_control: InternalCaptureControl):
+                    global WindowsCaptureFrame
+                    global StopWindowsCapture
+                    WindowsCaptureFrame = frame.convert_to_bgr().frame_buffer.copy()
+                    if StopWindowsCapture:
+                        StopWindowsCapture = False
+                        capture_control.stop()
+                @capture.event
+                def on_closed():
+                    print("Capture Session Closed")
+                try:
+                    control.stop()
+                except:
+                    pass
+                control = capture.start_free_threaded()
+
+                cam_library = "WindowsCapture"
+
             except:
-                pass
-            try:
-                cam.close()
-            except:
-                pass
-            try:
-                cam.release()
-            except:
-                pass
-            try:
-                del cam
-            except:
-                pass
-            cam = bettercam.create(output_idx=CamSetupDisplay)
-            cam.start()
-            cam.get_latest_frame()
-            cam_library = "BetterCam"
+
+                import bettercam
+                try:
+                    cam.stop()
+                except:
+                    pass
+                try:
+                    cam.close()
+                except:
+                    pass
+                try:
+                    cam.release()
+                except:
+                    pass
+                try:
+                    del cam
+                except:
+                    pass
+                cam = bettercam.create(output_idx=display)
+                cam.start()
+                cam.get_latest_frame()
+                cam_library = "BetterCam"
 
         else:
 
-            display = CamSetupDisplay
             cam_library = "MSS"
 
     except:
 
-        display = CamSetupDisplay
         cam_library = "MSS"
 
 
 def plugin(imgtype:str = "both"):
     """imgtype: "both", "cropped", "full" """
 
-    if variables.OS == "nt" and cam_library == "BetterCam":
+    if cam_library == "WindowsCapture":
+
+        try:
+
+            img = cv2.cvtColor(WindowsCaptureFrame, cv2.COLOR_BGRA2BGR)
+            if imgtype == "both":
+                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+                return croppedImg, img
+            elif imgtype == "cropped":
+                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+                return croppedImg
+            elif imgtype == "full":
+                return img
+            else:
+                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+                return croppedImg, img
+
+        except:
+
+            return None if imgtype == "cropped" or imgtype == "full" else (None, None)
+
+    elif cam_library == "BetterCam":
 
         try:
 
             if cam == None:
-                Initialize(settings.Get("ScreenCapture", "Display", 0))
+                Initialize()
             img = cam.get_latest_frame()
             img = np.array(img)
             if imgtype == "both":
@@ -95,9 +139,9 @@ def plugin(imgtype:str = "both"):
 
         except:
 
-            return (None, None) if imgtype != "cropped" or imgtype != "full" else None
+            return None if imgtype == "cropped" or imgtype == "full" else (None, None)
 
-    else:
+    elif cam_library == "MSS":
 
         try:
 
@@ -118,4 +162,4 @@ def plugin(imgtype:str = "both"):
 
         except:
 
-            return (None, None) if imgtype != "cropped" or imgtype != "full" else None
+            return None if imgtype == "cropped" or imgtype == "full" else (None, None)

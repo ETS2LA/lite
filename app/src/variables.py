@@ -18,6 +18,8 @@ BUTTON_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
 BUTTON_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 BUTTON_SELECTED_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)
 BUTTON_SELECTED_HOVER_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)
+SWITCH_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
+SWITCH_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
 
 TABS = ["Menu", "NavigationDetectionAI", "Settings"]
@@ -40,7 +42,6 @@ WIDTH = settings.Get("UI", "Width", 700)
 HEIGHT = settings.Get("UI", "Height", 400)
 
 HWND = None
-TAB = "Menu"
 NAME = "ETS2LA-Lite"
 PAGE = settings.Get("UI", "Page", "Menu")
 BREAK = False

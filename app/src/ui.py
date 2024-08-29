@@ -143,7 +143,7 @@ def Update():
                 "y1": -variables.TITLE_BAR_HEIGHT + 6,
                 "x2": (i + 1) / len(variables.TABS) * variables.CANVAS_RIGHT - 5,
                 "y2": -6,
-                "button_selected": variables.TAB == tab,
+                "button_selected": variables.PAGE == tab,
                 "button_color": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
                 "button_hover_color": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
                 "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
@@ -184,7 +184,7 @@ def Update():
             "x2": variables.CANVAS_RIGHT / 2 - 10,
             "y2": variables.CANVAS_BOTTOM - 20})
 
-    elif variables.PAGE == "Menu":
+    if variables.PAGE == "Menu":
         variables.ITEMS.append({
             "type": "label",
             "text": f"ETS2LA-Lite v{variables.VERSION}",
@@ -230,6 +230,18 @@ def Update():
             "x2": variables.CANVAS_RIGHT * 0.75,
             "y2": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT * 1.5 - 5})
 
+    if variables.PAGE == "Settings":
+        variables.ITEMS.append({
+            "type": "switch",
+            "text": "Hide Console",
+            "state": True if time.time() % 1 < 0.5 else False,
+            "setting": ("Console", "HideConsole", False),
+            "function": lambda: {console.HideConsole() if settings.Get("Console", "HideConsole", False) else console.RestoreConsole()},
+            "x1": 10,
+            "y1": 10,
+            "x2": variables.CANVAS_RIGHT - 10,
+            "y2": 50})
+
     if variables.CONTEXT_MENU[0]:
         offset = 0
         for item in variables.CONTEXT_MENU_ITEMS:
@@ -274,7 +286,7 @@ def Update():
 
     if variables.RENDER_FRAME or last_left_clicked != left_clicked:
         variables.RENDER_FRAME = False
-        print("Rendering new frame!")
+        #print("Rendering new frame!")
 
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
@@ -282,14 +294,19 @@ def Update():
         for item in variables.ITEMS:
             item_type = item["type"]
             item.pop("type")
-            if item_type == "button":
+            item_function = None
+            if "function" in item:
                 item_function = item["function"]
                 item.pop("function")
+            item_setting = None
+            if "setting" in item:
+                item_setting = item["setting"]
+                item.pop("setting")
 
             if item_type == "label":
                 uicomponents.Label(**item)
 
-            if item_type == "button":
+            elif item_type == "button":
                 pressed, hovered = uicomponents.Button(**item)
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
@@ -300,9 +317,16 @@ def Update():
                         variables.RENDER_FRAME = True
                         for tab in variables.TABS:
                             if item["text"] == tab:
-                                variables.TAB = tab
                                 variables.PAGE = tab
                                 settings.Set("UI", "Page", tab)
+
+            elif item_type == "switch":
+                pressed, hovered = uicomponents.Switch(**item)
+                if pressed:
+                    if item_setting is not None:
+                        settings.Set(str(item_setting[0]), str(item_setting[1]), not settings.Get(str(item_setting[0]), str(item_setting[1]), item_setting[2]))
+                    if item_function is not None:
+                        item_function()
 
         if len(variables.ITEMS) < len(variables.TABS) + 1 and variables.TITLE_BAR_HEIGHT != 0:
             uicomponents.Label(

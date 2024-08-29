@@ -22,12 +22,23 @@ helpers.RunEvery(60, lambda: server.Ping())
 server.variables.USERCOUNT = server.GetUserCount()
 
 import plugins.NavigationDetectionAI.main as NavigationDetectionAI
-def run_thread():
+def NavigationDetectionAIThread():
     global FPS
     NavigationDetectionAI.Initialize()
     while variables.BREAK == False:
         FPS = NavigationDetectionAI.plugin()
-#threading.Thread(target=run_thread, daemon=True).start()
+#threading.Thread(target=NavigationDetectionAIThread, daemon=True).start()
+
+import plugins.NavigationDetectionV4.main as NavigationDetectionV4
+def NavigationDetectionV4Thread():
+    global FPS
+    NavigationDetectionV4.Initialize()
+    while variables.BREAK == False:
+        start = time.time()
+        NavigationDetectionV4.plugin()
+        end = time.time()
+        FPS = (1 / (end - start)) if end - start > 0 else 1000
+threading.Thread(target=NavigationDetectionV4Thread, daemon=True).start()
 
 FPS = 0
 FPS_UpdateTime = 0

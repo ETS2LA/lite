@@ -4,14 +4,7 @@ import requests
 import json
 import time
 
-ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
-if ALLOW_CRASH_REPORTS == None:
-    if input("Do you want to allow crash reports to be sent to the developers? This will help us fix bugs faster.\n\nCrash reports are anonymous and will not contain any personal information").lower() == "yes":
-        ALLOW_CRASH_REPORTS = True
-        settings.Set("CrashReports", "AllowCrashReports", True)
-    else:
-        settings.Set("CrashReports", "AllowCrashReports", False)
-        ALLOW_CRASH_REPORTS = False
+ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports", False)
 
 def SendCrashReport(type:str, message:str, additional=None):
     """Will send a crash report to the main application server. This will then be forwarded to the developers on discord.

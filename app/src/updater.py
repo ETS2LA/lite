@@ -7,7 +7,7 @@ import time
 import os
 
 def CheckForUpdates(do_ui_update = True):
-    if float(settings.Get("Updater", "LastRemoteCheck", "0")) + 600 < time.time():
+    if settings.Get("Updater", "LastRemoteCheck", 0) + 600 < time.time():
         try:
             remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/version.txt").text.strip()
             changelog = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/changelog.txt").text.strip()
@@ -15,7 +15,7 @@ def CheckForUpdates(do_ui_update = True):
             remote_version = "404: Not Found"
             changelog = "404: Not Found"
         if remote_version != "404: Not Found" and changelog != "404: Not Found":
-            settings.Set("Updater", "LastRemoteCheck", str(time.time()))
+            settings.Set("Updater", "LastRemoteCheck", time.time())
             settings.Set("Updater", "RemoteVersion", remote_version)
             settings.Set("Updater", "Changelog", changelog)
     else:

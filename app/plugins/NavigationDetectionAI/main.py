@@ -93,7 +93,7 @@ def Initialize():
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
 
-    ScreenCapture.Initialize(settings.Get("ScreenCapture", "Display", 0))
+    ScreenCapture.Initialize()
 
 
 def UpdateSettings():

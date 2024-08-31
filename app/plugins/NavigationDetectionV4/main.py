@@ -206,23 +206,26 @@ def plugin():
     LastEnableKeyPressed = EnableKeyPressed
 
 
+    angle = -3
+
+    src_pts = np.float32([[0, 0], [width - 1, 0], [0, height - 1], [width - 1, height - 1]])
+    dst_pts = np.float32([[int(width * angle), 0], [width - 1 - int(width * angle), 0], [0, height - 1], [width - 1, height - 1]])
+    matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
+    frame = cv2.warpPerspective(frame, matrix, (width, height))
+
+    lower_red = np.array([0, 0, 160])
+    upper_red = np.array([110, 110, 255])
+    mask = cv2.inRange(frame, lower_red, upper_red)
+    frame = cv2.bitwise_and(frame, frame, mask=mask)
+
 
     Steering = 0
-
 
 
     SDKController.steering = float(Steering)
 
     text, fontscale, thickness, text_width_enabled, text_height_enabled = GetTextSize(text="Enabled" if Enabled else "Disabled", text_width=width/1.1, max_text_height=height/11)
     cv2.putText(frame, text, (5, 5 + text_height_enabled), cv2.FONT_HERSHEY_SIMPLEX, fontscale, (0, 255, 0) if Enabled else (0, 0, 255), thickness, cv2.LINE_AA)
-
-    currentDesired = Steering
-    actualSteering = -data["api"]["truckFloat"]["gameSteer"]
-
-    divider = 5
-    cv2.line(frame, (int(width/divider), int(height - height/10)), (int(width/divider*(divider-1)), int(height - height/10)), (100, 100, 100), 6, cv2.LINE_AA)
-    cv2.line(frame, (int(width/2), int(height - height/10)), (int(width/2 + actualSteering * (width/2 - width/divider)), int(height - height/10)), (0, 255, 100), 6, cv2.LINE_AA)
-    cv2.line(frame, (int(width/2), int(height - height/10)), (int(width/2 + (currentDesired if abs(currentDesired) < 1 else (1 if currentDesired > 0 else -1)) * (width/2 - width/divider)), int(height - height/10)), (0, 100, 255), 2, cv2.LINE_AA)
 
     try:
         _, _, _, _ = cv2.getWindowImageRect("NavigationDetectionV4")

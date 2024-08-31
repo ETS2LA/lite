@@ -12,10 +12,14 @@ import time
 import os
 
 def RunPlugins():
-    import plugins.NavigationDetectionV4.main as NavigationDetectionV4
-    NavigationDetectionV4.Initialize()
+    #import plugins.NavigationDetectionV4.main as NavigationDetectionV4
+    #NavigationDetectionV4.Initialize()
+    #while variables.BREAK == False:
+    #    NavigationDetectionV4.plugin()
+    import plugins.CustomACC.main as CustomACC
+    CustomACC.Initialize()
     while variables.BREAK == False:
-        NavigationDetectionV4.plugin()
+        CustomACC.plugin()
 
 if __name__ == '__main__':
     os.system("cls" if variables.OS == "nt" else "clear")

@@ -409,7 +409,7 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    data["frame"] = ScreenCapture.plugin(imgtype="cropped")
+    data["frame"] = ScreenCapture.plugin(ImageType="cropped")
 
     current_time = time.time()
 

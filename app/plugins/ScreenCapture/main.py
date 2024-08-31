@@ -93,21 +93,21 @@ def Initialize():
         cam_library = "MSS"
 
 
-def plugin(imgtype:str = "both"):
-    """imgtype: "both", "cropped", "full" """
+def plugin(ImageType:str = "both"):
+    """ImageType: "both", "cropped", "full" """
 
     if cam_library == "WindowsCapture":
 
         try:
 
             img = cv2.cvtColor(WindowsCaptureFrame, cv2.COLOR_BGRA2BGR)
-            if imgtype == "both":
+            if ImageType == "both":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg, img
-            elif imgtype == "cropped":
+            elif ImageType == "cropped":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg
-            elif imgtype == "full":
+            elif ImageType == "full":
                 return img
             else:
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
@@ -115,7 +115,7 @@ def plugin(imgtype:str = "both"):
 
         except:
 
-            return None if imgtype == "cropped" or imgtype == "full" else (None, None)
+            return None if ImageType == "cropped" or ImageType == "full" else (None, None)
 
     elif cam_library == "BetterCam":
 
@@ -125,13 +125,13 @@ def plugin(imgtype:str = "both"):
                 Initialize()
             img = cam.get_latest_frame()
             img = np.array(img)
-            if imgtype == "both":
+            if ImageType == "both":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg, img
-            elif imgtype == "cropped":
+            elif ImageType == "cropped":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg
-            elif imgtype == "full":
+            elif ImageType == "full":
                 return img
             else:
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
@@ -139,7 +139,7 @@ def plugin(imgtype:str = "both"):
 
         except:
 
-            return None if imgtype == "cropped" or imgtype == "full" else (None, None)
+            return None if ImageType == "cropped" or ImageType == "full" else (None, None)
 
     elif cam_library == "MSS":
 
@@ -148,13 +148,13 @@ def plugin(imgtype:str = "both"):
             fullMonitor = sct.monitors[(display + 1)]
             img = np.array(sct.grab(fullMonitor))
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-            if imgtype == "both":
+            if ImageType == "both":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg, img
-            elif imgtype == "cropped":
+            elif ImageType == "cropped":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg
-            elif imgtype == "full":
+            elif ImageType == "full":
                 return img
             else:
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
@@ -162,4 +162,4 @@ def plugin(imgtype:str = "both"):
 
         except:
 
-            return None if imgtype == "cropped" or imgtype == "full" else (None, None)
+            return None if ImageType == "cropped" or ImageType == "full" else (None, None)

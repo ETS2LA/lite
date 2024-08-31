@@ -174,7 +174,7 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    frame = ScreenCapture.plugin(imgtype="cropped")
+    frame = ScreenCapture.plugin(ImageType="cropped")
 
     if type(frame) == type(None):
         return

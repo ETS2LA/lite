@@ -79,7 +79,7 @@ def Initialize():
                     del cam
                 except:
                     pass
-                cam = bettercam.create(output_idx=display)
+                cam = bettercam.create(output_idx=display, output_color="BGR")
                 cam.start()
                 cam.get_latest_frame()
                 cam_library = "BetterCam"
@@ -100,7 +100,7 @@ def plugin(ImageType:str = "both"):
 
         try:
 
-            img = cv2.cvtColor(WindowsCaptureFrame, cv2.COLOR_BGRA2BGR)
+            img = cv2.cvtColor(np.array(WindowsCaptureFrame), cv2.COLOR_BGRA2BGR)
             if ImageType == "both":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg, img
@@ -123,8 +123,7 @@ def plugin(ImageType:str = "both"):
 
             if cam == None:
                 Initialize()
-            img = cam.get_latest_frame()
-            img = np.array(img)
+            img = np.array(cam.get_latest_frame())
             if ImageType == "both":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg, img
@@ -147,7 +146,6 @@ def plugin(ImageType:str = "both"):
 
             fullMonitor = sct.monitors[(display + 1)]
             img = np.array(sct.grab(fullMonitor))
-            img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
             if ImageType == "both":
                 croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
                 return croppedImg, img

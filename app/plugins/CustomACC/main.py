@@ -16,6 +16,10 @@ if variables.OS == "nt":
     from ctypes import windll, byref, sizeof, c_int
 
 
+from torchvision import transforms
+import torch
+
+
 def Initialize():
     global LastScreenCaptureCheck
     global SDKController
@@ -26,6 +30,16 @@ def Initialize():
     TruckSimAPI = SCSTelemetry()
 
     ScreenCapture.Initialize()
+
+    global model
+    global device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+    for file in os.listdir(f"{variables.PATH}"):
+        if file.endswith(".pt"):
+            model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
+            model.eval()
+            break
 
 
 def GetTextSize(text="NONE", text_width=100, max_text_height=100):
@@ -347,9 +361,35 @@ def plugin():
         matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
         frame = cv2.warpPerspective(frame, matrix, (width, height))
 
+    frame = cv2.resize(frame, (100, 100))
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    image = np.array(image, dtype=np.float32) / 255.0
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    image = transform(image).unsqueeze(0)
+    with torch.no_grad():
+        prediction = model(image.to(device))
 
-    #Steering = 0
-    #SDKController.steering = float(Steering)
+    prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
+
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+    prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
+
+    prediction_overlay[:, :, 2] = 0
+    prediction_overlay = prediction_overlay.astype(np.uint8) * 255
+
+    frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
+
+    non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
+    if len(non_black_pixels[0]) > 0:
+        x_center = int(np.mean(non_black_pixels[1]))
+    else:
+        x_center = width // 2
+    cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
+
+    Steering = (x_center/frame.shape[1] - 0.5) * 0.5
+    SDKController.steering = float(Steering)
 
     try:
         _, _, _, _ = cv2.getWindowImageRect("CustomACC")

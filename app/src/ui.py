@@ -27,8 +27,9 @@ def Initialize():
         height = 400
 
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
-    variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
-    cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+    variables.BACKGROUND[:] = variables.BACKGROUND_COLOR
+    if variables.TITLE_BAR_HEIGHT > 0:
+        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), variables.TAB_BAR_COLOR, -1)
 
     variables.CONTEXT_MENU_ITEMS = [
         {"name": "Restart",
@@ -49,7 +50,10 @@ def Initialize():
 
     if variables.OS == "nt":
         variables.HWND = win32gui.FindWindow(None, variables.NAME)
-        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x2F2F2F) if variables.THEME == "dark" else (0xE7E7E7))), sizeof(c_int))
+        if variables.TITLE_BAR_HEIGHT == 0:
+            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.BACKGROUND_COLOR[0] << 16) | (variables.BACKGROUND_COLOR[1] << 8) | variables.BACKGROUND_COLOR[2])), sizeof(c_int))
+        else:
+            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.TAB_BAR_COLOR[0] << 16) | (variables.TAB_BAR_COLOR[1] << 8) | variables.TAB_BAR_COLOR[2])), sizeof(c_int))
         hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
         win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
@@ -58,9 +62,9 @@ def Initialize():
 
 def Resize(width, height):
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
-    variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
+    variables.BACKGROUND[:] = variables.BACKGROUND_COLOR
     if variables.TITLE_BAR_HEIGHT > 0:
-        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), variables.TAB_BAR_COLOR, -1)
     variables.CANVAS_BOTTOM = height - 1 - variables.TITLE_BAR_HEIGHT
     variables.CANVAS_RIGHT = width - 1
     variables.RENDER_FRAME = True
@@ -86,16 +90,16 @@ def SetTitleBarHeight(title_bar_height):
         return
     variables.TITLE_BAR_HEIGHT = title_bar_height
     variables.BACKGROUND = np.zeros((height, width, 3), np.uint8)
-    variables.BACKGROUND[:] = (28 if variables.THEME == "dark" else 250)
+    variables.BACKGROUND[:] = variables.BACKGROUND_COLOR
     if title_bar_height > 0:
-        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231), -1)
+        cv2.rectangle(variables.BACKGROUND, (0, 0), (width - 1, variables.TITLE_BAR_HEIGHT - 1), variables.TAB_BAR_COLOR, -1)
     if variables.OS == "nt":
         if title_bar_height == 0:
             from ctypes import windll, byref, sizeof, c_int
-            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x1C1C1C) if variables.THEME == "dark" else (0xFAFAFA))), sizeof(c_int))
+            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.BACKGROUND_COLOR[0] << 16) | (variables.BACKGROUND_COLOR[1] << 8) | variables.BACKGROUND_COLOR[2])), sizeof(c_int))
         else:
             from ctypes import windll, byref, sizeof, c_int
-            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((0x2F2F2F) if variables.THEME == "dark" else (0xE7E7E7))), sizeof(c_int))
+            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.TAB_BAR_COLOR[0] << 16) | (variables.TAB_BAR_COLOR[1] << 8) | variables.TAB_BAR_COLOR[2])), sizeof(c_int))
     variables.CANVAS_BOTTOM = height - 1 - variables.TITLE_BAR_HEIGHT
     variables.CANVAS_RIGHT = width - 1
     variables.RENDER_FRAME = True
@@ -138,16 +142,16 @@ def Update():
             variables.ITEMS.append({
                 "type": "button",
                 "text": tab,
-                "function": None,
+                "function": lambda tab = tab: {setattr(variables, "PAGE", tab), settings.Set("UI", "Page", tab)},
                 "x1": i / len(variables.TABS) * variables.CANVAS_RIGHT + 5,
                 "y1": -variables.TITLE_BAR_HEIGHT + 6,
                 "x2": (i + 1) / len(variables.TABS) * variables.CANVAS_RIGHT - 5,
                 "y2": -6,
                 "button_selected": variables.PAGE == tab,
-                "button_color": (47, 47, 47) if variables.THEME == "dark" else (231, 231, 231),
-                "button_hover_color": (41, 41, 41) if variables.THEME == "dark" else (244, 244, 244),
-                "button_selected_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250),
-                "button_selected_hover_color": (28, 28, 28) if variables.THEME == "dark" else (250, 250, 250)})
+                "button_color": variables.TAB_BUTTON_COLOR,
+                "button_hover_color": variables.TAB_BUTTON_HOVER_COLOR,
+                "button_selected_color": variables.TAB_BUTTON_SELECTED_COLOR,
+                "button_selected_hover_color": variables.TAB_BUTTON_SELECTED_HOVER_COLOR})
 
     if variables.PAGE == "Update":
         variables.ITEMS.append({
@@ -234,7 +238,6 @@ def Update():
         variables.ITEMS.append({
             "type": "switch",
             "text": "Hide Console",
-            "state": True if time.time() % 1 < 0.5 else False,
             "setting": ("Console", "HideConsole", False),
             "function": lambda: {console.HideConsole() if settings.Get("Console", "HideConsole", False) else console.RestoreConsole()},
             "x1": 10,
@@ -276,7 +279,7 @@ def Update():
         variables.RENDER_FRAME = True
 
     for area in variables.AREAS:
-        if area[0] == "button" or area[0] == "buttonlist":
+        if area[0] == "button" or area[0] == "switch":
             if (area[1] <= mouse_x * width <= area[3] and area[2] <= mouse_y * height <= area[4]) != area[5]:
                 area = (area[1], area[2], area[3], area[4], not area[5])
                 variables.RENDER_FRAME = True
@@ -284,9 +287,9 @@ def Update():
     if foreground_window == False and variables.CACHED_FRAME is not None and variables.POPUP[0] == None:
         variables.RENDER_FRAME = False
 
-    if variables.RENDER_FRAME or last_left_clicked != left_clicked:
+    if variables.RENDER_FRAME or last_left_clicked != left_clicked or True:
         variables.RENDER_FRAME = False
-        #print("Rendering new frame!")
+        #print(f"Rendering new frame!")
 
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
@@ -298,10 +301,6 @@ def Update():
             if "function" in item:
                 item_function = item["function"]
                 item.pop("function")
-            item_setting = None
-            if "setting" in item:
-                item_setting = item["setting"]
-                item.pop("setting")
 
             if item_type == "label":
                 uicomponents.Label(**item)
@@ -315,16 +314,12 @@ def Update():
                         item_function()
                     else:
                         variables.RENDER_FRAME = True
-                        for tab in variables.TABS:
-                            if item["text"] == tab:
-                                variables.PAGE = tab
-                                settings.Set("UI", "Page", tab)
 
             elif item_type == "switch":
                 pressed, hovered = uicomponents.Switch(**item)
+                variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
+
                 if pressed:
-                    if item_setting is not None:
-                        settings.Set(str(item_setting[0]), str(item_setting[1]), not settings.Get(str(item_setting[0]), str(item_setting[1]), item_setting[2]))
                     if item_function is not None:
                         item_function()
 
@@ -351,12 +346,13 @@ def Update():
                 y1=y1,
                 x2=x2,
                 y2=y2,
-                button_hover_color=variables.BUTTON_COLOR)
+                button_color=variables.POPUP_COLOR,
+                button_hover_color=variables.POPUP_HOVER_COLOR)
             if variables.POPUP[1] > 0:
                 cv2.line(variables.FRAME,
                         (round(x1 + round(variables.TITLE_BAR_HEIGHT / 20) / 2), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),
                         (round(x1 - round(variables.TITLE_BAR_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),
-                        (255, 200, 87), round(variables.TITLE_BAR_HEIGHT / 20))
+                        variables.POPUP_PROGRESS_COLOR, round(variables.TITLE_BAR_HEIGHT / 20))
 
         variables.CACHED_FRAME = variables.FRAME.copy()
 

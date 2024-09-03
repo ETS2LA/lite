@@ -11,15 +11,21 @@ import multiprocessing
 import time
 import os
 
-def RunPlugins():
+def RunNavigationDetectionAI():
     #import plugins.NavigationDetectionV4.main as NavigationDetectionV4
     #NavigationDetectionV4.Initialize()
     #while variables.BREAK == False:
     #    NavigationDetectionV4.plugin()
-    import plugins.CustomACC.main as CustomACC
-    CustomACC.Initialize()
+    import plugins.NavigationDetectionAI.main as NavigationDetectionAI
+    NavigationDetectionAI.Initialize()
     while variables.BREAK == False:
-        CustomACC.plugin()
+        NavigationDetectionAI.plugin()
+
+def RunLaneDetection():
+    import plugins.LaneDetection.main as LaneDetection
+    LaneDetection.Initialize()
+    while variables.BREAK == False:
+        LaneDetection.plugin()
 
 if __name__ == '__main__':
     os.system("cls" if variables.OS == "nt" else "clear")
@@ -33,8 +39,11 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.Ping())
     server.variables.USERCOUNT = server.GetUserCount()
 
-    PluginProcess = multiprocessing.Process(target=RunPlugins, daemon=True)
-    PluginProcess.start()
+    PluginProcesses = []
+    #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
+    #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
+    for PluginProcess in PluginProcesses:
+        PluginProcess.start()
 
     FPS = 0
     FPS_UpdateTime = 0
@@ -66,9 +75,13 @@ if __name__ == '__main__':
                     hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
                     if hash != LastScripts[i]:
                         variables.POPUP = [f"Reloading {Script}...", 0, 0.5]
-                        PluginProcess.terminate()
-                        PluginProcess = multiprocessing.Process(target=RunPlugins, daemon=True)
-                        PluginProcess.start()
+                        for PluginProcess in PluginProcesses:
+                            PluginProcess.terminate()
+                        PluginProcesses = []
+                        #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
+                        #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
+                        for PluginProcess in PluginProcesses:
+                            PluginProcess.start()
                         LastScripts[i] = hash
                         break
                 except:

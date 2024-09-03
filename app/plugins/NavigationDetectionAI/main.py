@@ -10,6 +10,7 @@ import traceback
 import keyboard
 import time
 import cv2
+import mss
 import os
 
 if variables.OS == "nt":
@@ -37,6 +38,7 @@ def Initialize():
     global enable_key
     global enable_key_pressed
     global last_enable_key_pressed
+    global LastScreenCaptureCheck
 
     global AIDevice
 
@@ -61,6 +63,7 @@ def Initialize():
     enable_key = settings.Get("Steering", "EnableKey", "n")
     enable_key_pressed = False
     last_enable_key_pressed = False
+    LastScreenCaptureCheck = 0
 
     if TorchAvailable == True:
         LoadAIModel()
@@ -123,6 +126,99 @@ def get_text_size(text="NONE", text_width=100, max_text_height=100):
     if thickness <= 0:
         thickness = 1
     return text, fontscale, thickness, textsize[0], textsize[1]
+
+
+sct = mss.mss()
+def GetScreenDimensions(monitor=1):
+    global screen_x, screen_y, screen_width, screen_height
+    monitor = sct.monitors[monitor]
+    screen_x = monitor["left"]
+    screen_y = monitor["top"]
+    screen_width = monitor["width"]
+    screen_height = monitor["height"]
+    return screen_x, screen_y, screen_width, screen_height
+GetScreenDimensions()
+
+
+def GetScreenIndex(x, y):
+    with mss.mss() as sct:
+        monitors = sct.monitors
+    closest_screen_index = None
+    closest_distance = float('inf')
+    for i, monitor in enumerate(monitors[1:]):
+        center_x = (monitor['left'] + monitor['left'] + monitor['width']) // 2
+        center_y = (monitor['top'] + monitor['top'] + monitor['height']) // 2
+        distance = ((center_x - x) ** 2 + (center_y - y) ** 2) ** 0.5
+        if distance < closest_distance:
+            closest_screen_index = i + 1
+            closest_distance = distance
+    return closest_screen_index
+
+
+def ValidateCaptureArea(monitor, x1, y1, x2, y2):
+    monitor = sct.monitors[monitor]
+    width, height = monitor["width"], monitor["height"]
+    x1 = max(0, min(width - 1, x1))
+    x2 = max(0, min(width - 1, x2))
+    y1 = max(0, min(height - 1, y1))
+    y2 = max(0, min(height - 1, y2))
+    if x1 == x2:
+        if x1 == 0:
+            x2 = width - 1
+        else:
+            x1 = 0
+    if y1 == y2:
+        if y1 == 0:
+            y2 = height - 1
+        else:
+            y1 = 0
+    return x1, y1, x2, y2
+
+
+def GetGamePosition():
+    global LastGetGamePosition
+    if variables.OS == "nt":
+        if LastGetGamePosition[0] + 1 < time.time():
+            hwnd = None
+            top_windows = []
+            window = LastGetGamePosition[1], LastGetGamePosition[2], LastGetGamePosition[3], LastGetGamePosition[4]
+            win32gui.EnumWindows(lambda hwnd, top_windows: top_windows.append((hwnd, win32gui.GetWindowText(hwnd))), top_windows)
+            for hwnd, window_text in top_windows:
+                if "Truck Simulator" in window_text and "Discord" not in window_text:
+                    rect = win32gui.GetClientRect(hwnd)
+                    tl = win32gui.ClientToScreen(hwnd, (rect[0], rect[1]))
+                    br = win32gui.ClientToScreen(hwnd, (rect[2], rect[3]))
+                    window = (tl[0], tl[1], br[0] - tl[0], br[1] - tl[1])
+                    break
+            LastGetGamePosition = time.time(), window[0], window[1], window[0] + window[2], window[1] + window[3]
+            return window[0], window[1], window[0] + window[2], window[1] + window[3]
+        else:
+            return LastGetGamePosition[1], LastGetGamePosition[2], LastGetGamePosition[3], LastGetGamePosition[4]
+    else:
+        return screen_x, screen_y, screen_x + screen_width, screen_y + screen_height
+LastGetGamePosition = 0, screen_x, screen_y, screen_width, screen_height
+
+
+def GetRouteAdvisorPosition():
+    x1, y1, x2, y2 = GetGamePosition()
+    distance_from_right = 21
+    distance_from_bottom = 100
+    width = 420
+    height = 219
+    scale = (y2 - y1) / 1080
+    x = x1 + (x2 - x1) - (distance_from_right * scale + width * scale)
+    y = y1 + (y2 - y1) - (distance_from_bottom * scale + height * scale)
+    map_topleft = (round(x), round(y))
+    x = x1 + (x2 - x1) - (distance_from_right * scale)
+    y = y1 + (y2 - y1) - (distance_from_bottom * scale)
+    map_bottomright = (round(x), round(y))
+    x = map_bottomright[0] - (map_bottomright[0] - map_topleft[0]) * 0.57
+    y = map_bottomright[1] - (map_bottomright[1] - map_topleft[1]) * 0.575
+    arrow_topleft = (round(x), round(y))
+    x = map_bottomright[0] - (map_bottomright[0] - map_topleft[0]) * 0.43
+    y = map_bottomright[1] - (map_bottomright[1] - map_topleft[1]) * 0.39
+    arrow_bottomright = (round(x), round(y))
+    return map_topleft, map_bottomright, arrow_topleft, arrow_bottomright
 
 
 def preprocess_image(image):
@@ -385,12 +481,13 @@ def GetAIModelProperties():
 
 
 def plugin():
-    start = time.time()
+    CurrentTime = time.time()
 
     global enabled
     global enable_key
     global enable_key_pressed
     global last_enable_key_pressed
+    global LastScreenCaptureCheck
 
     global AIDevice
 
@@ -409,9 +506,7 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    data["frame"] = ScreenCapture.plugin(ImageType="cropped")
-
-    current_time = time.time()
+    frame = ScreenCapture.plugin(ImageType="cropped")
 
     try:
         try:
@@ -420,22 +515,29 @@ def plugin():
         except:
             return 0
 
-        try:
-            frame = data["frame"]
-            width = frame.shape[1]
-            height = frame.shape[0]
-        except:
-            return 0
+        if type(frame) == type(None):
+            return
 
-        if frame is None: return 0
-        if width <= 0 or width == None: return 0
-        if height <= 0 or height == None: return 0
+        if LastScreenCaptureCheck + 0.5 < CurrentTime:
+            map_topleft, map_bottomright, arrow_topleft, arrow_bottomright = GetRouteAdvisorPosition()
+            screen_x, screen_y, _, _ = GetScreenDimensions(GetScreenIndex((map_topleft[0] + map_bottomright[0]) / 2, (map_topleft[1] + map_bottomright[1]) / 2))
+            if ScreenCapture.monitor_x1 != map_topleft[0] - screen_x or ScreenCapture.monitor_y1 != map_topleft[1] - screen_y or ScreenCapture.monitor_x2 != map_bottomright[0] - screen_x or ScreenCapture.monitor_y2 != map_bottomright[1] - screen_y:
+                ScreenIndex = GetScreenIndex((map_topleft[0] + map_bottomright[0]) / 2, (map_topleft[1] + map_bottomright[1]) / 2)
+                if ScreenCapture.display != ScreenIndex - 1:
+                    settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
+                    if ScreenCapture.cam_library == "WindowsCapture":
+                        ScreenCapture.StopWindowsCapture = True
+                        while ScreenCapture.StopWindowsCapture == True:
+                            time.sleep(0.01)
+                    ScreenCapture.Initialize()
+                ScreenCapture.monitor_x1, ScreenCapture.monitor_y1, ScreenCapture.monitor_x2, ScreenCapture.monitor_y2 = ValidateCaptureArea(ScreenIndex, map_topleft[0] - screen_x, map_topleft[1] - screen_y, map_bottomright[0] - screen_x, map_bottomright[1] - screen_y)
+            LastScreenCaptureCheck = CurrentTime
 
-        if isinstance(frame, np.ndarray) and frame.ndim == 3 and frame.size > 0:
-            valid_frame = True
-        else:
-            valid_frame = False
-            return 0
+        width = frame.shape[1]
+        height = frame.shape[0]
+
+        if width <= 0 or height <= 0:
+            return
 
         enable_key_pressed = keyboard.is_pressed(enable_key)
         if enable_key_pressed == False and last_enable_key_pressed == True:
@@ -444,8 +546,8 @@ def plugin():
 
         cv2.rectangle(frame, (0, 0), (round(frame.shape[1]/6), round(frame.shape[0]/3)), (0, 0, 0), -1)
         cv2.rectangle(frame, (frame.shape[1] ,0), (round(frame.shape[1]-frame.shape[1]/6), round(frame.shape[0]/3)), (0, 0, 0), -1)
-        lower_red = np.array([160, 0, 0])
-        upper_red = np.array([255, 110, 110])
+        lower_red = np.array([0, 0, 160])
+        upper_red = np.array([110, 110, 255])
         mask = cv2.inRange(frame, lower_red, upper_red)
         frame_with_mask = cv2.bitwise_and(frame, frame, mask=mask)
         frame = cv2.cvtColor(frame_with_mask, cv2.COLOR_BGR2GRAY)
@@ -460,7 +562,7 @@ def plugin():
                 global TorchAvailable
                 TorchAvailable = False
                 console.RestoreConsole()
-                return 0
+                return
             AIFrame = preprocess_image(mask)
             output = [[0] * MODEL_OUTPUTS]
 
@@ -485,24 +587,24 @@ def plugin():
             if left_indicator != indicator_left and indicator_left_wait_for_response == False:
                 SDKController.lblinker = True
                 indicator_left_wait_for_response = True
-                indicator_left_response_timer = current_time
+                indicator_left_response_timer = CurrentTime
             if right_indicator != indicator_right and indicator_right_wait_for_response == False:
                 SDKController.rblinker = True
                 indicator_right_wait_for_response = True
-                indicator_right_response_timer = current_time
+                indicator_right_response_timer = CurrentTime
 
             if indicator_left != indicator_last_left:
                 indicator_left_wait_for_response = False
             if indicator_right != indicator_last_right:
                 indicator_right_wait_for_response = False
-            if current_time - 1 > indicator_left_response_timer:
+            if CurrentTime - 1 > indicator_left_response_timer:
                 indicator_left_wait_for_response = False
-            if current_time - 1 > indicator_right_response_timer:
+            if CurrentTime - 1 > indicator_right_response_timer:
                 indicator_right_wait_for_response = False
         indicator_last_left = left_indicator
         indicator_last_right = right_indicator
 
-        SDKController.steering = steering
+        SDKController.steering = steering * 0.65
 
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 
@@ -540,4 +642,4 @@ def plugin():
         console.RestoreConsole()
         print("\033[91m" + f"NavigationDetection - Running AI Error: " + "\033[0m" + str(e))
 
-    return 1/(time.time() - start)
+    return

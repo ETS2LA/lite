@@ -1,4 +1,7 @@
 import src.variables as variables
+import src.settings as settings
+import math
+import time
 import cv2
 
 
@@ -71,41 +74,76 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
         return False, button_hovered
 
 
-def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_height=20, fontsize=variables.FONT_SIZE, state=True, text_color=variables.TEXT_COLOR, switch_color=variables.SWITCH_COLOR, switch_hover_color=variables.SWITCH_HOVER_COLOR):
+def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_height=20, state=False, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, switch_color=variables.SWITCH_COLOR, switch_knob_color=variables.SWITCH_KNOB_COLOR, switch_hover_color=variables.SWITCH_HOVER_COLOR, switch_enabled_color=variables.SWITCH_ENABLED_COLOR, switch_enabled_hover_color=variables.SWITCH_ENABLED_HOVER_COLOR):
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    current_time = time.time()
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
+    if text in variables.SWITCHES:
+        state = variables.SWITCHES[text][0]
+    else:
+        if setting is not None:
+            state = settings.Get(str(setting[0]), str(setting[1]), setting[2])
+        variables.SWITCHES[text] = state, 0
+
+    x = current_time - variables.SWITCHES[text][1]
+    if x < 0.3333:
+        x *= 3
+        animation_state = 1 - math.pow(2, -10 * x)
+        variables.RENDER_FRAME = True
+        if state == False:
+            switch_color = switch_color[0] * animation_state + switch_enabled_color[0] * (1 - animation_state), switch_color[1] * animation_state + switch_enabled_color[1] * (1 - animation_state), switch_color[2] * animation_state + switch_enabled_color[2] * (1 - animation_state)
+            switch_hover_color = switch_hover_color[0] * animation_state + switch_enabled_hover_color[0] * (1 - animation_state), switch_hover_color[1] * animation_state + switch_enabled_hover_color[1] * (1 - animation_state), switch_hover_color[2] * animation_state + switch_enabled_hover_color[2] * (1 - animation_state)
+        else:
+            switch_enabled_color = switch_color[0] * (1 - animation_state) + switch_enabled_color[0] * animation_state, switch_color[1] * (1 - animation_state) + switch_enabled_color[1] * animation_state, switch_color[2] * (1 - animation_state) + switch_enabled_color[2] * animation_state
+            switch_enabled_hover_color = switch_hover_color[0] * (1 - animation_state) + switch_enabled_hover_color[0] * animation_state, switch_hover_color[1] * (1 - animation_state) + switch_enabled_hover_color[1] * animation_state, switch_hover_color[2] * (1 - animation_state) + switch_enabled_hover_color[2] * animation_state
+    else:
+        animation_state = 1
+
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         switch_hovered = True
     else:
         switch_hovered = False
-    switch_color = (70, 70, 70)
-    switch_hover_color = (84, 84, 84)
     if switch_hovered == True:
         if state == True:
-            cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_hover_color, -1, cv2.LINE_AA)
-            cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_hover_color, -1, cv2.LINE_AA)
-            cv2.rectangle(variables.FRAME, (round(x1+switch_height/2+1), round((y1+y2)/2-switch_height/2)), (round(x1+switch_width-switch_height/2-1), round((y1+y2)/2+switch_height/2)), switch_hover_color, -1, cv2.LINE_AA)
-            cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), (28, 28, 28), -1, cv2.LINE_AA)
+            cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_enabled_hover_color, -1, cv2.LINE_AA)
+            cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_enabled_hover_color, -1, cv2.LINE_AA)
+            cv2.rectangle(variables.FRAME, (round(x1+switch_height/2+1), round((y1+y2)/2-switch_height/2)), (round(x1+switch_width-switch_height/2-1), round((y1+y2)/2+switch_height/2)), switch_enabled_hover_color, -1, cv2.LINE_AA)
+            if animation_state < 1:
+                cv2.circle(variables.FRAME, (round(x1+switch_height/2+(switch_width-switch_height)*animation_state), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
+            else:
+                cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
         else:
             cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_hover_color, -1, cv2.LINE_AA)
             cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_hover_color, -1, cv2.LINE_AA)
             cv2.rectangle(variables.FRAME, (round(x1+switch_height/2+1), round((y1+y2)/2-switch_height/2)), (round(x1+switch_width-switch_height/2-1), round((y1+y2)/2+switch_height/2)), switch_hover_color, -1, cv2.LINE_AA)
-            cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), (28, 28, 28), -1, cv2.LINE_AA)
+            if animation_state < 1:
+                cv2.circle(variables.FRAME, (round(x1+switch_height/2+(switch_width-switch_height)*(1-animation_state)), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
+            else:
+                cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
     else:
         if state == True:
-            cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_color, -1, cv2.LINE_AA)
-            cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_color, -1, cv2.LINE_AA)
-            cv2.rectangle(variables.FRAME, (round(x1+switch_height/2+1), round((y1+y2)/2-switch_height/2)), (round(x1+switch_width-switch_height/2-1), round((y1+y2)/2+switch_height/2)), switch_color, -1, cv2.LINE_AA)
-            cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), (28, 28, 28), -1, cv2.LINE_AA)
+            cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_enabled_color, -1, cv2.LINE_AA)
+            cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_enabled_color, -1, cv2.LINE_AA)
+            cv2.rectangle(variables.FRAME, (round(x1+switch_height/2+1), round((y1+y2)/2-switch_height/2)), (round(x1+switch_width-switch_height/2-1), round((y1+y2)/2+switch_height/2)), switch_enabled_color, -1, cv2.LINE_AA)
+            if animation_state < 1:
+                cv2.circle(variables.FRAME, (round(x1+switch_height/2+(switch_width-switch_height)*animation_state), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
+            else:
+                cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
         else:
             cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_color, -1, cv2.LINE_AA)
             cv2.circle(variables.FRAME, (round(x1+switch_width-switch_height/2), round((y1+y2)/2)), round(switch_height/2), switch_color, -1, cv2.LINE_AA)
             cv2.rectangle(variables.FRAME, (round(x1+switch_height/2+1), round((y1+y2)/2-switch_height/2)), (round(x1+switch_width-switch_height/2-1), round((y1+y2)/2+switch_height/2)), switch_color, -1, cv2.LINE_AA)
-            cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), (28, 28, 28), -1, cv2.LINE_AA)
+            if animation_state < 1:
+                cv2.circle(variables.FRAME, (round(x1+switch_height/2+(switch_width-switch_height)*(1-animation_state)), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
+            else:
+                cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True:
+        if setting is not None:
+            variables.SWITCHES[text] = not state, current_time
+            settings.Set(str(setting[0]), str(setting[1]), not state)
         return True, switch_hovered
     else:
         return False, switch_hovered

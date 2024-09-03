@@ -31,15 +31,18 @@ def Initialize():
 
     ScreenCapture.Initialize()
 
-    global model
-    global device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
-    for file in os.listdir(f"{variables.PATH}"):
-        if file.endswith(".pt"):
-            model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
-            model.eval()
-            break
+    global LastDataTime
+    LastDataTime = 0
+
+    #global model
+    #global device
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #print("Using device:", device)
+    #for file in os.listdir(f"{variables.PATH}"):
+    #    if file.endswith(".pt"):
+    #        model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
+    #        model.eval()
+    #        break
 
 
 def GetTextSize(text="NONE", text_width=100, max_text_height=100):
@@ -187,6 +190,8 @@ def plugin():
     global head_rotation_degrees_x
     global head_rotation_degrees_y
     global head_rotation_degrees_z
+
+    global LastDataTime
 
     data = {}
     data["api"] = TruckSimAPI.update()
@@ -356,56 +361,112 @@ def plugin():
 
 
     if all_valid:
+        cropped_width = round(max(top_right[0] - top_left[0], bottom_right[0] - bottom_left[0]))
+        cropped_height = round(max(bottom_left[1] - top_left[1], bottom_right[1] - top_right[1]))
         src_pts = np.float32([top_left, top_right, bottom_left, bottom_right])
-        dst_pts = np.float32([[0, 0], [width, 0], [0, height], [width, height]])
+        dst_pts = np.float32([[0, 0], [cropped_width, 0], [0, cropped_height], [cropped_width, cropped_height]])
         matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-        frame = cv2.warpPerspective(frame, matrix, (width, height))
+        frame = cv2.warpPerspective(frame, matrix, (cropped_width, cropped_height))
 
-    frame = cv2.resize(frame, (100, 100))
-    image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    image = np.array(image, dtype=np.float32) / 255.0
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-    ])
-    image = transform(image).unsqueeze(0)
-    with torch.no_grad():
-        prediction = model(image.to(device))
+    steering = data["api"]["truckFloat"]["gameSteer"]
+    throttle = data["api"]["truckFloat"]["gameThrottle"]
+    brake = data["api"]["truckFloat"]["gameBrake"]
+    speed = data["api"]["truckFloat"]["speed"]
+    speed_limit = data["api"]["truckFloat"]["speedLimit"]
+    truck_pitch = data["api"]["truckPlacement"]["rotationY"]
 
-    prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
-    prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
+    if LastDataTime + 0.5 < CurrentTime and data["api"]["pause"] == False:
+        if os.path.exists(f"{variables.PATH}DataCaptures") == False:
+            os.mkdir(f"{variables.PATH}DataCaptures")
+        LastDataTime = CurrentTime
+        name = str(len([name for name in os.listdir(f"{variables.PATH}DataCaptures") if name.endswith(".png")]))
+        cv2.imwrite(f"{variables.PATH}DataCaptures/{name}.png", frame)
+        data = {"Steering": steering, "Speed": speed, "SpeedLimit": speed_limit, "TruckPitch": truck_pitch, "Throttle": throttle, "Brake": brake}
+        with open(f"{variables.PATH}DataCaptures/{name}.txt", "w") as f:
+            f.write(str(data))
 
-    prediction_overlay[:, :, 2] = 0
-    prediction_overlay = prediction_overlay.astype(np.uint8) * 255
 
-    frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
+    #frame = cv2.resize(frame, (200, 200))
+    #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #image = np.array(image, dtype=np.float32) / 255.0
+    #transform = transforms.Compose([
+    #    transforms.ToTensor(),
+    #])
+    #image = transform(image).unsqueeze(0)
+    #with torch.no_grad():
+    #    prediction = model(image.to(device))
 
-    non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
-    if len(non_black_pixels[0]) > 0:
-        x_center = int(np.mean(non_black_pixels[1]))
-    else:
-        x_center = width // 2
-    cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
+    #prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
 
-    Steering = (x_center/frame.shape[1] - 0.5) * 0.5
-    SDKController.steering = float(Steering)
+    #frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+    #prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
+
+    #prediction_overlay[:, :, 2] = 0
+    #prediction_overlay = prediction_overlay.astype(np.uint8) * 255
+
+    #frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
+
+    #non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
+    #if len(non_black_pixels[0]) > 0:
+    #    x_center = int(np.mean(non_black_pixels[1]))
+    #else:
+    #    x_center = frame.shape[1] / 2
+    #cv2.line(frame, (round(x_center), 0), (round(x_center), height), (0, 255, 0), 1)
+
+
+
+    #image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+    #avg_color = 70
+    #mean_color = np.mean(image)
+    #if mean_color != avg_color:
+    #    scaling_factor = avg_color / mean_color
+    #    image = cv2.multiply(image, scaling_factor)
+    #    image = np.clip(image, 0, 255).astype(np.uint8)
+    #image = cv2.addWeighted(image, 4, cv2.GaussianBlur(image, (0, 0), 20), -4, 0)
+
+    ## only keep the 30 larges blobs
+    #image = cv2.medianBlur(image, 5)
+
+    #image = cv2.Canny(image, 50, 200)
+
+    #lines = cv2.HoughLines(image, 1, np.pi/180, 200)
+    #if lines is None:
+    #    return
+    #for r_theta in lines:
+    #    arr = np.array(r_theta[0], dtype=np.float64)
+    #    r, theta = arr
+    #    a = np.cos(theta)
+    #    b = np.sin(theta)
+    #    x0 = a*r
+    #    y0 = b*r
+    #    x1 = int(x0 + 1000*(-b))
+    #    y1 = int(y0 + 1000*(a))
+    #    x2 = int(x0 - 1000*(-b))
+    #    y2 = int(y0 - 1000*(a))
+    #    cv2.line(frame, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
+
+
+    #Steering = 0
+    #SDKController.steering = float(Steering)
 
     try:
-        _, _, _, _ = cv2.getWindowImageRect("CustomACC")
+        _, _, _, _ = cv2.getWindowImageRect("LaneDetection")
     except:
-        cv2.namedWindow("CustomACC", cv2.WINDOW_NORMAL)
-        cv2.setWindowProperty("CustomACC", cv2.WND_PROP_TOPMOST, 1)
+        cv2.namedWindow("LaneDetection", cv2.WINDOW_NORMAL)
+        cv2.setWindowProperty("LaneDetection", cv2.WND_PROP_TOPMOST, 1)
 
         if variables.OS == "nt":
-            hwnd = win32gui.FindWindow(None, "CustomACC")
+            hwnd = win32gui.FindWindow(None, "LaneDetection")
             windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x000000)), sizeof(c_int))
             icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
             hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
             win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
             win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
 
-    cv2.imshow("CustomACC", frame)
+    cv2.imshow("LaneDetection", frame)
     cv2.waitKey(1)
 
     return

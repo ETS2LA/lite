@@ -1,4 +1,5 @@
 @echo off
+title ETS2LA-Lite Updater
 
 echo.
 echo ETS2LA-Lite

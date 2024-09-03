@@ -1,5 +1,6 @@
 deep-translator
 opencv-python
+pyinstaller
 torchvision==0.18.1
 setuptools
 torchaudio==2.3.1

@@ -46,7 +46,7 @@ def TranslateThread(text):
 
 
 def TranslationRequest(text):
-    threading.Thread(target=TranslateThread, args=(text,)).start()
+    threading.Thread(target=TranslateThread, args=(text,), daemon=True).start()
 
 
 def Translate(text):

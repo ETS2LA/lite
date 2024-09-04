@@ -10,6 +10,7 @@ import src.setup as setup
 import numpy as np
 import subprocess
 import webbrowser
+import threading
 import ctypes
 import mouse
 import json
@@ -195,6 +196,41 @@ def Update():
             "x2": variables.CANVAS_RIGHT / 2 - 10,
             "y2": variables.CANVAS_BOTTOM - 20})
 
+    if variables.PAGE == "CrashReport":
+        variables.ITEMS.append({
+            "type": "label",
+            "text": "CrashReporter",
+            "x1": 0,
+            "y1": 10,
+            "x2": variables.CANVAS_RIGHT,
+            "y2": 50})
+
+        variables.ITEMS.append({
+            "type": "label",
+            "text": "Do you want the app to send anonymous crash reports to the developers?\nNo personal information is sent and all paths have the username censored.\nWe take all crash reports seriously and will try to fix the issue as soon as possible.\nDo you want to enable the crash reporting?",
+            "x1": 0,
+            "y1": 60,
+            "x2": variables.CANVAS_RIGHT,
+            "y2": variables.CANVAS_BOTTOM - 90})
+
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "Yes",
+            "function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), setattr(server, "ALLOW_CRASH_REPORTS", True), settings.Get("CrashReports", "AllowCrashReports", True)},
+            "x1": variables.CANVAS_RIGHT / 2 + 10,
+            "y1": variables.CANVAS_BOTTOM - 70,
+            "x2": variables.CANVAS_RIGHT - 20,
+            "y2": variables.CANVAS_BOTTOM - 20})
+
+        variables.ITEMS.append({
+            "type": "button",
+            "text": "No",
+            "function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), setattr(server, "ALLOW_CRASH_REPORTS", False), settings.Get("CrashReports", "AllowCrashReports", False)},
+            "x1": 20,
+            "y1": variables.CANVAS_BOTTOM - 70,
+            "x2": variables.CANVAS_RIGHT / 2 - 10,
+            "y2": variables.CANVAS_BOTTOM - 20})
+
     if variables.PAGE == "Menu":
         variables.ITEMS.append({
             "type": "label",
@@ -255,7 +291,8 @@ def Update():
         variables.ITEMS.append({
             "type": "switch",
             "text": "Send Anonymous Crash Reports",
-            "setting": ("CrashReports", "AllowCrashReports", False),
+            "setting": ("CrashReports", "AllowCrashReports", None),
+            "function": lambda: {setattr(server, "ALLOW_CRASH_REPORTS", settings.Get("CrashReports", "AllowCrashReports")), threading.Thread(target=server.GetUserCount, daemon=True).start()},
             "x1": 10,
             "y1": 41,
             "x2": variables.CANVAS_RIGHT - 10,

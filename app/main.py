@@ -8,6 +8,7 @@ import src.server as server
 import src.ui as ui
 
 import multiprocessing
+import threading
 import time
 import os
 
@@ -38,7 +39,7 @@ if __name__ == '__main__':
     ui.Initialize()
     updater.CheckForUpdates()
     helpers.RunEvery(60, lambda: server.Ping())
-    server.variables.USERCOUNT = server.GetUserCount()
+    helpers.RunEvery(60, lambda: server.GetUserCount())
 
     PluginProcesses = []
     #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))

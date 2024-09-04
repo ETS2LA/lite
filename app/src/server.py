@@ -4,25 +4,18 @@ import requests
 import json
 import time
 
-ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports", False)
+
+ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
+if ALLOW_CRASH_REPORTS == None:
+    variables.PAGE = "CrashReport"
+
 
 def SendCrashReport(type:str, message:str, additional=None):
-    """Will send a crash report to the main application server. This will then be forwarded to the developers on discord.
-
-    Args:
-        type (str): Crash type
-        message (str): Crash message
-        additional (_type_, optional): Additional text / information. Defaults to None.
-
-    Returns:
-        success (bool): False if not successful, True if successful
-    """
-
     if message.strip() == "":
         return False
 
     try:
-        if ALLOW_CRASH_REPORTS:
+        if ALLOW_CRASH_REPORTS == True:
             additional = {
                 "version": variables.VERSION + " (ETS2LA-Lite)",
                 "os": variables.OS,
@@ -51,31 +44,28 @@ def SendCrashReport(type:str, message:str, additional=None):
         traceback.print_exc()
         print("Crash report sending failed.")
 
+
 def GetUserCount():
-    """Get the amount of users using the app. This will be shown to the user when the app is opened.
-
-    Returns:
-        str: User count
-    """
-
-    if not ALLOW_CRASH_REPORTS:
+    if ALLOW_CRASH_REPORTS == False:
+        variables.USERCOUNT = "Please enable crash reporting to fetch user count."
         return "Please enable crash reporting to fetch user count."
 
     try:
         url = 'https://crash.tumppi066.fi/usercount'
         response = json.loads(requests.get(url, timeout=1).text)
+        variables.USERCOUNT = response["usercount"]
         return response["usercount"]
     except:
+        variables.USERCOUNT = "Could not get user count."
         return "Could not get user count."
 
+
 def Ping():
-    """Will send a ping to the server, doesn't send any data."""
     try:
         last_ping = float(settings.Get("CrashReports", "last_ping", 0))
         current_time = time.time()
         if last_ping + 59 < current_time:
             settings.Set("CrashReports", "last_ping", str(current_time))
             requests.get("https://crash.tumppi066.fi/ping", timeout=1)
-            variables.USERCOUNT = GetUserCount()
     except:
         pass

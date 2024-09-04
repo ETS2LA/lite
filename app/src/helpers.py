@@ -9,10 +9,11 @@ def RunEvery(duration, function, *args, **kwargs):
     """
     def wrapper():
         while True:
+            start = time.time()
             function(*args, **kwargs)
-            time.sleep(duration)
+            time.sleep(duration - (time.time() - start))
 
-    thread = threading.Thread(target=wrapper)
+    thread = threading.Thread(target=wrapper, daemon=True)
     thread.daemon = True
     thread.start()
 
@@ -28,7 +29,7 @@ def RunIn(duration, function, mainThread=False, *args, **kwargs):
             time.sleep(duration)
             function(*args, **kwargs)
 
-        thread = threading.Thread(target=wrapper)
+        thread = threading.Thread(target=wrapper, daemon=True)
         thread.daemon = True
         thread.start()
     else:

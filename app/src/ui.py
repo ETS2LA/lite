@@ -12,9 +12,11 @@ import subprocess
 import webbrowser
 import ctypes
 import mouse
+import json
 import math
 import time
 import cv2
+import os
 
 def Initialize():
     width = settings.Get("UI", "Width", 700)
@@ -74,6 +76,11 @@ def Restart():
     Close()
 
 def Close():
+    if variables.LANGUAGE != "en":
+        if os.path.exists(f"{variables.PATH}cache/Translations") == False:
+            os.makedirs(f"{variables.PATH}cache/Translations")
+        with open(f"{variables.PATH}cache/Translations/{variables.LANGUAGE}.json", "w") as f:
+            json.dump(variables.TRANSLATION_CACHE, f, indent=4)
     settings.Set("UI", "X", variables.X)
     settings.Set("UI", "Y", variables.Y)
     settings.Set("UI", "Width", variables.WIDTH)
@@ -241,9 +248,18 @@ def Update():
             "setting": ("Console", "HideConsole", False),
             "function": lambda: {console.HideConsole() if settings.Get("Console", "HideConsole", False) else console.RestoreConsole()},
             "x1": 10,
-            "y1": 10,
+            "y1": 11,
             "x2": variables.CANVAS_RIGHT - 10,
-            "y2": 50})
+            "y2": 31})
+
+        variables.ITEMS.append({
+            "type": "switch",
+            "text": "Send Anonymous Crash Reports",
+            "setting": ("CrashReports", "AllowCrashReports", False),
+            "x1": 10,
+            "y1": 41,
+            "x2": variables.CANVAS_RIGHT - 10,
+            "y2": 61})
 
     if variables.CONTEXT_MENU[0]:
         offset = 0

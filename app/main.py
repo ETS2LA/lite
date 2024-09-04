@@ -1,4 +1,4 @@
-import multiprocessing.process
+import src.translate as translate
 import src.variables as variables
 import src.settings as settings
 import src.console as console
@@ -34,6 +34,7 @@ if __name__ == '__main__':
     if settings.Get("Console", "HideConsole", False):
         console.HideConsole()
 
+    translate.Initialize()
     ui.Initialize()
     updater.CheckForUpdates()
     helpers.RunEvery(60, lambda: server.Ping())

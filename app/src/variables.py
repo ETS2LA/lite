@@ -8,6 +8,7 @@ REMOTE_VERSION = None
 CHANGELOG = None
 USERCOUNT = "Loading"
 
+LANGUAGE = settings.Get("UI", "Language")
 THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None
 
@@ -34,6 +35,7 @@ SWITCH_ENABLED_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 
 
+TRANSLATION_CACHE = {}
 TABS = ["Menu", "NavigationDetectionAI", "Settings"]
 CANVAS_BOTTOM = settings.Get("UI", "Height", 400) - TITLE_BAR_HEIGHT - 1
 CANVAS_RIGHT = settings.Get("UI", "Width", 700) - 1

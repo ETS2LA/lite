@@ -4,6 +4,7 @@ torchvision==0.18.1
 setuptools
 torchaudio==2.3.1
 bettercam
+unidecode
 keyboard
 requests
 pywin32

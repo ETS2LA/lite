@@ -1,3 +1,4 @@
+import src.translate as translate
 import src.variables as variables
 import src.settings as settings
 import math
@@ -41,6 +42,7 @@ def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE,
     texts = text.split("\n")
     line_height = ((y2-y1) / len(texts))
     for i, t in enumerate(texts):
+        t = translate.Translate(t)
         text, fontscale, thickness, width, height = GetTextSize(t, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
         cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
@@ -49,6 +51,7 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
+    text = translate.Translate(text)
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         button_hovered = True
     else:
@@ -74,11 +77,12 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
         return False, button_hovered
 
 
-def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_height=20, state=False, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, switch_color=variables.SWITCH_COLOR, switch_knob_color=variables.SWITCH_KNOB_COLOR, switch_hover_color=variables.SWITCH_HOVER_COLOR, switch_enabled_color=variables.SWITCH_ENABLED_COLOR, switch_enabled_hover_color=variables.SWITCH_ENABLED_HOVER_COLOR):
+def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_height=20, text_padding=10, state=False, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, switch_color=variables.SWITCH_COLOR, switch_knob_color=variables.SWITCH_KNOB_COLOR, switch_hover_color=variables.SWITCH_HOVER_COLOR, switch_enabled_color=variables.SWITCH_ENABLED_COLOR, switch_enabled_hover_color=variables.SWITCH_ENABLED_HOVER_COLOR):
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
     current_time = time.time()
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
+    text = translate.Translate(text)
     if text in variables.SWITCHES:
         state = variables.SWITCHES[text][0]
     else:
@@ -139,7 +143,7 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
             else:
                 cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
-    cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+    cv2.putText(variables.FRAME, text, (round(x1 + switch_width + text_padding), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True:
         if setting is not None:
             variables.SWITCHES[text] = not state, current_time

@@ -13,6 +13,7 @@ THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None
 
 FONT_SIZE = 11
+POPUP_HEIGHT = 50
 TITLE_BAR_HEIGHT = 50
 TEXT_COLOR = (255, 255, 255) if THEME == "dark" else (0, 0, 0)
 BACKGROUND_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)

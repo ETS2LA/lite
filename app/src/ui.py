@@ -353,9 +353,9 @@ def Update():
             elif variables.POPUP_SHOW_VALUE > 0.99:
                 variables.POPUP_SHOW_VALUE = 1
             x1 = variables.CANVAS_RIGHT * (0.5 - variables.POPUP[2] / 2)
-            y1 = variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT + variables.TITLE_BAR_HEIGHT * variables.POPUP_SHOW_VALUE
+            y1 = variables.CANVAS_BOTTOM - variables.POPUP_HEIGHT + variables.POPUP_HEIGHT * variables.POPUP_SHOW_VALUE
             x2 = variables.CANVAS_RIGHT * (0.5 + variables.POPUP[2] / 2)
-            y2 = variables.CANVAS_BOTTOM - variables.TITLE_BAR_HEIGHT * 0.25 + variables.TITLE_BAR_HEIGHT * variables.POPUP_SHOW_VALUE
+            y2 = variables.CANVAS_BOTTOM - variables.POPUP_HEIGHT * 0.25 + variables.POPUP_HEIGHT * variables.POPUP_SHOW_VALUE
             uicomponents.Button(
                 text=str(variables.POPUP[0]),
                 x1=x1,
@@ -366,9 +366,9 @@ def Update():
                 button_hover_color=variables.POPUP_HOVER_COLOR)
             if variables.POPUP[1] > 0:
                 cv2.line(variables.FRAME,
-                        (round(x1 + round(variables.TITLE_BAR_HEIGHT / 20) / 2), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),
-                        (round(x1 - round(variables.TITLE_BAR_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.TITLE_BAR_HEIGHT + y2 + variables.TITLE_BAR_HEIGHT / 40)),
-                        variables.POPUP_PROGRESS_COLOR, round(variables.TITLE_BAR_HEIGHT / 20))
+                        (round(x1 + round(variables.POPUP_HEIGHT / 20) / 2), round(variables.POPUP_HEIGHT + y2 + variables.POPUP_HEIGHT / 40)),
+                        (round(x1 - round(variables.POPUP_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.POPUP_HEIGHT + y2 + variables.POPUP_HEIGHT / 40)),
+                        variables.POPUP_PROGRESS_COLOR, round(variables.POPUP_HEIGHT / 20))
 
         variables.CACHED_FRAME = variables.FRAME.copy()
 

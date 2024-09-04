@@ -8,6 +8,7 @@ unidecode
 keyboard
 requests
 pywin32
+pynput
 mouse
 numpy==1.26.4
 torch==2.3.1

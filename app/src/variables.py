@@ -47,6 +47,7 @@ CACHED_FRAME = None
 POPUP_SHOW_VALUE = 1
 LAST_POPUP = [None, 0, 0.5], 0
 POPUP = [None, 0, 0.5]
+DROPDOWNS = {}
 SWITCHES = {}
 FRAME = None
 ITEMS = []

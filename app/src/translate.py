@@ -72,3 +72,11 @@ def GetAvailableLanguages():
             formatted_language += ("(" if i > 0 else "") + part.capitalize()
         formatted_languages[formatted_language] = languages[language]
     return formatted_languages
+
+
+def SaveCache():
+    if variables.LANGUAGE != "en":
+        if os.path.exists(f"{variables.PATH}cache/Translations") == False:
+            os.makedirs(f"{variables.PATH}cache/Translations")
+        with open(f"{variables.PATH}cache/Translations/{variables.LANGUAGE}.json", "w") as f:
+            json.dump(variables.TRANSLATION_CACHE, f, indent=4)

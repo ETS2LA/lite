@@ -1,5 +1,6 @@
 import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 import src.uicomponents as uicomponents
+import src.translate as translate
 import src.variables as variables
 import src.settings as settings
 import src.console as console
@@ -77,11 +78,7 @@ def Restart():
     Close()
 
 def Close():
-    if variables.LANGUAGE != "en":
-        if os.path.exists(f"{variables.PATH}cache/Translations") == False:
-            os.makedirs(f"{variables.PATH}cache/Translations")
-        with open(f"{variables.PATH}cache/Translations/{variables.LANGUAGE}.json", "w") as f:
-            json.dump(variables.TRANSLATION_CACHE, f, indent=4)
+    translate.SaveCache()
     settings.Set("UI", "X", variables.X)
     settings.Set("UI", "Y", variables.Y)
     settings.Set("UI", "Width", variables.WIDTH)
@@ -298,6 +295,17 @@ def Update():
             "x2": variables.CANVAS_RIGHT - 10,
             "y2": 61})
 
+        variables.ITEMS.append({
+            "type": "dropdown",
+            "text": "Language",
+            "items": [name for name, _ in translate.GetAvailableLanguages().items()],
+            "setting": ("UI", "Language", None),
+            "function": lambda: {translate.SaveCache(), settings.Set("UI", "Language", str(translate.GetAvailableLanguages()[[name for name, _ in translate.GetAvailableLanguages().items()][variables.DROPDOWNS["Language"][2]]])), setattr(variables, "TRANSLATION_CACHE", {}), setattr(variables, "DROPDOWNS", {}), setattr(variables, "LANGUAGE", settings.Get("UI", "Language")), translate.Initialize()},
+            "x1": 10,
+            "y1": 71,
+            "x2": 210,
+            "y2": 106})
+
     if variables.CONTEXT_MENU[0]:
         offset = 0
         for item in variables.CONTEXT_MENU_ITEMS:
@@ -373,6 +381,14 @@ def Update():
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
                 if pressed:
+                    if item_function is not None:
+                        item_function()
+
+            elif item_type == "dropdown":
+                pressed, hovered, unhovered = uicomponents.Dropdown(**item)
+                variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
+
+                if unhovered:
                     if item_function is not None:
                         item_function()
 

@@ -35,7 +35,7 @@ SWITCH_HOVER_COLOR = (70, 70, 70) if THEME == "dark" else (208, 208, 208)
 SWITCH_ENABLED_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 
-
+AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}
 TABS = ["Menu", "NavigationDetectionAI", "Settings"]
 CANVAS_BOTTOM = settings.Get("UI", "Height", 400) - TITLE_BAR_HEIGHT - 1

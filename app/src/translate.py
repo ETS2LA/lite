@@ -63,7 +63,9 @@ def Translate(text):
         return text
 
 
-def GetAvailableLanguages():
+def GetAvailableLanguages(ForceNewSearch=False):
+    if ForceNewSearch == False and variables.AVAILABLE_LANGUAGES != {}:
+        return variables.AVAILABLE_LANGUAGES
     languages = GoogleTranslator().get_supported_languages(as_dict=True)
     formatted_languages = {}
     for language in languages:
@@ -71,6 +73,7 @@ def GetAvailableLanguages():
         for i, part in enumerate(str(language).split("(")):
             formatted_language += ("(" if i > 0 else "") + part.capitalize()
         formatted_languages[formatted_language] = languages[language]
+    variables.AVAILABLE_LANGUAGES = formatted_languages
     return formatted_languages
 
 

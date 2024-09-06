@@ -166,10 +166,12 @@ def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_h
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 + ((dropdown_height + dropdown_padding) if dropdown_selected else 0) and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         dropdown_hovered = True
         dropdown_pressed = left_clicked
+        dropdown_changed = True if last_left_clicked == True and left_clicked == False and dropdown_selected == True else False
         dropdown_selected = not dropdown_selected if last_left_clicked == True and left_clicked == False else dropdown_selected
     else:
         dropdown_hovered = False
         dropdown_pressed = False
+        dropdown_changed =  dropdown_selected
         dropdown_selected = False
 
     if dropdown_hovered == True:
@@ -208,11 +210,11 @@ def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_h
             else:
                 item = translate.Translate(items[index])
             if i == 1:
-                text1 = "> " + item + " <"
+                item_text = "> " + item + " <"
             else:
-                text1 = item
-            text1, fontscale, thickness, width, height = GetTextSize(text1, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
-            cv2.putText(variables.FRAME, text1, (round(x1 + (x2-x1) / 2 - width / 2), round(y2 + dropdown_padding + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+                item_text = item
+            item_text, fontscale, thickness, width, height = GetTextSize(item_text, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
+            cv2.putText(variables.FRAME, item_text, (round(x1 + (x2-x1) / 2 - width / 2), round(y2 + dropdown_padding + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
     else:
 
@@ -222,11 +224,11 @@ def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_h
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding  - height * 2), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
 
-    text = translate.Translate(text)
-    text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
-    cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+    text_translated = translate.Translate(text)
+    text_translated, fontscale, thickness, width, height = GetTextSize(text_translated, round((x2-x1)), fontsize)
+    cv2.putText(variables.FRAME, text_translated, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
     variables.DROPDOWNS[text] = dropdown_selected, selected_item
 
     #print(variables.DROPDOWNS)
-    return False, False, dropdown_hovered
+    return dropdown_changed, dropdown_pressed, dropdown_hovered

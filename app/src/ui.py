@@ -300,7 +300,13 @@ def Update():
             "text": "Language",
             "items": [name for name, _ in translate.GetAvailableLanguages().items()],
             "setting": ("UI", "Language", None),
-            "function": lambda: {print("dropdown function executed")},
+            "function": lambda: {
+                translate.SaveCache(),
+                settings.Set("UI", "Language", translate.GetAvailableLanguages()[[name for name, _ in translate.GetAvailableLanguages().items()][variables.DROPDOWNS["Language"][1]]]),
+                setattr(variables, "LANGUAGE", settings.Get("UI", "Language")),
+                setattr(variables, "TRANSLATION_CACHE", {}),
+                translate.Initialize()
+                },
             "x1": 10,
             "y1": 71,
             "x2": 210,

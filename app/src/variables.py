@@ -8,7 +8,7 @@ REMOTE_VERSION = None
 CHANGELOG = None
 USERCOUNT = "Loading"
 
-LANGUAGE = settings.Get("UI", "Language")
+LANGUAGE = settings.Get("UI", "Language", "en")
 THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None
 

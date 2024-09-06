@@ -48,7 +48,7 @@ def GetTextSize(text="NONE", text_width=100, fontsize=variables.FONT_SIZE):
 
 
 def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR):
-    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked, scroll_event_queue
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
     texts = text.split("\n")
@@ -60,7 +60,7 @@ def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE,
 
 
 def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE, round_corners=5, button_selected=False, text_color=variables.TEXT_COLOR, button_color=variables.BUTTON_COLOR, button_hover_color=variables.BUTTON_HOVER_COLOR, button_selected_color=variables.BUTTON_SELECTED_COLOR, button_selected_hover_color=variables.BUTTON_SELECTED_HOVER_COLOR):
-    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked, scroll_event_queue
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
     text = translate.Translate(text)
@@ -90,7 +90,7 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
 
 
 def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_height=20, text_padding=10, state=False, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, switch_color=variables.SWITCH_COLOR, switch_knob_color=variables.SWITCH_KNOB_COLOR, switch_hover_color=variables.SWITCH_HOVER_COLOR, switch_enabled_color=variables.SWITCH_ENABLED_COLOR, switch_enabled_hover_color=variables.SWITCH_ENABLED_HOVER_COLOR):
-    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked, scroll_event_queue
     current_time = time.time()
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
@@ -165,12 +165,13 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
         return True, left_clicked and switch_hovered, switch_hovered
 
 
-def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_height=100, dropdown_padding=5, round_corners=5, selected_item=None, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, dropdown_color=variables.BUTTON_COLOR, dropdown_hover_color=variables.BUTTON_HOVER_COLOR):
-    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
+def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2=100, dropdown_height=100, dropdown_padding=5, round_corners=5, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, dropdown_color=variables.BUTTON_COLOR, dropdown_hover_color=variables.BUTTON_HOVER_COLOR):
+    global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked, scroll_event_queue
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
     if text not in variables.DROPDOWNS:
-        variables.DROPDOWNS[text] = False, selected_item if selected_item != None else 0
+        default_item = int(max(min(default_item, len(items) - 1), 0))
+        variables.DROPDOWNS[text] = False, settings.Get("DropdownSelections", str(text), default_item)
 
     dropdown_selected, selected_item = variables.DROPDOWNS[text]
 
@@ -234,11 +235,14 @@ def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_h
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding  - height * 2), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
 
+        scroll_event_queue = []
+
     text_translated = translate.Translate(text)
     text_translated, fontscale, thickness, width, height = GetTextSize(text_translated, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text_translated, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
     variables.DROPDOWNS[text] = dropdown_selected, selected_item
+    if dropdown_changed:
+        settings.Set("DropdownSelections", str(text), int(selected_item))
 
-    #print(variables.DROPDOWNS)
     return dropdown_changed, dropdown_pressed, dropdown_hovered

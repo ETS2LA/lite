@@ -307,11 +307,11 @@ def Update():
             "type": "dropdown",
             "text": "Language",
             "items": [name for name, _ in translate.GetAvailableLanguages().items()],
-            "setting": ("UI", "Language", None),
+            "default_item": 27,
             "function": lambda: {
                 translate.SaveCache(),
                 settings.Set("UI", "Language", translate.GetAvailableLanguages()[[name for name, _ in translate.GetAvailableLanguages().items()][variables.DROPDOWNS["Language"][1]]]),
-                setattr(variables, "LANGUAGE", settings.Get("UI", "Language")),
+                setattr(variables, "LANGUAGE", settings.Get("UI", "Language", "en")),
                 setattr(variables, "TRANSLATION_CACHE", {}),
                 translate.Initialize()
                 },

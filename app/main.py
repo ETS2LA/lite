@@ -77,13 +77,16 @@ if __name__ == '__main__':
                     hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
                     if hash != LastScripts[i]:
                         variables.POPUP = [f"Reloading {Script}...", 0, 0.5]
-                        for PluginProcess in PluginProcesses:
-                            PluginProcess.terminate()
-                        PluginProcesses = []
-                        #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
-                        #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
-                        for PluginProcess in PluginProcesses:
-                            PluginProcess.start()
+                        if "plugins" in Path:
+                            for PluginProcess in PluginProcesses:
+                                PluginProcess.terminate()
+                            PluginProcesses = []
+                            #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
+                            #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
+                            for PluginProcess in PluginProcesses:
+                                PluginProcess.start()
+                        else:
+                            ui.Restart()
                         LastScripts[i] = hash
                         break
                 except:

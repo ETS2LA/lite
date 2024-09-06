@@ -73,9 +73,9 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True:
-        return True, button_hovered
+        return True, left_clicked and button_hovered, button_hovered
     else:
-        return False, button_hovered
+        return False, left_clicked and button_hovered, button_hovered
 
 
 def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_height=20, text_padding=10, state=False, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, switch_color=variables.SWITCH_COLOR, switch_knob_color=variables.SWITCH_KNOB_COLOR, switch_hover_color=variables.SWITCH_HOVER_COLOR, switch_enabled_color=variables.SWITCH_ENABLED_COLOR, switch_enabled_hover_color=variables.SWITCH_ENABLED_HOVER_COLOR):
@@ -149,77 +149,84 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
         if setting is not None:
             variables.SWITCHES[text] = not state, current_time
             settings.Set(str(setting[0]), str(setting[1]), not state)
-        return True, switch_hovered
+        return True, left_clicked and switch_hovered, switch_hovered
     else:
-        return False, switch_hovered
+        return True, left_clicked and switch_hovered, switch_hovered
 
 
 def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_height=100, dropdown_padding=5, round_corners=5, selected_item=None, setting=None, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, dropdown_color=variables.BUTTON_COLOR, dropdown_hover_color=variables.BUTTON_HOVER_COLOR):
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
-    if text in variables.DROPDOWNS:
-        selected_item, _, _ = variables.DROPDOWNS[text]
-    else:
-        if setting is not None:
-            selected_item = settings.Get(str(setting[0]), str(setting[1]), setting[2])
-        if selected_item is None:
-            selected_item = text
-        variables.DROPDOWNS[text] = selected_item, False, 0
-    dropdown_unhovered = False
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 + ((dropdown_height + dropdown_padding) if variables.DROPDOWNS[text][1] else 0) and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
+    if text not in variables.DROPDOWNS:
+        variables.DROPDOWNS[text] = False, selected_item if selected_item != None else 0
+
+    dropdown_selected, selected_item = variables.DROPDOWNS[text]
+
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 + ((dropdown_height + dropdown_padding) if dropdown_selected else 0) and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         dropdown_hovered = True
+        dropdown_pressed = left_clicked
+        dropdown_selected = not dropdown_selected if last_left_clicked == True and left_clicked == False else dropdown_selected
     else:
         dropdown_hovered = False
-        if variables.DROPDOWNS[text][1]:
-            dropdown_unhovered = True
-        variables.DROPDOWNS[text] = variables.DROPDOWNS[text][0], False, variables.DROPDOWNS[text][2]
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True:
-        dropdown_pressed = True
-        variables.DROPDOWNS[text] = variables.DROPDOWNS[text][0], not variables.DROPDOWNS[text][1], variables.DROPDOWNS[text][2]
-    else:
         dropdown_pressed = False
+        dropdown_selected = False
+
     if dropdown_hovered == True:
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), dropdown_hover_color, round_corners, cv2.LINE_AA)
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), dropdown_hover_color, -1, cv2.LINE_AA)
     else:
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), dropdown_color, round_corners, cv2.LINE_AA)
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), dropdown_color, -1, cv2.LINE_AA)
-    if variables.DROPDOWNS[text][1] == True:
+    if dropdown_selected == True:
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y2+dropdown_padding+round_corners/2)), (round(x2-round_corners/2), round(y2+dropdown_height+dropdown_padding-round_corners/2)), dropdown_hover_color, round_corners, cv2.LINE_AA)
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y2+dropdown_padding+round_corners/2)), (round(x2-round_corners/2), round(y2+dropdown_height+dropdown_padding-round_corners/2)), dropdown_hover_color, -1, cv2.LINE_AA)
+
+        _, _, thickness, _, _ = GetTextSize()
+        padding = (y2 + y1) / 2 - variables.FONT_SIZE / 4 - y1
+        height = round(y2 - padding) - round(y1 + padding)
+        cv2.line(variables.FRAME, (round(x2 - padding - height), round(y1 + padding)), (round(x2 - padding), round(y2 - padding)), text_color, thickness, cv2.LINE_AA)
+        cv2.line(variables.FRAME, (round(x2 - padding - height), round(y1 + padding)), (round(x2 - padding  - height * 2), round(y2 - padding)), text_color, thickness, cv2.LINE_AA)
+
         with pynput.mouse.Events() as events:
             event = events.get()
             if isinstance(event, pynput.mouse.Events.Scroll):
                 if event.dy > 0:
-                    new_scroll = variables.DROPDOWNS[text][2] - 1
-                    if new_scroll >= 0:
-                        variables.DROPDOWNS[text] = variables.DROPDOWNS[text][0], variables.DROPDOWNS[text][1], new_scroll
+                    selected_item = (selected_item - 1) if selected_item > 0 else 0
                 elif event.dy < 0:
-                    new_scroll = variables.DROPDOWNS[text][2] + 1
-                    if new_scroll <= len(items) - 1:
-                        variables.DROPDOWNS[text] = variables.DROPDOWNS[text][0], variables.DROPDOWNS[text][1], new_scroll
+                    selected_item = (selected_item + 1) if selected_item < len(items) - 1 else len(items) - 1
+
         for i in range(3):
             line_height = (dropdown_height / 3)
-            index = variables.DROPDOWNS[text][2] - 1 + i
+            index = selected_item - 1 + i
             if index >= len(items):
                 index = -1
             if index < 0:
                 index = -1
             if index == -1:
-                language = ""
+                item = ""
             else:
-                language = translate.Translate(items[index]).capitalize()
+                item = translate.Translate(items[index])
             if i == 1:
-                text1 = "> " + language + " <"
+                text1 = "> " + item + " <"
             else:
-                text1 = language
+                text1 = item
             text1, fontscale, thickness, width, height = GetTextSize(text1, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
             cv2.putText(variables.FRAME, text1, (round(x1 + (x2-x1) / 2 - width / 2), round(y2 + dropdown_padding + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+
+    else:
+
+        _, _, thickness, _, _ = GetTextSize()
+        padding = (y2 + y1) / 2 - variables.FONT_SIZE / 4 - y1
+        height = round(y2 - padding) - round(y1 + padding)
+        cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
+        cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding  - height * 2), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
 
     text = translate.Translate(text)
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
+    variables.DROPDOWNS[text] = dropdown_selected, selected_item
+
     #print(variables.DROPDOWNS)
-    return dropdown_pressed, dropdown_hovered, dropdown_unhovered
+    return False, False, dropdown_hovered

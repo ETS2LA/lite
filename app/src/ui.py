@@ -74,7 +74,7 @@ def Resize(width, height):
     variables.RENDER_FRAME = True
 
 def Restart():
-    subprocess.Popen(f"{variables.PATH}Start.bat", cwd=variables.PATH, creationflags=subprocess.CREATE_NEW_CONSOLE)
+    subprocess.Popen(f"{variables.PATH}Start.bat", cwd=variables.PATH)
     Close()
 
 def Close():
@@ -300,7 +300,7 @@ def Update():
             "text": "Language",
             "items": [name for name, _ in translate.GetAvailableLanguages().items()],
             "setting": ("UI", "Language", None),
-            "function": lambda: {translate.SaveCache(), settings.Set("UI", "Language", str(translate.GetAvailableLanguages()[[name for name, _ in translate.GetAvailableLanguages().items()][variables.DROPDOWNS["Language"][2]]])), setattr(variables, "TRANSLATION_CACHE", {}), setattr(variables, "DROPDOWNS", {}), setattr(variables, "LANGUAGE", settings.Get("UI", "Language")), translate.Initialize()},
+            "function": lambda: {print("dropdown function executed")},
             "x1": 10,
             "y1": 71,
             "x2": 210,
@@ -367,28 +367,28 @@ def Update():
                 uicomponents.Label(**item)
 
             elif item_type == "button":
-                pressed, hovered = uicomponents.Button(**item)
+                changed, pressed, hovered = uicomponents.Button(**item)
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
-                if pressed and (variables.CONTEXT_MENU[0] == False or item["text"] in str(variables.CONTEXT_MENU_ITEMS)):
+                if changed and (variables.CONTEXT_MENU[0] == False or item["text"] in str(variables.CONTEXT_MENU_ITEMS)):
                     if item_function is not None:
                         item_function()
                     else:
                         variables.RENDER_FRAME = True
 
             elif item_type == "switch":
-                pressed, hovered = uicomponents.Switch(**item)
+                changed, pressed, hovered = uicomponents.Switch(**item)
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
-                if pressed:
+                if changed:
                     if item_function is not None:
                         item_function()
 
             elif item_type == "dropdown":
-                pressed, hovered, unhovered = uicomponents.Dropdown(**item)
+                changed, pressed, hovered = uicomponents.Dropdown(**item)
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
-                if unhovered:
+                if changed:
                     if item_function is not None:
                         item_function()
 

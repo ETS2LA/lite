@@ -1,4 +1,3 @@
-import plugins.NavigationDetectionAI.main as NavigationDetectionAI
 import src.uicomponents as uicomponents
 import src.translate as translate
 import src.variables as variables
@@ -6,7 +5,6 @@ import src.settings as settings
 import src.console as console
 import src.updater as updater
 import src.server as server
-import src.setup as setup
 
 import numpy as np
 import subprocess
@@ -14,11 +12,13 @@ import webbrowser
 import threading
 import ctypes
 import mouse
-import json
 import math
 import time
 import cv2
-import os
+
+if variables.OS == "nt":
+    from ctypes import windll, byref, sizeof, c_int
+    import win32gui, win32con
 
 def Initialize():
     width = settings.Get("UI", "Width", 700)
@@ -42,10 +42,6 @@ def Initialize():
         "function": lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
         {"name": "Search for updates",
         "function": lambda: {updater.CheckForUpdates(False), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}}]
-
-    if variables.OS == "nt":
-        from ctypes import windll, byref, sizeof, c_int
-        import win32gui, win32con
 
     cv2.namedWindow(variables.NAME, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(variables.NAME, width, height)
@@ -88,6 +84,11 @@ def Close():
     variables.BREAK = True
 
 def SetTitleBarHeight(title_bar_height):
+    if variables.OS == "nt":
+        if int(win32gui.IsIconic(variables.HWND)) == 1:
+            cv2.imshow(variables.NAME, variables.CACHED_FRAME)
+            cv2.waitKey(1)
+            return
     try:
         x, y, width, height = cv2.getWindowImageRect(variables.NAME)
     except:
@@ -111,6 +112,13 @@ def SetTitleBarHeight(title_bar_height):
 
 def Update():
     current_time = time.time()
+
+    if variables.OS == "nt":
+        if int(win32gui.IsIconic(variables.HWND)) == 1:
+            cv2.imshow(variables.NAME, variables.CACHED_FRAME)
+            cv2.waitKey(1)
+            return
+
     try:
         x, y, width, height = cv2.getWindowImageRect(variables.NAME)
         if (x, y, width, height) != (variables.X, variables.Y, variables.WIDTH, variables.HEIGHT):

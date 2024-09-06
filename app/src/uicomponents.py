@@ -1,6 +1,7 @@
 import src.translate as translate
 import src.variables as variables
 import src.settings as settings
+import threading
 import pynput
 import math
 import time
@@ -16,6 +17,16 @@ left_clicked = False
 right_clicked = False
 last_left_clicked = False
 last_right_clicked = False
+
+scroll_event_queue = []
+def handle_scroll_events():
+    global scroll_event_queue
+    with pynput.mouse.Events() as events:
+        while variables.BREAK == False:
+            event = events.get()
+            if isinstance(event, pynput.mouse.Events.Scroll):
+                scroll_event_queue.append(event)
+scroll_event_thread = threading.Thread(target=handle_scroll_events, daemon=True).start()
 
 
 def GetTextSize(text="NONE", text_width=100, fontsize=variables.FONT_SIZE):
@@ -190,13 +201,12 @@ def Dropdown(text="NONE", items=["NONE"], x1=0, y1=0, x2=100, y2=100, dropdown_h
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y1 + padding)), (round(x2 - padding), round(y2 - padding)), text_color, thickness, cv2.LINE_AA)
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y1 + padding)), (round(x2 - padding  - height * 2), round(y2 - padding)), text_color, thickness, cv2.LINE_AA)
 
-        with pynput.mouse.Events() as events:
-            event = events.get()
-            if isinstance(event, pynput.mouse.Events.Scroll):
-                if event.dy > 0:
-                    selected_item = (selected_item - 1) if selected_item > 0 else 0
-                elif event.dy < 0:
-                    selected_item = (selected_item + 1) if selected_item < len(items) - 1 else len(items) - 1
+        while scroll_event_queue:
+            event = scroll_event_queue.pop(0)
+            if event.dy > 0:
+                selected_item = (selected_item - 1) if selected_item > 0 else 0
+            elif event.dy < 0:
+                selected_item = (selected_item + 1) if selected_item < len(items) - 1 else len(items) - 1
 
         for i in range(3):
             line_height = (dropdown_height / 3)

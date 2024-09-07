@@ -68,7 +68,7 @@ def LoadAIModel():
                     ModelFileCorrupted = True
 
                 if ModelFileCorrupted == False:
-                    variables.QUEUE.put(["Successfully loaded the AI model!", 100, 0.5])
+                    variables.QUEUE.put(["Successfully loaded the AI model!", 0, 0.5])
                     print(GREEN + "Successfully loaded the AI model!" + NORMAL)
                     ModelLoaded = True
                 else:
@@ -144,10 +144,10 @@ def CheckForAIModelUpdates():
                                 modelfile.write(data)
                                 progress = round((downloaded_size / total_size) * 100)
                                 variables.QUEUE.put([f"Downloading the AI model: {progress}%", progress, 0.5])
-                        variables.QUEUE.put(["Successfully updated the AI model!", 100, 0.5])
+                        variables.QUEUE.put(["Successfully updated the AI model!", 0, 0.5])
                         print(GREEN + "Successfully updated the AI model!" + NORMAL)
                     else:
-                        variables.QUEUE.put(["No AI model updates available!", 100, 0.5])
+                        variables.QUEUE.put(["No AI model updates available!", 0, 0.5])
                         print(GREEN + "No AI model updates available!" + NORMAL)
                     settings.Set("NavigationDetectionAI", "LastUpdateCheck", time.time())
 

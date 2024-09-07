@@ -42,7 +42,7 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.GetUserCount())
 
     PluginProcesses = []
-    #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
+    PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
     #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
     for PluginProcess in PluginProcesses:
         PluginProcess.start()
@@ -81,7 +81,7 @@ if __name__ == '__main__':
                             for PluginProcess in PluginProcesses:
                                 PluginProcess.terminate()
                             PluginProcesses = []
-                            #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
+                            PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
                             #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
                             for PluginProcess in PluginProcesses:
                                 PluginProcess.start()

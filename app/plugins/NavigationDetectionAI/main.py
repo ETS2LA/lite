@@ -5,6 +5,7 @@ from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.pytorch as pytorch
 import numpy as np
 import traceback
 import keyboard
@@ -17,20 +18,6 @@ if variables.OS == "nt":
     import win32gui, win32con
     from ctypes import windll, byref, sizeof, c_int
 
-try:
-    from torchvision import transforms
-    from bs4 import BeautifulSoup
-    import threading
-    import requests
-    import torch
-    TorchAvailable = True
-except:
-    TorchAvailable = False
-    exc = traceback.format_exc()
-    SendCrashReport("NavigationDetection - PyTorch import error.", str(exc))
-    print("\033[91m" + f"NavigationDetection - PyTorch import Error:\n" + "\033[0m" + str(exc))
-    console.RestoreConsole()
-
 global enabled
 enabled = True
 
@@ -39,8 +26,6 @@ def Initialize():
     global enable_key_pressed
     global last_enable_key_pressed
     global LastScreenCaptureCheck
-
-    global AIDevice
 
     global MapTopLeft
     global MapBottomRight
@@ -65,12 +50,9 @@ def Initialize():
     last_enable_key_pressed = False
     LastScreenCaptureCheck = 0
 
-    if TorchAvailable == True:
-        LoadAIModel()
-    else:
-        print("NavigationDetectionAI not available due to missing dependencies.")
-        console.RestoreConsole()
-    AIDevice = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    pytorch.Initialize()
+    pytorch.LoadAIModel()
+
     variables.POPUP = ["Loading...", 0, 0.5]
 
     MapTopLeft = settings.Get("NavigationDetectionAI", "MapTopLeft", "unset")
@@ -223,261 +205,12 @@ def GetRouteAdvisorPosition():
 
 def preprocess_image(image):
     image = np.array(image)
-    image = cv2.resize(image, (IMG_WIDTH, IMG_HEIGHT))
+    image = cv2.resize(image, (pytorch.IMG_WIDTH, pytorch.IMG_HEIGHT))
     image = np.array(image, dtype=np.float32) / 255.0
-    transform = transforms.Compose([
-        transforms.ToTensor(),
+    transform = pytorch.transforms.Compose([
+        pytorch.transforms.ToTensor(),
     ])
-    return transform(image).unsqueeze(0).to(AIDevice)
-
-
-def HandleCorruptedAIModel():
-    DeleteAllAIModels()
-    CheckForAIModelUpdates()
-    while AIModelUpdateThread.is_alive(): time.sleep(0.1)
-    time.sleep(0.5)
-    if TorchAvailable == True:
-        LoadAIModel()
-    else:
-        print("NavigationDetectionAI not available due to missing dependencies.")
-        console.RestoreConsole()
-
-
-def LoadAIModel():
-    try:
-        def LoadAIModelThread():
-            try:
-                global AIModel
-                global AIModelLoaded
-
-                CheckForAIModelUpdates()
-                while AIModelUpdateThread.is_alive(): time.sleep(0.1)
-
-                if GetAIModelName() == "UNKNOWN":
-                    return
-
-                variables.POPUP = ["Loading the AI model...", 0, 0.5]
-                print("\033[92m" + "Loading the AI model..." + "\033[0m")
-
-                GetAIModelProperties()
-
-                ModelFileCorrupted = False
-
-                try:
-                    AIModel = torch.jit.load(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", GetAIModelName()), map_location=AIDevice)
-                    AIModel.eval()
-                except:
-                    ModelFileCorrupted = True
-
-                if ModelFileCorrupted == False:
-                    variables.POPUP = ["Successfully loaded the AI model!", 100, 0.5]
-                    print("\033[92m" + "Successfully loaded the AI model!" + "\033[0m")
-                    AIModelLoaded = True
-                else:
-                    variables.POPUP = ["Failed to load the AI model because the model file is corrupted.", 0, 0.5]
-                    print("\033[91m" + "Failed to load the AI model because the model file is corrupted." + "\033[0m")
-                    AIModelLoaded = False
-                    time.sleep(3)
-                    HandleCorruptedAIModel()
-            except Exception as e:
-                exc = traceback.format_exc()
-                SendCrashReport("NavigationDetection - Loading AI Error.", str(exc))
-                console.RestoreConsole()
-                variables.POPUP = ["Failed to load the AI model!", 0, 0.5]
-                print("\033[91m" + "Failed to load the AI model!" + "\033[0m")
-                AIModelLoaded = False
-
-        global AIModelLoadThread
-        AIModelLoadThread = threading.Thread(target=LoadAIModelThread, daemon=True)
-        AIModelLoadThread.start()
-
-    except Exception as ex:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function LoadAIModel.", str(exc))
-        print(f"NavigationDetection - Error in function LoadAIModel: {ex}")
-        console.RestoreConsole()
-        print("\033[91m" + f"Failed to load the AI model." + "\033[0m")
-
-
-def CheckForAIModelUpdates():
-    try:
-        def CheckForAIModelUpdatesThread():
-            try:
-                try:
-                    response = requests.get("https://huggingface.co/", timeout=3)
-                    response = response.status_code
-                except requests.exceptions.RequestException as ex:
-                    response = None
-
-                if response == 200:
-                    variables.POPUP = ["Checking for AI model updates...", 0, 0.5]
-                    print("\033[92m" + "Checking for AI model updates..." + "\033[0m")
-
-                    if settings.Get("NavigationDetectionAI", "LastUpdateCheck", 0) + 600 > time.time():
-                        if settings.Get("NavigationDetectionAI", "LatestModel", "unset") == GetAIModelName():
-                            print("\033[92m" + f"No AI model updates available!" + "\033[0m")
-                            return
-
-                    url = "https://huggingface.co/Glas42/NavigationDetectionAI/tree/main/model"
-                    response = requests.get(url)
-                    soup = BeautifulSoup(response.content, 'html.parser')
-
-                    for link in soup.find_all('a', href=True):
-                        href = link['href']
-                        if href.startswith('/Glas42/NavigationDetectionAI/blob/main/model'):
-                            LatestAIModel = href.split("/")[-1]
-                            settings.Set("NavigationDetectionAI", "LatestModel", LatestAIModel)
-                            break
-
-                    CurrentAIModel = GetAIModelName()
-                    if CurrentAIModel == "UNKNOWN":
-                        CurrentAIModel = None
-
-                    if str(LatestAIModel) != str(CurrentAIModel):
-                        variables.POPUP = ["Updating the AI model...", 0, 0.5]
-                        print("\033[92m" + "Updating the AI model..." + "\033[0m")
-                        DeleteAllAIModels()
-                        response = requests.get(f"https://huggingface.co/Glas42/NavigationDetectionAI/resolve/main/model/{LatestAIModel}?download=true", stream=True)
-                        with open(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", f"{LatestAIModel}"), "wb") as modelfile:
-                            total_size = int(response.headers.get('content-length', 0))
-                            downloaded_size = 0
-                            chunk_size = 1024
-                            for data in response.iter_content(chunk_size=chunk_size):
-                                downloaded_size += len(data)
-                                modelfile.write(data)
-                                progress = round((downloaded_size / total_size) * 100)
-                                variables.POPUP = [f"Downloading the AI model: {progress}%", progress, 0.5]
-                        variables.POPUP = ["Successfully updated the AI model!", 100, 0.5]
-                        print("\033[92m" + "Successfully updated the AI model!" + "\033[0m")
-                    else:
-                        variables.POPUP = ["No AI model updates available!", 100, 0.5]
-                        print("\033[92m" + "No AI model updates available!" + "\033[0m")
-                    settings.Set("NavigationDetectionAI", "LastUpdateCheck", time.time())
-
-                else:
-
-                    console.RestoreConsole()
-                    variables.POPUP = ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5]
-                    print("\033[91m" + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + "\033[0m")
-
-            except Exception as ex:
-                exc = traceback.format_exc()
-                SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdatesThread.", str(exc))
-                print(f"NavigationDetection - Error in function CheckForAIModelUpdatesThread: {ex}")
-                console.RestoreConsole()
-                variables.POPUP = ["Failed to check for AI model updates or update the AI model.", 0, 0.5]
-                print("\033[91m" + "Failed to check for AI model updates or update the AI model." + "\033[0m")
-
-        global AIModelUpdateThread
-        AIModelUpdateThread = threading.Thread(target=CheckForAIModelUpdatesThread, daemon=True)
-        AIModelUpdateThread.start()
-
-    except Exception as ex:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdates.", str(exc))
-        print(f"NavigationDetection - Error in function CheckForAIModelUpdates: {ex}")
-        console.RestoreConsole()
-        variables.POPUP = ["Failed to check for AI model updates or update the AI model.", 0, 0.5]
-        print("\033[91m" + "Failed to check for AI model updates or update the AI model." + "\033[0m")
-
-
-def ModelFolderExists():
-    try:
-        if os.path.exists(f"{variables.PATH}cache/NavigationDetectionAI") == False:
-            os.makedirs(f"{variables.PATH}cache/NavigationDetectionAI")
-    except Exception as ex:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function ModelFolderExists.", str(exc))
-        print(f"NavigationDetection - Error in function ModelFolderExists: {ex}")
-        console.RestoreConsole()
-
-
-def GetAIModelName():
-    try:
-        ModelFolderExists()
-        for file in os.listdir(f"{variables.PATH}cache/NavigationDetectionAI"):
-            if file.endswith(".pt"):
-                return file
-        return "UNKNOWN"
-    except Exception as ex:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function GetAIModelName.", str(exc))
-        print(f"NavigationDetection - Error in function GetAIModelName: {ex}")
-        console.RestoreConsole()
-        return "UNKNOWN"
-
-
-def DeleteAllAIModels():
-    try:
-        ModelFolderExists()
-        for file in os.listdir(f"{variables.PATH}cache/NavigationDetectionAI"):
-            if file.endswith(".pt"):
-                os.remove(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", file))
-    except PermissionError as ex:
-        global TorchAvailable
-        TorchAvailable = False
-        settings.Set("NavigationDetectionAI", "UseAI", False)
-        print(f"NavigationDetection - PermissionError in function DeleteAllAIModels: {ex}")
-        print("NavigationDetectionAI will be automatically disabled because the code cannot delete the AI model.")
-        console.RestoreConsole()
-    except Exception as ex:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function DeleteAllAIModels.", str(exc))
-        print(f"NavigationDetection - Error in function DeleteAllAIModels: {ex}")
-        console.RestoreConsole()
-
-
-def GetAIModelProperties():
-    global MODEL_METADATA
-    global IMG_WIDTH
-    global IMG_HEIGHT
-    global IMG_CHANNELS
-    global MODEL_OUTPUTS
-    global MODEL_EPOCHS
-    global MODEL_BATCH_SIZE
-    global MODEL_IMAGE_COUNT
-    global MODEL_TRAINING_TIME
-    global MODEL_TRAINING_DATE
-    try:
-        ModelFolderExists()
-        MODEL_METADATA = {"data": []}
-        IMG_WIDTH = "UNKNOWN"
-        IMG_HEIGHT = "UNKNOWN"
-        IMG_CHANNELS = "UNKNOWN"
-        MODEL_OUTPUTS = "UNKNOWN"
-        MODEL_EPOCHS = "UNKNOWN"
-        MODEL_BATCH_SIZE = "UNKNOWN"
-        MODEL_IMAGE_COUNT = "UNKNOWN"
-        MODEL_TRAINING_TIME = "UNKNOWN"
-        MODEL_TRAINING_DATE = "UNKNOWN"
-        if GetAIModelName() == "UNKNOWN" or TorchAvailable == False:
-            return
-        torch.jit.load(os.path.join(f"{variables.PATH}cache/NavigationDetectionAI", GetAIModelName()), _extra_files=MODEL_METADATA, map_location=AIDevice)
-        MODEL_METADATA = str(MODEL_METADATA["data"]).replace('b"(', '').replace(')"', '').replace("'", "").split(", ")
-        for var in MODEL_METADATA:
-            if "image_width" in var:
-                IMG_WIDTH = int(var.split("#")[1])
-            if "image_height" in var:
-                IMG_HEIGHT = int(var.split("#")[1])
-            if "image_channels" in var:
-                IMG_CHANNELS = str(var.split("#")[1])
-            if "outputs" in var:
-                MODEL_OUTPUTS = int(var.split("#")[1])
-            if "epochs" in var:
-                MODEL_EPOCHS = int(var.split("#")[1])
-            if "batch" in var:
-                MODEL_BATCH_SIZE = int(var.split("#")[1])
-            if "image_count" in var:
-                MODEL_IMAGE_COUNT = int(var.split("#")[1])
-            if "training_time" in var:
-                MODEL_TRAINING_TIME = var.split("#")[1]
-            if "training_date" in var:
-                MODEL_TRAINING_DATE = var.split("#")[1]
-    except Exception as ex:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function GetAIModelProperties.", str(exc))
-        print(f"NavigationDetection - Error in function GetAIModelProperties: {ex}")
-        console.RestoreConsole()
+    return transform(image).unsqueeze(0).to(pytorch.DEVICE)
 
 
 def plugin():
@@ -488,8 +221,6 @@ def plugin():
     global enable_key_pressed
     global last_enable_key_pressed
     global LastScreenCaptureCheck
-
-    global AIDevice
 
     global MapTopLeft
     global MapBottomRight
@@ -510,8 +241,8 @@ def plugin():
 
     try:
         try:
-            while AIModelUpdateThread.is_alive(): return 0
-            while AIModelLoadThread.is_alive(): return 0
+            while pytorch.AIModelUpdateThread.is_alive(): return 0
+            while pytorch.AIModelLoadThread.is_alive(): return 0
         except:
             return 0
 
@@ -552,29 +283,38 @@ def plugin():
         frame_with_mask = cv2.bitwise_and(frame, frame, mask=mask)
         frame = cv2.cvtColor(frame_with_mask, cv2.COLOR_BGR2GRAY)
 
+        if cv2.countNonZero(frame) / (frame.shape[0] * frame.shape[1]) > 0.03:
+            lane_detected = True
+        else:
+            lane_detected = False
+
         try:
             AIFrame = preprocess_image(mask)
-            output = [[0] * MODEL_OUTPUTS]
+            output = [[0] * pytorch.MODEL_OUTPUTS]
         except:
-            GetAIModelProperties()
-            if IMG_WIDTH == "UNKNOWN" or IMG_HEIGHT == "UNKNOWN" or MODEL_OUTPUTS == "UNKNOWN":
-                print(f"NavigationDetection - Unable to read the AI model metadata. The code wont run the NavigationDetectionAI.")
+            pytorch.GetAIModelProperties()
+            if pytorch.IMG_WIDTH == None or pytorch.IMG_HEIGHT == None or pytorch.MODEL_OUTPUTS == None:
                 global TorchAvailable
                 TorchAvailable = False
                 console.RestoreConsole()
                 return
             AIFrame = preprocess_image(mask)
-            output = [[0] * MODEL_OUTPUTS]
+            output = [[0] * pytorch.MODEL_OUTPUTS]
 
         if enabled == True:
-            if AIModelLoaded == True:
-                with torch.no_grad():
-                    output = AIModel(AIFrame)
+            if pytorch.ModelLoaded == True:
+                with pytorch.torch.no_grad():
+                    output = pytorch.Model(AIFrame)
                     output = output.tolist()
 
         steering = float(output[0][0]) / -30
         left_indicator = bool(float(output[0][1]) > 0.15)
         right_indicator = bool(float(output[0][2]) > 0.15)
+
+        if lane_detected == False:
+            steering = 0
+            left_indicator = False
+            right_indicator = False
 
         try:
             indicator_left = data["api"]["truckBool"]["blinkerLeftActive"]

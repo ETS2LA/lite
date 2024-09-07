@@ -313,6 +313,7 @@ def Update():
                 settings.Set("UI", "Language", translate.GetAvailableLanguages()[[name for name, _ in translate.GetAvailableLanguages().items()][variables.DROPDOWNS["Language"][1]]]),
                 setattr(variables, "LANGUAGE", settings.Get("UI", "Language", "en")),
                 setattr(variables, "TRANSLATION_CACHE", {}),
+                setattr(variables, "RENDER_FRAME", True),
                 translate.Initialize()
                 },
             "x1": 10,
@@ -354,7 +355,7 @@ def Update():
         variables.RENDER_FRAME = True
 
     for area in variables.AREAS:
-        if area[0] == "button" or area[0] == "switch":
+        if area[0] != "label":
             if (area[1] <= mouse_x * width <= area[3] and area[2] <= mouse_y * height <= area[4]) != area[5]:
                 area = (area[1], area[2], area[3], area[4], not area[5])
                 variables.RENDER_FRAME = True
@@ -362,7 +363,7 @@ def Update():
     if foreground_window == False and variables.CACHED_FRAME is not None and variables.POPUP[0] == None:
         variables.RENDER_FRAME = False
 
-    if variables.RENDER_FRAME or last_left_clicked != left_clicked or True:
+    if variables.RENDER_FRAME or last_left_clicked != left_clicked:
         variables.RENDER_FRAME = False
         #print(f"Rendering new frame!")
 

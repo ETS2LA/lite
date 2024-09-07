@@ -244,5 +244,7 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
     variables.DROPDOWNS[text] = dropdown_selected, selected_item
     if dropdown_changed:
         settings.Set("DropdownSelections", str(text), int(selected_item))
+    if dropdown_selected:
+        variables.RENDER_FRAME = True
 
     return dropdown_changed, dropdown_pressed, dropdown_hovered

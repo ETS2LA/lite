@@ -62,6 +62,7 @@ HWND = None
 NAME = "ETS2LA-Lite"
 PAGE = settings.Get("UI", "Page", "Menu")
 BREAK = False
+QUEUE = None
 
 CONSOLENAME = None
 CONSOLEHWND = None

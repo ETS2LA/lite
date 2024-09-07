@@ -54,7 +54,7 @@ def LoadAIModel():
                 if GetAIModelName() == None:
                     return
 
-                variables.POPUP = ["Loading the AI model...", 0, 0.5]
+                variables.QUEUE.put(["Loading the AI model...", 0, 0.5])
                 print(GREEN + "Loading the AI model..." + NORMAL)
 
                 GetAIModelProperties()
@@ -68,11 +68,11 @@ def LoadAIModel():
                     ModelFileCorrupted = True
 
                 if ModelFileCorrupted == False:
-                    variables.POPUP = ["Successfully loaded the AI model!", 100, 0.5]
+                    variables.QUEUE.put(["Successfully loaded the AI model!", 100, 0.5])
                     print(GREEN + "Successfully loaded the AI model!" + NORMAL)
                     ModelLoaded = True
                 else:
-                    variables.POPUP = ["Failed to load the AI model because the model file is corrupted.", 0, 0.5]
+                    variables.QUEUE.put(["Failed to load the AI model because the model file is corrupted.", 0, 0.5])
                     print(RED + "Failed to load the AI model because the model file is corrupted." + NORMAL)
                     ModelLoaded = False
                     time.sleep(3)
@@ -82,7 +82,7 @@ def LoadAIModel():
                 SendCrashReport("NavigationDetection - Loading AI Error.", str(exc))
                 print(RED + "NavigationDetection - Loading AI Error:\n" + NORMAL + str(exc))
                 console.RestoreConsole()
-                variables.POPUP = ["Failed to load the AI model!", 0, 0.5]
+                variables.QUEUE.put(["Failed to load the AI model!", 0, 0.5])
                 print(RED + "Failed to load the AI model!" + NORMAL)
                 ModelLoaded = False
 
@@ -109,7 +109,7 @@ def CheckForAIModelUpdates():
                     response = None
 
                 if response == 200:
-                    variables.POPUP = ["Checking for AI model updates...", 0, 0.5]
+                    variables.QUEUE.put(["Checking for AI model updates...", 0, 0.5])
                     print(GREEN + "Checking for AI model updates..." + NORMAL)
 
                     if settings.Get("NavigationDetectionAI", "LastUpdateCheck", 0) + 600 > time.time():
@@ -131,7 +131,7 @@ def CheckForAIModelUpdates():
                     CurrentAIModel = GetAIModelName()
 
                     if str(LatestAIModel) != str(CurrentAIModel):
-                        variables.POPUP = ["Updating the AI model...", 0, 0.5]
+                        variables.QUEUE.put(["Updating the AI model...", 0, 0.5])
                         print(GREEN + "Updating the AI model..." + NORMAL)
                         DeleteAllAIModels()
                         response = requests.get(f"https://huggingface.co/Glas42/NavigationDetectionAI/resolve/main/model/{LatestAIModel}?download=true", stream=True)
@@ -143,18 +143,18 @@ def CheckForAIModelUpdates():
                                 downloaded_size += len(data)
                                 modelfile.write(data)
                                 progress = round((downloaded_size / total_size) * 100)
-                                variables.POPUP = [f"Downloading the AI model: {progress}%", progress, 0.5]
-                        variables.POPUP = ["Successfully updated the AI model!", 100, 0.5]
+                                variables.QUEUE.put([f"Downloading the AI model: {progress}%", progress, 0.5])
+                        variables.QUEUE.put(["Successfully updated the AI model!", 100, 0.5])
                         print(GREEN + "Successfully updated the AI model!" + NORMAL)
                     else:
-                        variables.POPUP = ["No AI model updates available!", 100, 0.5]
+                        variables.QUEUE.put(["No AI model updates available!", 100, 0.5])
                         print(GREEN + "No AI model updates available!" + NORMAL)
                     settings.Set("NavigationDetectionAI", "LastUpdateCheck", time.time())
 
                 else:
 
                     console.RestoreConsole()
-                    variables.POPUP = ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5]
+                    variables.QUEUE.put(["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5])
                     print(RED + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + NORMAL)
 
             except:
@@ -162,7 +162,7 @@ def CheckForAIModelUpdates():
                 SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdatesThread.", str(exc))
                 print(RED + "NavigationDetection - Error in function CheckForAIModelUpdatesThread:\n" + NORMAL + str(exc))
                 console.RestoreConsole()
-                variables.POPUP = ["Failed to check for AI model updates or update the AI model.", 0, 0.5]
+                variables.QUEUE.put(["Failed to check for AI model updates or update the AI model.", 0, 0.5])
                 print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
 
         global AIModelUpdateThread
@@ -174,7 +174,7 @@ def CheckForAIModelUpdates():
         SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdates.", str(exc))
         print(RED + "NavigationDetection - Error in function CheckForAIModelUpdates:\n" + NORMAL + str(exc))
         console.RestoreConsole()
-        variables.POPUP = ["Failed to check for AI model updates or update the AI model.", 0, 0.5]
+        variables.QUEUE.put(["Failed to check for AI model updates or update the AI model.", 0, 0.5])
         print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
 
 

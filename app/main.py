@@ -12,7 +12,8 @@ import threading
 import time
 import os
 
-def RunNavigationDetectionAI():
+def RunNavigationDetectionAI(Queue):
+    variables.QUEUE = Queue
     #import plugins.NavigationDetectionV4.main as NavigationDetectionV4
     #NavigationDetectionV4.Initialize()
     #while variables.BREAK == False:
@@ -21,8 +22,10 @@ def RunNavigationDetectionAI():
     NavigationDetectionAI.Initialize()
     while variables.BREAK == False:
         NavigationDetectionAI.plugin()
+        while variables.QUEUE.empty() == False:
+           Queue.put(variables.QUEUE.get())
 
-def RunLaneDetection():
+def RunLaneDetection(Queue):
     import plugins.LaneDetection.main as LaneDetection
     LaneDetection.Initialize()
     while variables.BREAK == False:
@@ -42,8 +45,9 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.GetUserCount())
 
     PluginProcesses = []
-    PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
-    #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
+    PluginQueue = multiprocessing.Queue()
+    PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
+    #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, args=(PluginQueue,), daemon=True))
     for PluginProcess in PluginProcesses:
         PluginProcess.start()
 
@@ -71,6 +75,11 @@ if __name__ == '__main__':
     while variables.BREAK == False:
         start = time.time()
 
+        if PluginQueue.empty() == False:
+            variables.POPUP = PluginQueue.get()
+            while PluginQueue.empty() == False:
+                PluginQueue.get()
+
         if DEVMODE:
             for i, (Script, Path) in enumerate(Scripts):
                 try:
@@ -81,8 +90,9 @@ if __name__ == '__main__':
                             for PluginProcess in PluginProcesses:
                                 PluginProcess.terminate()
                             PluginProcesses = []
-                            PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, daemon=True))
-                            #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, daemon=True))
+                            PluginQueue = multiprocessing.Queue()
+                            PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
+                            #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, args=(PluginQueue,), daemon=True))
                             for PluginProcess in PluginProcesses:
                                 PluginProcess.start()
                         else:

@@ -318,7 +318,21 @@ def Update():
                 },
             "x1": 10,
             "y1": 71,
-            "x2": 210,
+            "x2": variables.CANVAS_RIGHT / 2 - 5,
+            "y2": 106})
+
+        variables.ITEMS.append({
+            "type": "dropdown",
+            "text": "Theme",
+            "items": ["Dark", "Light"],
+            "default_item": 0,
+            "function": lambda: {
+                settings.Set("UI", "Theme", ["dark", "light"][variables.DROPDOWNS["Theme"][1]]),
+                Restart() if variables.THEME != settings.Get("UI", "Theme", "dark") else None
+                },
+            "x1": variables.CANVAS_RIGHT / 2 + 5,
+            "y1": 71,
+            "x2": variables.CANVAS_RIGHT - 10,
             "y2": 106})
 
     if variables.CONTEXT_MENU[0]:

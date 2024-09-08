@@ -202,12 +202,12 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y1 + padding)), (round(x2 - padding), round(y2 - padding)), text_color, thickness, cv2.LINE_AA)
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y1 + padding)), (round(x2 - padding  - height * 2), round(y2 - padding)), text_color, thickness, cv2.LINE_AA)
 
-        while scroll_event_queue:
-            event = scroll_event_queue.pop(0)
+        for event in scroll_event_queue:
             if event.dy > 0:
                 selected_item = (selected_item - 1) if selected_item > 0 else 0
             elif event.dy < 0:
                 selected_item = (selected_item + 1) if selected_item < len(items) - 1 else len(items) - 1
+        scroll_event_queue = []
 
         for i in range(3):
             line_height = (dropdown_height / 3)
@@ -234,8 +234,6 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
         height = round(y2 - padding) - round(y1 + padding)
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
         cv2.line(variables.FRAME, (round(x2 - padding - height), round(y2 - padding)), (round(x2 - padding  - height * 2), round(y1 + padding)), text_color, thickness, cv2.LINE_AA)
-
-        scroll_event_queue = []
 
     text_translated = translate.Translate(text)
     text_translated, fontscale, thickness, width, height = GetTextSize(text_translated, round((x2-x1)), fontsize)

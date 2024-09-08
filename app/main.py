@@ -54,7 +54,7 @@ if __name__ == '__main__':
 
     PluginProcesses = []
     PluginQueue = multiprocessing.Queue()
-    PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
+    #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
     #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionV4, args=(PluginQueue,), daemon=True))
     #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, args=(PluginQueue,), daemon=True))
     for PluginProcess in PluginProcesses:
@@ -100,7 +100,7 @@ if __name__ == '__main__':
                                 PluginProcess.terminate()
                             PluginProcesses = []
                             PluginQueue = multiprocessing.Queue()
-                            PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
+                            #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
                             #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionV4, args=(PluginQueue,), daemon=True))
                             #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, args=(PluginQueue,), daemon=True))
                             for PluginProcess in PluginProcesses:

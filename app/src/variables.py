@@ -16,6 +16,7 @@ FONT_SIZE = 11
 POPUP_HEIGHT = 50
 TITLE_BAR_HEIGHT = 50
 TEXT_COLOR = (255, 255, 255) if THEME == "dark" else (0, 0, 0)
+GRAYED_TEXT_COLOR = (155, 155, 155) if THEME == "dark" else (100, 100, 100)
 BACKGROUND_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)
 TAB_BAR_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 TAB_BUTTON_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
@@ -34,6 +35,8 @@ SWITCH_KNOB_COLOR = (28, 28, 28) if THEME == "dark" else (250, 250, 250)
 SWITCH_HOVER_COLOR = (70, 70, 70) if THEME == "dark" else (208, 208, 208)
 SWITCH_ENABLED_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
+DROPDOWN_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
+DROPDOWN_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
 AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}

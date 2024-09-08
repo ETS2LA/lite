@@ -165,7 +165,7 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
         return True, left_clicked and switch_hovered, switch_hovered
 
 
-def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2=100, dropdown_height=100, dropdown_padding=5, round_corners=5, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, dropdown_color=variables.BUTTON_COLOR, dropdown_hover_color=variables.BUTTON_HOVER_COLOR):
+def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2=100, dropdown_height=100, dropdown_padding=5, round_corners=5, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, grayed_text_color=variables.GRAYED_TEXT_COLOR, dropdown_color=variables.DROPDOWN_COLOR, dropdown_hover_color=variables.DROPDOWN_HOVER_COLOR):
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked, scroll_event_queue
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
@@ -225,7 +225,7 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
             else:
                 item_text = item
             item_text, fontscale, thickness, width, height = GetTextSize(item_text, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
-            cv2.putText(variables.FRAME, item_text, (round(x1 + (x2-x1) / 2 - width / 2), round(y2 + dropdown_padding + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+            cv2.putText(variables.FRAME, item_text, (round(x1 + (x2-x1) / 2 - width / 2), round(y2 + dropdown_padding + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color if i == 1 else grayed_text_color, thickness, cv2.LINE_AA)
 
     else:
 

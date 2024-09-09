@@ -10,6 +10,7 @@ import src.ui as ui
 import multiprocessing
 import threading
 import time
+import sys
 import os
 
 def RunNavigationDetectionAI(Queue):
@@ -43,6 +44,9 @@ if __name__ == '__main__':
     os.system("cls" if variables.OS == "nt" else "clear")
     print("\nETS2LA-Lite\n-----------\n")
 
+    if "--dev" in sys.argv:
+        variables.DEVMODE = True
+
     if settings.Get("Console", "HideConsole", False):
         console.HideConsole()
 
@@ -64,8 +68,7 @@ if __name__ == '__main__':
     FPS_UpdateTime = 0
     MainMenu_UpdateTime = 0
 
-    DEVMODE = True
-    if DEVMODE:
+    if variables.DEVMODE:
         import hashlib
         Scripts = []
         Scripts.append(("Main", f"{variables.PATH}app/main.py"))
@@ -89,7 +92,7 @@ if __name__ == '__main__':
             while PluginQueue.empty() == False:
                 PluginQueue.get()
 
-        if DEVMODE:
+        if variables.DEVMODE:
             for i, (Script, Path) in enumerate(Scripts):
                 try:
                     hash = hashlib.md5(open(Path, "rb").read()).hexdigest()

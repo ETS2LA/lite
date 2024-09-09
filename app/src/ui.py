@@ -70,7 +70,10 @@ def Resize(width, height):
     variables.RENDER_FRAME = True
 
 def Restart():
-    subprocess.Popen(f"{variables.PATH}Start.bat", cwd=variables.PATH)
+    if variables.DEVMODE == True:
+        subprocess.Popen(f"python {variables.PATH}app/main.py --dev", cwd=variables.PATH)
+    else:
+        subprocess.Popen(f"{variables.PATH}Start.bat", cwd=variables.PATH, creationflags=subprocess.CREATE_NEW_CONSOLE)
     Close()
 
 def Close():

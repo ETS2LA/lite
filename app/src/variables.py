@@ -11,6 +11,7 @@ USERCOUNT = "Loading"
 LANGUAGE = settings.Get("UI", "Language", "en")
 THEME = settings.Get("UI", "Theme", "dark")
 BACKGROUND = None
+DEVMODE = False
 
 FONT_SIZE = 11
 POPUP_HEIGHT = 50

@@ -31,12 +31,12 @@ def RunNavigationDetectionV4(Queue):
         while variables.QUEUE.empty() == False:
            Queue.put(variables.QUEUE.get())
 
-def RunLaneDetection(Queue):
+def RunAdaptiveCruiseControl(Queue):
     variables.QUEUE = Queue
-    import plugins.LaneDetection.main as LaneDetection
-    LaneDetection.Initialize()
+    import plugins.AdaptiveCruiseControl.main as AdaptiveCruiseControl
+    AdaptiveCruiseControl.Initialize()
     while variables.BREAK == False:
-        LaneDetection.plugin()
+        AdaptiveCruiseControl.plugin()
         while variables.QUEUE.empty() == False:
            Queue.put(variables.QUEUE.get())
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     PluginQueue = multiprocessing.Queue()
     #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
     #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionV4, args=(PluginQueue,), daemon=True))
-    #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, args=(PluginQueue,), daemon=True))
+    PluginProcesses.append(multiprocessing.Process(target=RunAdaptiveCruiseControl, args=(PluginQueue,), daemon=True))
     for PluginProcess in PluginProcesses:
         PluginProcess.start()
 
@@ -105,7 +105,7 @@ if __name__ == '__main__':
                             PluginQueue = multiprocessing.Queue()
                             #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
                             #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionV4, args=(PluginQueue,), daemon=True))
-                            #PluginProcesses.append(multiprocessing.Process(target=RunLaneDetection, args=(PluginQueue,), daemon=True))
+                            PluginProcesses.append(multiprocessing.Process(target=RunAdaptiveCruiseControl, args=(PluginQueue,), daemon=True))
                             for PluginProcess in PluginProcesses:
                                 PluginProcess.start()
                         else:

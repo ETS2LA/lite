@@ -34,15 +34,15 @@ def Initialize():
     global LastDataTime
     LastDataTime = 0
 
-    #global model
-    #global device
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #print("Using device:", device)
-    #for file in os.listdir(f"{variables.PATH}"):
-    #    if file.endswith(".pt"):
-    #        model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
-    #        model.eval()
-    #        break
+    global model
+    global device
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    print("Using device:", device)
+    for file in os.listdir(f"{variables.PATH}"):
+        if file.endswith(".pt"):
+            model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
+            model.eval()
+            break
 
 
 def GetTextSize(text="NONE", text_width=100, max_text_height=100):
@@ -369,26 +369,37 @@ def plugin():
         frame = cv2.warpPerspective(frame, matrix, (cropped_width, cropped_height))
 
 
-    image = frame
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    frame = cv2.resize(frame, (100, 100))
+    image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    image = np.array(image, dtype=np.float32) / 255.0
+    transform = transforms.Compose([
+        transforms.ToTensor(),
+    ])
+    image = transform(image).unsqueeze(0)
+    with torch.no_grad():
+        prediction = model(image.to(device))
 
-    #performing binary thresholding
-    kernel_size = 3
-    ret,thresh = cv2.threshold(gray,200,255,cv2.THRESH_BINARY)  
+    prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
 
-    #finding contours 
-    cnts = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
-    cnts = cnts[0] if len(cnts) == 2 else cnts[1]
+    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+    prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
 
-    #drawing Contours
-    radius =2
-    color = (30,255,50)
-    cv2.drawContours(image, cnts, -1,color , radius)
-    frame = image
+    prediction_overlay[:, :, 2] = 0
+    prediction_overlay = prediction_overlay.astype(np.uint8) * 255
+
+    frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
+
+    non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
+    if len(non_black_pixels[0]) > 0:
+        x_center = int(np.mean(non_black_pixels[1]))
+    else:
+        x_center = width // 2
+    cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
 
 
-    #Steering = 0
-    #SDKController.steering = float(Steering)
+
+    Steering = (x_center/frame.shape[1] - 0.5) * 0.5
+    SDKController.steering = float(Steering)
 
     try:
         _, _, _, _ = cv2.getWindowImageRect("AdaptiveCruiseControl")

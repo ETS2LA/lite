@@ -34,6 +34,9 @@ def Initialize():
     global LastDataTime
     LastDataTime = 0
 
+    global SteeringHistory
+    SteeringHistory = []
+
     global model
     global device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -398,7 +401,14 @@ def plugin():
 
 
 
-    Steering = (x_center/frame.shape[1] - 0.5) * 0.5
+    Steering = (x_center/frame.shape[1] - 0.5) * 0.3 - 0.0125
+
+    SteeringHistory.append((Steering, CurrentTime))
+    SteeringHistory.sort(key=lambda x: x[1])
+    while CurrentTime - SteeringHistory[0][1] > 0.2:
+        SteeringHistory.pop(0)
+    Steering = sum(x[0] for x in SteeringHistory) / len(SteeringHistory)
+
     SDKController.steering = float(Steering)
 
     try:

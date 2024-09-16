@@ -5,6 +5,7 @@ import src.settings as settings
 import src.console as console
 import src.updater as updater
 import src.server as server
+from main import RunPlugins
 
 import numpy as np
 import subprocess
@@ -337,6 +338,26 @@ def Update():
             "y1": 71,
             "x2": variables.CANVAS_RIGHT - 10,
             "y2": 106})
+
+        variables.ITEMS.append({
+            "type": "label",
+            "text": "Enabled Plugins",
+            "x1": 10,
+            "y1": 136,
+            "x2": variables.CANVAS_RIGHT - 10,
+            "y2": 156,
+            "align": "left"})
+
+        for i, plugin in enumerate(variables.AVAILABLE_PLUGINS):
+            variables.ITEMS.append({
+                "type": "switch",
+                "text": plugin,
+                "setting": ("EnabledPlugins", plugin, True),
+                "function": lambda plugin=plugin: {RunPlugins(plugin, "Start" if settings.Get("EnabledPlugins", plugin, True) else "Stop")},
+                "x1": 10,
+                "y1": 166 + 30 * i,
+                "x2": variables.CANVAS_RIGHT - 10,
+                "y2": 186 + 30 * i})
 
     if variables.CONTEXT_MENU[0]:
         offset = 0

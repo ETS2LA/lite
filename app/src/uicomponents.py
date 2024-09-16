@@ -47,7 +47,7 @@ def GetTextSize(text="NONE", text_width=100, fontsize=variables.FONT_SIZE):
     return text, fontscale, thickness, textsize[0], textsize[1]
 
 
-def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR):
+def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, align="center", fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR):
     global foreground_window, frame_width, frame_height, mouse_x, mouse_y, left_clicked, right_clicked, last_left_clicked, last_right_clicked, scroll_event_queue
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
@@ -56,7 +56,13 @@ def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE,
     for i, t in enumerate(texts):
         t = translate.Translate(t)
         text, fontscale, thickness, width, height = GetTextSize(t, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
-        cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+        if align == "center":
+            x1 = round(x1 + (x2-x1) / 2 - width / 2)
+        elif align == "left":
+            x1 = round(x1)
+        elif align == "right":
+            x1 = round(x1 + (x2-x1) - width)
+        cv2.putText(variables.FRAME, text, (x1, round(y1 + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
 
 def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE, round_corners=5, button_selected=False, text_color=variables.TEXT_COLOR, button_color=variables.BUTTON_COLOR, button_hover_color=variables.BUTTON_HOVER_COLOR, button_selected_color=variables.BUTTON_SELECTED_COLOR, button_selected_hover_color=variables.BUTTON_SELECTED_HOVER_COLOR):
@@ -162,7 +168,7 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
             settings.Set(str(setting[0]), str(setting[1]), not state)
         return True, left_clicked and switch_hovered, switch_hovered
     else:
-        return True, left_clicked and switch_hovered, switch_hovered
+        return False, left_clicked and switch_hovered, switch_hovered
 
 
 def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2=100, dropdown_height=100, dropdown_padding=5, round_corners=5, fontsize=variables.FONT_SIZE, text_color=variables.TEXT_COLOR, grayed_text_color=variables.GRAYED_TEXT_COLOR, dropdown_color=variables.DROPDOWN_COLOR, dropdown_hover_color=variables.DROPDOWN_HOVER_COLOR):

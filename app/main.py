@@ -13,32 +13,49 @@ import time
 import sys
 import os
 
-def RunNavigationDetectionAI(Queue):
+def PluginProcessFunction(PluginName, Queue):
     variables.QUEUE = Queue
-    import plugins.NavigationDetectionAI.main as NavigationDetectionAI
-    NavigationDetectionAI.Initialize()
+    Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
+    Plugin.Initialize()
     while variables.BREAK == False:
-        NavigationDetectionAI.plugin()
+        Plugin.plugin()
         while variables.QUEUE.empty() == False:
-           Queue.put(variables.QUEUE.get())
+            Queue.put(variables.QUEUE.get())
 
-def RunNavigationDetectionV4(Queue):
-    variables.QUEUE = Queue
-    import plugins.NavigationDetectionV4.main as NavigationDetectionV4
-    NavigationDetectionV4.Initialize()
-    while variables.BREAK == False:
-        NavigationDetectionV4.plugin()
-        while variables.QUEUE.empty() == False:
-           Queue.put(variables.QUEUE.get())
-
-def RunAdaptiveCruiseControl(Queue):
-    variables.QUEUE = Queue
-    import plugins.AdaptiveCruiseControl.main as AdaptiveCruiseControl
-    AdaptiveCruiseControl.Initialize()
-    while variables.BREAK == False:
-        AdaptiveCruiseControl.plugin()
-        while variables.QUEUE.empty() == False:
-           Queue.put(variables.QUEUE.get())
+def RunPlugins(Plugin=None, Action=None):
+    global PluginProcesses, PluginQueue
+    if "PluginProcesses" not in globals():
+        PluginProcesses = []
+    if "PluginQueue" not in globals():
+        PluginQueue = multiprocessing.Queue()
+    if Plugin != None and Action != None:
+        if Action == "Restart":
+            if not any(process.name == Plugin for process in PluginProcesses):
+                return
+        if Action == "Stop" or Action == "Restart":
+            for i, process in enumerate(PluginProcesses):
+                if process.name == Plugin:
+                    process.terminate()
+                    PluginProcesses.pop(i)
+                    break
+        if "PluginProcesses" not in globals():
+            PluginProcesses = []
+        if "PluginQueue" not in globals():
+            PluginQueue = multiprocessing.Queue()
+        if Action == "Start" or Action == "Restart":
+            PluginProcesses.append(multiprocessing.Process(target=PluginProcessFunction, args=(Plugin, PluginQueue), name=Plugin, daemon=True))
+            PluginProcesses[-1].start()
+        return
+    if "PluginProcesses" in globals():
+        for PluginProcess in PluginProcesses:
+            PluginProcess.terminate()
+    for Plugin in os.listdir(f"{variables.PATH}app/plugins"):
+        if Plugin not in variables.INVISIBLE_PLUGINS:
+            variables.AVAILABLE_PLUGINS.append(Plugin)
+            if os.path.isdir(f"{variables.PATH}app/plugins/{Plugin}") and settings.Get("EnabledPlugins", Plugin, True):
+                PluginProcesses.append(multiprocessing.Process(target=PluginProcessFunction, args=(Plugin, PluginQueue), name=Plugin, daemon=True))
+    for PluginProcess in PluginProcesses:
+        PluginProcess.start()
 
 if __name__ == '__main__':
     os.system("cls" if variables.OS == "nt" else "clear")
@@ -56,13 +73,7 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.Ping())
     helpers.RunEvery(60, lambda: server.GetUserCount())
 
-    PluginProcesses = []
-    PluginQueue = multiprocessing.Queue()
-    #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
-    #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionV4, args=(PluginQueue,), daemon=True))
-    PluginProcesses.append(multiprocessing.Process(target=RunAdaptiveCruiseControl, args=(PluginQueue,), daemon=True))
-    for PluginProcess in PluginProcesses:
-        PluginProcess.start()
+    RunPlugins()
 
     FPS = 0
     FPS_UpdateTime = 0
@@ -99,15 +110,7 @@ if __name__ == '__main__':
                     if hash != LastScripts[i]:
                         variables.POPUP = [f"Reloading {Script}...", 0, 0.5]
                         if "plugins" in Path:
-                            for PluginProcess in PluginProcesses:
-                                PluginProcess.terminate()
-                            PluginProcesses = []
-                            PluginQueue = multiprocessing.Queue()
-                            #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionAI, args=(PluginQueue,), daemon=True))
-                            #PluginProcesses.append(multiprocessing.Process(target=RunNavigationDetectionV4, args=(PluginQueue,), daemon=True))
-                            PluginProcesses.append(multiprocessing.Process(target=RunAdaptiveCruiseControl, args=(PluginQueue,), daemon=True))
-                            for PluginProcess in PluginProcesses:
-                                PluginProcess.start()
+                            RunPlugins()
                         else:
                             ui.Restart()
                         LastScripts[i] = hash

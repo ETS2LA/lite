@@ -39,6 +39,8 @@ SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 DROPDOWN_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
 DROPDOWN_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
+AVAILABLE_PLUGINS = []
+INVISIBLE_PLUGINS = ["ScreenCapture", "SDKController", "TruckSimAPI"]
 AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}
 TABS = ["Menu", "NavigationDetectionAI", "Settings"]

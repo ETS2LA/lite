@@ -40,7 +40,7 @@ def TranslateThread(text):
     TRANSLATING = True
     variables.POPUP = ["Translating...", 0, 0.5]
     translation = translator.translate(text)
-    variables.TRANSLATION_CACHE[text] =  unidecode.unidecode(translation)
+    variables.TRANSLATION_CACHE[text] = unidecode.unidecode(translation)
     variables.RENDER_FRAME = True
     TRANSLATING = False
     return translation

@@ -57,12 +57,12 @@ def Label(text="NONE", x1=0, y1=0, x2=100, y2=100, align="center", fontsize=vari
         t = translate.Translate(t)
         text, fontscale, thickness, width, height = GetTextSize(t, round((x2-x1)), line_height / 1.5 if line_height / 1.5 < fontsize else fontsize)
         if align == "center":
-            x1 = round(x1 + (x2-x1) / 2 - width / 2)
+            x = round(x1 + (x2-x1) / 2 - width / 2)
         elif align == "left":
-            x1 = round(x1)
+            x = round(x1)
         elif align == "right":
-            x1 = round(x1 + (x2-x1) - width)
-        cv2.putText(variables.FRAME, text, (x1, round(y1 + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
+            x = round(x1 + (x2-x1) - width)
+        cv2.putText(variables.FRAME, text, (x, round(y1 + (i + 0.5) * line_height + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
 
 
 def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE, round_corners=5, button_selected=False, text_color=variables.TEXT_COLOR, button_color=variables.BUTTON_COLOR, button_hover_color=variables.BUTTON_HOVER_COLOR, button_selected_color=variables.BUTTON_SELECTED_COLOR, button_selected_hover_color=variables.BUTTON_SELECTED_HOVER_COLOR):

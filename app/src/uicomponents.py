@@ -90,7 +90,7 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
     if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True:
-        return True, left_clicked and button_hovered, button_hovered
+        return variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS), left_clicked and button_hovered, button_hovered
     else:
         return False, left_clicked and button_hovered, button_hovered
 
@@ -166,7 +166,7 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
         if setting is not None:
             variables.SWITCHES[text] = not state, current_time
             settings.Set(str(setting[0]), str(setting[1]), not state)
-        return True, left_clicked and switch_hovered, switch_hovered
+        return variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS), left_clicked and switch_hovered, switch_hovered
     else:
         return False, left_clicked and switch_hovered, switch_hovered
 
@@ -250,5 +250,8 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
         settings.Set("DropdownSelections", str(text), int(selected_item))
     if dropdown_selected:
         variables.RENDER_FRAME = True
+
+    if dropdown_changed:
+        dropdown_changed = variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)
 
     return dropdown_changed, dropdown_pressed, dropdown_hovered

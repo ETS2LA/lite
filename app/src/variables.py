@@ -1,4 +1,5 @@
 import src.settings as settings
+import multiprocessing
 import os
 
 OS = os.name
@@ -39,8 +40,10 @@ SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 DROPDOWN_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
 DROPDOWN_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
-AVAILABLE_PLUGINS = []
+PLUGIN_QUEUE = multiprocessing.Queue()
+PLUGIN_PROCESSES = {}
 INVISIBLE_PLUGINS = ["ScreenCapture", "SDKController", "TruckSimAPI"]
+AVAILABLE_PLUGINS = [Plugin for Plugin in os.listdir(f"{PATH}app/plugins") if Plugin not in INVISIBLE_PLUGINS]
 AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}
 TABS = ["Menu", "NavigationDetectionAI", "Settings"]

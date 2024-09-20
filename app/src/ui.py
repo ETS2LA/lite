@@ -3,9 +3,9 @@ import src.translate as translate
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.plugins as plugins
 import src.updater as updater
 import src.server as server
-from main import RunPlugins
 
 import numpy as np
 import subprocess
@@ -353,7 +353,7 @@ def Update():
                 "type": "switch",
                 "text": plugin,
                 "setting": ("EnabledPlugins", plugin, True),
-                "function": lambda plugin=plugin: {RunPlugins(plugin, "Start" if settings.Get("EnabledPlugins", plugin, True) else "Stop")},
+                "function": lambda plugin=plugin: {plugins.ManagePlugins(Plugin=plugin, Action="Start" if settings.Get("EnabledPlugins", plugin, True) else "Stop")},
                 "x1": 10,
                 "y1": 166 + 30 * i,
                 "x2": variables.CANVAS_RIGHT - 10,
@@ -405,6 +405,7 @@ def Update():
         variables.RENDER_FRAME = False
         #print(f"Rendering new frame!")
 
+        variables.ITEMS = sorted(variables.ITEMS, key=lambda x: ["label", "button", "switch", "dropdown"].index(x["type"]))
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
 
@@ -423,7 +424,7 @@ def Update():
                 changed, pressed, hovered = uicomponents.Button(**item)
                 variables.AREAS.append((item_type, item["x1"], item["y1"] + variables.TITLE_BAR_HEIGHT, item["x2"], item["y2"] + variables.TITLE_BAR_HEIGHT, pressed or hovered))
 
-                if changed and (variables.CONTEXT_MENU[0] == False or item["text"] in str(variables.CONTEXT_MENU_ITEMS)):
+                if changed:
                     if item_function is not None:
                         item_function()
                     else:

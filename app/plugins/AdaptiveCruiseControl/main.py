@@ -1,5 +1,5 @@
-from plugins.SDKController.main import SCSController as SCSController
 from plugins.TruckSimAPI.main import scsTelemetry as SCSTelemetry
+from plugins.SDKController.main import SCSController
 import plugins.ScreenCapture.main as ScreenCapture
 import src.variables as variables
 import src.settings as settings

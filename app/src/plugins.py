@@ -18,9 +18,10 @@ def ManagePlugins(Plugin=None, Action=None):
         return
     if Plugin != None and Plugin != "All":
         if Plugin not in variables.AVAILABLE_PLUGINS:
-            print(f"Plugin {Plugin} not in AVAILABLE_PLUGINS!")
             return
         Plugins = [Plugin]
+        if Action != "Stop":
+            variables.POPUP = [f"{Action}ing {Plugin}...", 0, 0.5]
     else:
         Plugins = [Plugin for Plugin in variables.AVAILABLE_PLUGINS if settings.Get("EnabledPlugins", Plugin, True)]
 

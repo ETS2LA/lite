@@ -1,5 +1,5 @@
-from plugins.SDKController.main import SCSController as SCSController
 from plugins.TruckSimAPI.main import scsTelemetry as SCSTelemetry
+from plugins.SDKController.main import SCSController
 import plugins.ScreenCapture.main as ScreenCapture
 from src.server import SendCrashReport
 import src.variables as variables
@@ -325,11 +325,11 @@ def plugin():
 
         if enabled == True:
             if left_indicator != indicator_left and indicator_left_wait_for_response == False:
-                SDKController.lblinker = True
+                SDKController.lblinker = not SDKController.lblinker
                 indicator_left_wait_for_response = True
                 indicator_left_response_timer = CurrentTime
             if right_indicator != indicator_right and indicator_right_wait_for_response == False:
-                SDKController.rblinker = True
+                SDKController.rblinker = not SDKController.rblinker
                 indicator_right_wait_for_response = True
                 indicator_right_response_timer = CurrentTime
 

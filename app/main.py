@@ -60,7 +60,6 @@ if __name__ == '__main__':
                 try:
                     hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
                     if hash != LastScripts[i]:
-                        variables.POPUP = [f"Reloading {Script}...", 0, 0.5]
                         if "plugins" in Path:
                             plugins.ManagePlugins(Plugin=Script, Action="Restart")
                         else:

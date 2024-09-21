@@ -157,7 +157,7 @@ def Update():
     if variables.TITLE_BAR_HEIGHT > 0:
         for i, tab in enumerate(variables.TABS):
             variables.ITEMS.append({
-                "type": "button",
+                "type": "button-last-render",
                 "text": tab,
                 "function": lambda tab = tab: {setattr(variables, "PAGE", tab), settings.Set("UI", "Page", tab)},
                 "x1": i / len(variables.TABS) * variables.CANVAS_RIGHT + 5,
@@ -363,7 +363,7 @@ def Update():
         offset = 0
         for item in variables.CONTEXT_MENU_ITEMS:
             variables.ITEMS.append({
-                "type": "button",
+                "type": "button-last-render",
                 "text": item["name"],
                 "function": item["function"],
                 "x1": variables.CONTEXT_MENU[1] * variables.CANVAS_RIGHT,
@@ -405,12 +405,14 @@ def Update():
         variables.RENDER_FRAME = False
         #print(f"Rendering new frame!")
 
-        variables.ITEMS = sorted(variables.ITEMS, key=lambda x: ["label", "button", "switch", "dropdown"].index(x["type"]))
+        variables.ITEMS = sorted(variables.ITEMS, key=lambda x: ["label-first-render", "button-first-render", "switch-first-render", "dropdown-first-render",
+                                                                 "label", "button", "switch", "dropdown",
+                                                                 "label-last-render", "button-last-render", "switch-last-render", "dropdown-last-render"].index(x["type"]))
         variables.FRAME = variables.BACKGROUND.copy()
         variables.AREAS = []
 
         for item in variables.ITEMS:
-            item_type = item["type"]
+            item_type = item["type"].split("-")[0]
             item.pop("type")
             item_function = None
             if "function" in item:

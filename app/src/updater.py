@@ -1,5 +1,6 @@
 import src.variables as variables
 import src.settings as settings
+import src.plugins as plugins
 import src.ui as ui
 
 import requests
@@ -32,6 +33,7 @@ def CheckForUpdates(do_ui_update = True):
         variables.POPUP = ["No updates available.", 0, 0.5]
 
 def Update():
+    plugins.ManagePlugins(Plugin="All", Action="Stop")
     try:
         os.chdir(variables.PATH)
         os.system("git stash >nul 2>&1")

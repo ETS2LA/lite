@@ -26,6 +26,7 @@ def Initialize():
     global enable_key_pressed
     global last_enable_key_pressed
     global LastScreenCaptureCheck
+    global SteeringHistory
 
     global MapTopLeft
     global MapBottomRight
@@ -49,6 +50,7 @@ def Initialize():
     enable_key_pressed = False
     last_enable_key_pressed = False
     LastScreenCaptureCheck = 0
+    SteeringHistory = []
 
     pytorch.Initialize()
     pytorch.LoadAIModel()
@@ -344,7 +346,15 @@ def plugin():
         indicator_last_left = left_indicator
         indicator_last_right = right_indicator
 
-        SDKController.steering = steering * 0.65
+        Steering = steering * 0.65
+
+        SteeringHistory.append((Steering, CurrentTime))
+        SteeringHistory.sort(key=lambda x: x[1])
+        while CurrentTime - SteeringHistory[0][1] > 0.2:
+            SteeringHistory.pop(0)
+        Steering = sum(x[0] for x in SteeringHistory) / len(SteeringHistory)
+
+        SDKController.steering = Steering
 
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 

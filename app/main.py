@@ -61,6 +61,8 @@ if __name__ == '__main__':
                     hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
                     if hash != LastScripts[i]:
                         if "plugins" in Path:
+                            os.system("cls" if variables.OS == "nt" else "clear")
+                            print("\nETS2LA-Lite\n-----------\n")
                             plugins.ManagePlugins(Plugin=Script, Action="Restart")
                         else:
                             ui.Restart()

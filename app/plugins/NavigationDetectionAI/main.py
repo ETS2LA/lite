@@ -12,7 +12,6 @@ import keyboard
 import time
 import cv2
 import mss
-import os
 
 if variables.OS == "nt":
     import win32gui, win32con
@@ -20,6 +19,7 @@ if variables.OS == "nt":
 
 global enabled
 enabled = True
+sct = mss.mss()
 
 def Initialize():
     global enable_key
@@ -83,19 +83,7 @@ def Initialize():
     ScreenCapture.Initialize()
 
 
-def UpdateSettings():
-    global SteeringOffset
-    global SteeringSmoothness
-    global SteeringSensitivity
-    global SteeringMaximum
-
-    SteeringOffset = settings.Get("Steering", "Offset", 0)
-    SteeringSmoothness = settings.Get("Steering", "Smoothness", 3)
-    SteeringSensitivity = settings.Get("Steering", "Sensitivity", 0.5)
-    SteeringMaximum = settings.Get("Steering", "Maximum", 1)
-
-
-def get_text_size(text="NONE", text_width=100, max_text_height=100):
+def GetTextSize(text="NONE", text_width=100, max_text_height=100):
     fontscale = 1
     textsize, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontscale, 1)
     width_current_text, height_current_text = textsize
@@ -112,7 +100,6 @@ def get_text_size(text="NONE", text_width=100, max_text_height=100):
     return text, fontscale, thickness, textsize[0], textsize[1]
 
 
-sct = mss.mss()
 def GetScreenDimensions(monitor=1):
     global screen_x, screen_y, screen_width, screen_height
     monitor = sct.monitors[monitor]
@@ -358,7 +345,7 @@ def plugin():
 
         frame = cv2.cvtColor(frame, cv2.COLOR_GRAY2BGR)
 
-        text, fontscale, thickness, text_width_enabled, text_height_enabled = get_text_size(text="Enabled" if enabled else "Disabled", text_width=width/1.1, max_text_height=height/11)
+        text, fontscale, thickness, text_width_enabled, text_height_enabled = GetTextSize(text="Enabled" if enabled else "Disabled", text_width=width/1.1, max_text_height=height/11)
         cv2.putText(frame, text, (5, 5 + text_height_enabled), cv2.FONT_HERSHEY_SIMPLEX, fontscale, (0, 255, 0) if enabled else (0, 0, 255), thickness, cv2.LINE_AA)
 
         currentDesired = steering

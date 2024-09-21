@@ -286,6 +286,27 @@ def Update():
             "x2": variables.CANVAS_RIGHT * 0.75,
             "y2": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT * 1.5 - 5})
 
+    if variables.PAGE == "Plugins":
+        variables.ITEMS.append({
+            "type": "label",
+            "text": "Enabled Plugins",
+            "x1": 10,
+            "y1": 4,
+            "x2": variables.CANVAS_RIGHT - 10,
+            "y2": 31,
+            "align": "left"})
+
+        for i, plugin in enumerate(variables.AVAILABLE_PLUGINS):
+            variables.ITEMS.append({
+                "type": "switch",
+                "text": plugin,
+                "setting": ("EnabledPlugins", plugin, True),
+                "function": lambda plugin=plugin: {plugins.ManagePlugins(Plugin=plugin, Action="Start" if settings.Get("EnabledPlugins", plugin, True) else "Stop")},
+                "x1": 10,
+                "y1": 35 + 30 * i,
+                "x2": variables.CANVAS_RIGHT - 10,
+                "y2": 55 + 30 * i})
+
     if variables.PAGE == "Settings":
         variables.ITEMS.append({
             "type": "switch",
@@ -338,26 +359,6 @@ def Update():
             "y1": 71,
             "x2": variables.CANVAS_RIGHT - 10,
             "y2": 106})
-
-        variables.ITEMS.append({
-            "type": "label",
-            "text": "Enabled Plugins",
-            "x1": 10,
-            "y1": 136,
-            "x2": variables.CANVAS_RIGHT - 10,
-            "y2": 156,
-            "align": "left"})
-
-        for i, plugin in enumerate(variables.AVAILABLE_PLUGINS):
-            variables.ITEMS.append({
-                "type": "switch",
-                "text": plugin,
-                "setting": ("EnabledPlugins", plugin, True),
-                "function": lambda plugin=plugin: {plugins.ManagePlugins(Plugin=plugin, Action="Start" if settings.Get("EnabledPlugins", plugin, True) else "Stop")},
-                "x1": 10,
-                "y1": 166 + 30 * i,
-                "x2": variables.CANVAS_RIGHT - 10,
-                "y2": 186 + 30 * i})
 
     if variables.CONTEXT_MENU[0]:
         offset = 0

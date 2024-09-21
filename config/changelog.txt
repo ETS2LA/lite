@@ -1,1 +1,1 @@
-fixed updater
+-UI Fixes\n-Moved the switches to enable/disable plugins to the new plugins tab\n-Removed NavigationDetectioAI tab

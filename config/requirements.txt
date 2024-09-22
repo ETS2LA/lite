@@ -1,8 +1,10 @@
 deep-translator
+windows-capture
+beautifulsoup4
 opencv-python
-torchvision==0.18.1
+torchvision==0.19.1
 setuptools
-torchaudio==2.3.1
+torchaudio==2.4.1
 bettercam
 unidecode
 keyboard
@@ -11,5 +13,5 @@ pywin32
 pynput
 mouse
 numpy==1.26.4
-torch==2.3.1
+torch==2.4.1
 mss

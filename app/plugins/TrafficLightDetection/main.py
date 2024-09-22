@@ -22,7 +22,6 @@ NORMAL = "\033[0m"
 GREEN = "\033[92m"
 RED = "\033[91m"
 
-sct = mss.mss()
 lower_red = np.array([200, 0, 0])
 upper_red = np.array([255, 110, 110])
 lower_green = np.array([0, 200, 0])
@@ -219,17 +218,6 @@ def GetTextSize(text="NONE", text_width=100, max_text_height=100):
     return text, fontscale, thickness, textsize[0], textsize[1]
 
 
-def GetScreenDimensions(monitor=1):
-    global screen_x, screen_y, screen_width, screen_height
-    monitor = sct.monitors[monitor]
-    screen_x = monitor["left"]
-    screen_y = monitor["top"]
-    screen_width = monitor["width"]
-    screen_height = monitor["height"]
-    return screen_x, screen_y, screen_width, screen_height
-GetScreenDimensions()
-last_GetGamePosition = 0, screen_x, screen_y, screen_width, screen_height
-
 
 def ClassifyImage(image):
     try:
@@ -300,6 +288,8 @@ def ConvertToAngle(x, y):
 
 
 def plugin():
+    CurrentTime = time.time()
+
     global godot_data
     global coordinates
     global trafficlights
@@ -307,15 +297,30 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    frameFull = ScreenCapture.plugin(ImageType="full")
+    frame = ScreenCapture.plugin(ImageType="cropped")
 
-    if frameFull is None: state = None; return (next((state for _, _, _, approved in trafficlights if approved and state in ("Red", "Yellow", "Green")), None), trafficlights), {"TrafficLights": godot_data}
-    frame = frameFull[round(GetGamePosition()[1] + y1 * (GetGamePosition()[1] + GetGamePosition()[3])):
-                      round(GetGamePosition()[1] + y2 * (GetGamePosition()[1] + GetGamePosition()[3])), 
-                      round(GetGamePosition()[0] + x1 * (GetGamePosition()[0] + GetGamePosition()[2])):
-                      round(GetGamePosition()[0] + x2 * (GetGamePosition()[0] + GetGamePosition()[2]))]
+    if type(frame) == type(None):
+        return
 
-    _, _, windowwidth, windowheight = GetGamePosition()
+    width = frame.shape[1]
+    height = frame.shape[0]
+
+    if width <= 0 or height <= 0:
+        return
+
+    if LastScreenCaptureCheck + 0.5 < CurrentTime:
+        game_x1, game_y1, game_x2, game_y2 = GetGamePosition()
+        if ScreenCapture.monitor_x1 != game_x1 or ScreenCapture.monitor_y1 != game_y1 or ScreenCapture.monitor_x2 != game_x2 or ScreenCapture.monitor_y2 != game_y2:
+            ScreenIndex = GetScreenIndex((game_x1 + game_x2) / 2, (game_y1 + game_y2) / 2)
+            if ScreenCapture.display != ScreenIndex - 1:
+                settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
+                if ScreenCapture.cam_library == "WindowsCapture":
+                    ScreenCapture.StopWindowsCapture = True
+                    while ScreenCapture.StopWindowsCapture == True:
+                        time.sleep(0.01)
+                ScreenCapture.Initialize()
+            ScreenCapture.monitor_x1, ScreenCapture.monitor_y1, ScreenCapture.monitor_x2, ScreenCapture.monitor_y2 = ValidateCaptureArea(ScreenIndex, game_x1, game_y1, game_x2, game_y2)
+        LastScreenCaptureCheck = CurrentTime
 
     try:
         truck_x = data["api"]["truckPlacement"]["coordinateX"]

@@ -1,29 +1,43 @@
+from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import numpy as np
+import traceback
 import cv2
 import mss
 
-def Initialize():
-    global sct
-    global display
-    global monitor
-    global monitor_x1
-    global monitor_y1
-    global monitor_x2
-    global monitor_y2
-    global cam
-    global cam_library
 
-    sct = mss.mss()
-    display = settings.Get("ScreenCapture", "Display", 0)
-    monitor = sct.monitors[(display + 1)]
-    monitor_x1 = monitor["left"]
-    monitor_y1 = monitor["top"]
-    monitor_x2 = monitor["width"]
-    monitor_y2 = monitor["height"]
-    cam = None
-    cam_library = None
+sct = mss.mss()
+if len(sct.monitors) < 2:
+    SendCrashReport("ScreenCapture - Only one item in the monitor list, normally there should be at least two.", str(sct.monitors))
+    Monitor = sct.monitors[0]
+else:
+    Monitor = sct.monitors[1]
+ScreenX = Monitor["left"]
+ScreenY = Monitor["top"]
+ScreenWidth = Monitor["width"]
+ScreenHeight = Monitor["height"]
+LastGamePosition = 0, ScreenX, ScreenY, ScreenWidth, ScreenHeight
+
+
+def Initialize():
+    global Display
+    global Monitor
+    global MonitorX1
+    global MonitorY1
+    global MonitorX2
+    global MonitorY2
+    global Cam
+    global CaptureLibrary
+
+    Display = settings.Get("ScreenCapture", "Display", 0)
+    Monitor = sct.monitors[(Display + 1)]
+    MonitorX1 = Monitor["left"]
+    MonitorY1 = Monitor["top"]
+    MonitorX2 = Monitor["width"]
+    MonitorY2 = Monitor["height"]
+    Cam = None
+    CaptureLibrary = None
 
     try:
 
@@ -35,7 +49,7 @@ def Initialize():
                 capture = WindowsCapture(
                     cursor_capture=False,
                     draw_border=False,
-                    monitor_index=display + 1,
+                    monitor_index=Display + 1,
                     window_name=None,
                 )
                 global WindowsCaptureFrame
@@ -58,106 +72,119 @@ def Initialize():
                     pass
                 control = capture.start_free_threaded()
 
-                cam_library = "WindowsCapture"
+                CaptureLibrary = "WindowsCapture"
 
             except:
 
                 import bettercam
                 try:
-                    cam.stop()
+                    Cam.stop()
                 except:
                     pass
                 try:
-                    cam.close()
+                    Cam.close()
                 except:
                     pass
                 try:
-                    cam.release()
+                    Cam.release()
                 except:
                     pass
                 try:
-                    del cam
+                    del Cam
                 except:
                     pass
-                cam = bettercam.create(output_idx=display, output_color="BGR")
-                cam.start()
-                cam.get_latest_frame()
-                cam_library = "BetterCam"
+                Cam = bettercam.create(output_idx=Display, output_color="BGR")
+                Cam.start()
+                Cam.get_latest_frame()
+                CaptureLibrary = "BetterCam"
 
         else:
 
-            cam_library = "MSS"
+            CaptureLibrary = "MSS"
 
     except:
 
-        cam_library = "MSS"
+        CaptureLibrary = "MSS"
 
 
-def plugin(ImageType:str = "both"):
+def Capture(ImageType:str = "both"):
     """ImageType: "both", "cropped", "full" """
 
-    if cam_library == "WindowsCapture":
+    if CaptureLibrary.lower() == "windowscapture":
 
         try:
 
             img = cv2.cvtColor(np.array(WindowsCaptureFrame), cv2.COLOR_BGRA2BGR)
-            if ImageType == "both":
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+            if ImageType.lower() == "both":
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg, img
-            elif ImageType == "cropped":
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+            elif ImageType.lower() == "cropped":
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg
-            elif ImageType == "full":
+            elif ImageType.lower() == "full":
                 return img
             else:
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg, img
 
         except:
 
-            return None if ImageType == "cropped" or ImageType == "full" else (None, None)
+            return None if ImageType.lower() == "cropped" or ImageType.lower() == "full" else (None, None)
 
-    elif cam_library == "BetterCam":
+    elif CaptureLibrary.lower() == "bettercam":
 
         try:
 
-            if cam == None:
+            if Cam == None:
                 Initialize()
-            img = np.array(cam.get_latest_frame())
-            if ImageType == "both":
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+            img = np.array(Cam.get_latest_frame())
+            if ImageType.lower() == "both":
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg, img
-            elif ImageType == "cropped":
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+            elif ImageType.lower() == "cropped":
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg
-            elif ImageType == "full":
+            elif ImageType.lower() == "full":
                 return img
             else:
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg, img
 
         except:
 
-            return None if ImageType == "cropped" or ImageType == "full" else (None, None)
+            return None if ImageType.lower() == "cropped" or ImageType.lower() == "full" else (None, None)
 
-    elif cam_library == "MSS":
+    elif CaptureLibrary.lower() == "mss":
 
         try:
 
-            fullMonitor = sct.monitors[(display + 1)]
+            fullMonitor = sct.monitors[(Display + 1)]
             img = np.array(sct.grab(fullMonitor))
-            if ImageType == "both":
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+            if ImageType.lower() == "both":
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg, img
-            elif ImageType == "cropped":
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+            elif ImageType.lower() == "cropped":
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg
-            elif ImageType == "full":
+            elif ImageType.lower() == "full":
                 return img
             else:
-                croppedImg = img[monitor_y1:monitor_y2, monitor_x1:monitor_x2]
+                croppedImg = img[MonitorY1:MonitorY2, MonitorX1:MonitorX2]
                 return croppedImg, img
 
         except:
 
-            return None if ImageType == "cropped" or ImageType == "full" else (None, None)
+            return None if ImageType.lower() == "cropped" or ImageType.lower() == "full" else (None, None)
+
+
+def GetScreenDimensions(monitor=1):
+    try:
+        global screen_x, screen_y, screen_width, screen_height
+        monitor = sct.monitors[monitor]
+        screen_x = monitor["left"]
+        screen_y = monitor["top"]
+        screen_width = monitor["width"]
+        screen_height = monitor["height"]
+    except:
+        SendCrashReport("ScreenCapture - Error in function GetScreenDimensions.", str(traceback.format_exc()))
+    return screen_x, screen_y, screen_width, screen_height

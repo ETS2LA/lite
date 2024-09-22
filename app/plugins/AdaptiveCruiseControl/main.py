@@ -203,6 +203,12 @@ def plugin():
     if type(frame) == type(None):
         return
 
+    width = frame.shape[1]
+    height = frame.shape[0]
+
+    if width <= 0 or height <= 0:
+        return
+
     if LastScreenCaptureCheck + 0.5 < CurrentTime:
         game_x1, game_y1, game_x2, game_y2 = GetGamePosition()
         if ScreenCapture.monitor_x1 != game_x1 or ScreenCapture.monitor_y1 != game_y1 or ScreenCapture.monitor_x2 != game_x2 or ScreenCapture.monitor_y2 != game_y2:
@@ -216,13 +222,6 @@ def plugin():
                 ScreenCapture.Initialize()
             ScreenCapture.monitor_x1, ScreenCapture.monitor_y1, ScreenCapture.monitor_x2, ScreenCapture.monitor_y2 = ValidateCaptureArea(ScreenIndex, game_x1, game_y1, game_x2, game_y2)
         LastScreenCaptureCheck = CurrentTime
-
-    width = frame.shape[1]
-    height = frame.shape[0]
-
-    if width <= 0 or height <= 0:
-        return
-
 
     
     try:

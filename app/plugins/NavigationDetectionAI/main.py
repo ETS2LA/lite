@@ -226,7 +226,11 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    frame = ScreenCapture.plugin(ImageType="cropped")
+    try:
+        frame = ScreenCapture.plugin(ImageType="cropped")
+    except:
+        SendCrashReport("ScreenCapture - Error in function plugin.", str(traceback.format_exc()))
+        exit()
 
     try:
         try:

@@ -1,5 +1,6 @@
 import src.variables as variables
 import src.settings as settings
+import traceback
 import requests
 import json
 import time
@@ -9,13 +10,18 @@ ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
 if ALLOW_CRASH_REPORTS == None:
     variables.PAGE = "CrashReport"
 
+RED = "\033[91m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+NORMAL = "\033[0m"
+
 
 def SendCrashReport(type:str, message:str, additional=None):
     if message.strip() == "":
-        return False
-
+        return
+    CurrentTime = time.time()
     try:
-        if ALLOW_CRASH_REPORTS == True:
+        if ALLOW_CRASH_REPORTS == True and settings.Get("CrashReports", "LastCrashReport", 0) + 300 > CurrentTime:
             additional = {
                 "version": variables.VERSION + " (ETS2LA-Lite)",
                 "os": variables.OS,
@@ -34,15 +40,22 @@ def SendCrashReport(type:str, message:str, additional=None):
             data = json.dumps(jsonData)
             try:
                 response = requests.post(url, headers=headers, data=data)
+                if response.status_code == 200:
+                    print(GREEN + "\nCrash report sent successfully!" + NORMAL)
+                else:
+                    print(RED + f"\nFailed to send crash report (Server responded with {response.status_code})." + NORMAL)
             except:
-                print("Could not connect to server to send crash report.")
-            return response.status_code == 200
+                print(RED + f"\nUnexpected error occurred while sending the crash report:{NORMAL}\n{str(str(traceback.format_exc()))}")
+        elif ALLOW_CRASH_REPORTS == False:
+            print(YELLOW + "\nCrash detected, but crash reports are disabled in the settings. No report was sent." + NORMAL)
         else:
-            print("Crash detected, but crash reports are not allowed to be sent.")
+            print(YELLOW + "\nCrash detected, but the crash report rate limit has been reached. No report was sent." + NORMAL)
     except:
-        import traceback
-        traceback.print_exc()
-        print("Crash report sending failed.")
+        print(RED + f"\nCrash report sending failed due to an unexpected error:{NORMAL}\n{str(traceback.format_exc())}")
+    if message.endswith('\n'):
+        message = message[:-1]
+    message = f"{RED}>{NORMAL} " + message.replace("\n", f"\n{RED}>{NORMAL} ")
+    print(f"{RED}{type}{NORMAL}\n{message}\n")
 
 
 def GetUserCount():
@@ -62,10 +75,10 @@ def GetUserCount():
 
 def Ping():
     try:
-        last_ping = float(settings.Get("CrashReports", "last_ping", 0))
-        current_time = time.time()
-        if last_ping + 59 < current_time:
-            settings.Set("CrashReports", "last_ping", str(current_time))
+        LastPing = settings.Get("CrashReports", "LastPing", 0)
+        CurrentTime = time.time()
+        if LastPing + 59 < CurrentTime:
+            settings.Set("CrashReports", "LastPing", CurrentTime)
             requests.get("https://crash.tumppi066.fi/ping", timeout=1)
     except:
         pass

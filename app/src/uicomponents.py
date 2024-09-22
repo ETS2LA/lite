@@ -70,7 +70,7 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
     y1 += variables.TITLE_BAR_HEIGHT
     y2 += variables.TITLE_BAR_HEIGHT
     text = translate.Translate(text)
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in variables.CONTEXT_MENU_ITEMS):
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         button_hovered = True
     else:
         button_hovered = False
@@ -89,7 +89,7 @@ def Button(text="NONE", x1=0, y1=0, x2=100, y2=100, fontsize=variables.FONT_SIZE
         cv2.rectangle(variables.FRAME, (round(x1+round_corners/2), round(y1+round_corners/2)), (round(x2-round_corners/2), round(y2-round_corners/2)), button_color, -1, cv2.LINE_AA)
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text, (round(x1 + (x2-x1) / 2 - width / 2), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True and (variables.CONTEXT_MENU[0] == False or text in variables.CONTEXT_MENU_ITEMS):
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         return True, left_clicked and button_hovered, button_hovered
     else:
         return False, left_clicked and button_hovered, button_hovered
@@ -122,7 +122,7 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
     else:
         animation_state = 1
 
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in variables.CONTEXT_MENU_ITEMS):
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         switch_hovered = True
     else:
         switch_hovered = False
@@ -162,7 +162,7 @@ def Switch(text="NONE", x1=0, y1=0, x2=100, y2=100, switch_width=40, switch_heig
                 cv2.circle(variables.FRAME, (round(x1+switch_height/2), round((y1+y2)/2)), round(switch_height/2.5), switch_knob_color, -1, cv2.LINE_AA)
     text, fontscale, thickness, width, height = GetTextSize(text, round((x2-x1)), fontsize)
     cv2.putText(variables.FRAME, text, (round(x1 + switch_width + text_padding), round(y1 + (y2-y1) / 2 + height / 2)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, text_color, thickness, cv2.LINE_AA)
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True and (variables.CONTEXT_MENU[0] == False or text in variables.CONTEXT_MENU_ITEMS):
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 and left_clicked == False and last_left_clicked == True and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         if setting is not None:
             variables.SWITCHES[text] = not state, current_time
             settings.Set(str(setting[0]), str(setting[1]), not state)
@@ -181,7 +181,7 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
 
     dropdown_selected, selected_item = variables.DROPDOWNS[text]
 
-    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 + ((dropdown_height + dropdown_padding) if dropdown_selected else 0) and foreground_window and (variables.CONTEXT_MENU[0] == False or text in variables.CONTEXT_MENU_ITEMS):
+    if x1 <= mouse_x * frame_width <= x2 and y1 <= mouse_y * frame_height <= y2 + ((dropdown_height + dropdown_padding) if dropdown_selected else 0) and foreground_window and (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS)):
         dropdown_hovered = True
         dropdown_pressed = left_clicked
         dropdown_changed = True if last_left_clicked == True and left_clicked == False and dropdown_selected == True else False
@@ -252,6 +252,6 @@ def Dropdown(text="NONE", items=["NONE"], default_item=0, x1=0, y1=0, x2=100, y2
         variables.RENDER_FRAME = True
 
     if dropdown_changed:
-        dropdown_changed = (variables.CONTEXT_MENU[0] == False or text in variables.CONTEXT_MENU_ITEMS)
+        dropdown_changed = (variables.CONTEXT_MENU[0] == False or text in str(variables.CONTEXT_MENU_ITEMS))
 
     return dropdown_changed, dropdown_pressed, dropdown_hovered

@@ -113,7 +113,7 @@ def preprocess_image(image):
     return transform(image).unsqueeze(0).to(pytorch.DEVICE)
 
 
-def plugin():
+def Run():
     CurrentTime = time.time()
 
     global enabled
@@ -134,7 +134,7 @@ def plugin():
 
     global SDKController
     global TruckSimAPI
-
+    1/0
     data = {}
     data["api"] = TruckSimAPI.update()
     try:

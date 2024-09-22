@@ -1,6 +1,8 @@
+from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import multiprocessing
+import traceback
 
 
 def PluginProcessFunction(PluginName, Queue):
@@ -8,9 +10,12 @@ def PluginProcessFunction(PluginName, Queue):
     Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
     Plugin.Initialize()
     while variables.BREAK == False:
-        Plugin.plugin()
-        while variables.QUEUE.empty() == False:
-            Queue.put(variables.QUEUE.get())
+        try:
+            Plugin.Run()
+            while variables.QUEUE.empty() == False:
+                Queue.put(variables.QUEUE.get())
+        except:
+            SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
 
 
 def ManagePlugins(Plugin=None, Action=None):

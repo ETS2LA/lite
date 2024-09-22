@@ -121,12 +121,15 @@ def CheckForAIModelUpdates():
                     response = requests.get(url)
                     soup = BeautifulSoup(response.content, 'html.parser')
 
+                    LatestAIModel = None
                     for link in soup.find_all('a', href=True):
                         href = link['href']
                         if href.startswith('/Glas42/NavigationDetectionAI/blob/main/model'):
                             LatestAIModel = href.split("/")[-1]
                             settings.Set("NavigationDetectionAI", "LatestModel", LatestAIModel)
                             break
+                    if LatestAIModel == None:
+                        LatestAIModel = settings.Get("NavigationDetectionAI", "LatestModel", "unset")
 
                     CurrentAIModel = GetAIModelName()
 

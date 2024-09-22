@@ -40,6 +40,8 @@ if __name__ == '__main__':
         Scripts.append(("Main", f"{variables.PATH}app/main.py"))
         for Object in os.listdir(f"{variables.PATH}app/plugins"):
             Scripts.append((Object, f"{variables.PATH}app/plugins/{Object}/main.py"))
+        for Object in os.listdir(f"{variables.PATH}app/modules"):
+            Scripts.append((Object, f"{variables.PATH}app/modules/{Object}/main.py"))
         for Object in os.listdir(f"{variables.PATH}app/src"):
             Scripts.append((Object, f"{variables.PATH}app/src/{Object}"))
         LastScripts = {}
@@ -64,6 +66,10 @@ if __name__ == '__main__':
                             os.system("cls" if variables.OS == "nt" else "clear")
                             print("\nETS2LA-Lite\n-----------\n")
                             plugins.ManagePlugins(Plugin=Script, Action="Restart")
+                        elif "modules" in Path:
+                            os.system("cls" if variables.OS == "nt" else "clear")
+                            print("\nETS2LA-Lite\n-----------\n")
+                            plugins.ManagePlugins(Plugin="All", Action="Restart")
                         else:
                             ui.Restart()
                         LastScripts[i] = hash

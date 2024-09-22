@@ -1,6 +1,6 @@
-from plugins.TruckSimAPI.main import scsTelemetry as SCSTelemetry
-from plugins.SDKController.main import SCSController
-import plugins.ScreenCapture.main as ScreenCapture
+from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
+from modules.SDKController.main import SCSController
+import modules.ScreenCapture.main as ScreenCapture
 from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
@@ -100,96 +100,7 @@ def GetTextSize(text="NONE", text_width=100, max_text_height=100):
     return text, fontscale, thickness, textsize[0], textsize[1]
 
 
-def GetScreenDimensions(monitor=1):
-    global screen_x, screen_y, screen_width, screen_height
-    monitor = sct.monitors[monitor]
-    screen_x = monitor["left"]
-    screen_y = monitor["top"]
-    screen_width = monitor["width"]
-    screen_height = monitor["height"]
-    return screen_x, screen_y, screen_width, screen_height
-GetScreenDimensions()
 
-
-def GetScreenIndex(x, y):
-    with mss.mss() as sct:
-        monitors = sct.monitors
-    closest_screen_index = None
-    closest_distance = float('inf')
-    for i, monitor in enumerate(monitors[1:]):
-        center_x = (monitor['left'] + monitor['left'] + monitor['width']) // 2
-        center_y = (monitor['top'] + monitor['top'] + monitor['height']) // 2
-        distance = ((center_x - x) ** 2 + (center_y - y) ** 2) ** 0.5
-        if distance < closest_distance:
-            closest_screen_index = i + 1
-            closest_distance = distance
-    return closest_screen_index
-
-
-def ValidateCaptureArea(monitor, x1, y1, x2, y2):
-    monitor = sct.monitors[monitor]
-    width, height = monitor["width"], monitor["height"]
-    x1 = max(0, min(width - 1, x1))
-    x2 = max(0, min(width - 1, x2))
-    y1 = max(0, min(height - 1, y1))
-    y2 = max(0, min(height - 1, y2))
-    if x1 == x2:
-        if x1 == 0:
-            x2 = width - 1
-        else:
-            x1 = 0
-    if y1 == y2:
-        if y1 == 0:
-            y2 = height - 1
-        else:
-            y1 = 0
-    return x1, y1, x2, y2
-
-
-def GetGamePosition():
-    global LastGetGamePosition
-    if variables.OS == "nt":
-        if LastGetGamePosition[0] + 1 < time.time():
-            hwnd = None
-            top_windows = []
-            window = LastGetGamePosition[1], LastGetGamePosition[2], LastGetGamePosition[3], LastGetGamePosition[4]
-            win32gui.EnumWindows(lambda hwnd, top_windows: top_windows.append((hwnd, win32gui.GetWindowText(hwnd))), top_windows)
-            for hwnd, window_text in top_windows:
-                if "Truck Simulator" in window_text and "Discord" not in window_text:
-                    rect = win32gui.GetClientRect(hwnd)
-                    tl = win32gui.ClientToScreen(hwnd, (rect[0], rect[1]))
-                    br = win32gui.ClientToScreen(hwnd, (rect[2], rect[3]))
-                    window = (tl[0], tl[1], br[0] - tl[0], br[1] - tl[1])
-                    break
-            LastGetGamePosition = time.time(), window[0], window[1], window[0] + window[2], window[1] + window[3]
-            return window[0], window[1], window[0] + window[2], window[1] + window[3]
-        else:
-            return LastGetGamePosition[1], LastGetGamePosition[2], LastGetGamePosition[3], LastGetGamePosition[4]
-    else:
-        return screen_x, screen_y, screen_x + screen_width, screen_y + screen_height
-LastGetGamePosition = 0, screen_x, screen_y, screen_width, screen_height
-
-
-def GetRouteAdvisorPosition():
-    x1, y1, x2, y2 = GetGamePosition()
-    distance_from_right = 21
-    distance_from_bottom = 100
-    width = 420
-    height = 219
-    scale = (y2 - y1) / 1080
-    x = x1 + (x2 - x1) - (distance_from_right * scale + width * scale)
-    y = y1 + (y2 - y1) - (distance_from_bottom * scale + height * scale)
-    map_topleft = (round(x), round(y))
-    x = x1 + (x2 - x1) - (distance_from_right * scale)
-    y = y1 + (y2 - y1) - (distance_from_bottom * scale)
-    map_bottomright = (round(x), round(y))
-    x = map_bottomright[0] - (map_bottomright[0] - map_topleft[0]) * 0.57
-    y = map_bottomright[1] - (map_bottomright[1] - map_topleft[1]) * 0.575
-    arrow_topleft = (round(x), round(y))
-    x = map_bottomright[0] - (map_bottomright[0] - map_topleft[0]) * 0.43
-    y = map_bottomright[1] - (map_bottomright[1] - map_topleft[1]) * 0.39
-    arrow_bottomright = (round(x), round(y))
-    return map_topleft, map_bottomright, arrow_topleft, arrow_bottomright
 
 
 def preprocess_image(image):
@@ -227,7 +138,7 @@ def plugin():
     data = {}
     data["api"] = TruckSimAPI.update()
     try:
-        frame = ScreenCapture.plugin(ImageType="cropped")
+        frame = ScreenCapture.Capture(ImageType="cropped")
     except:
         SendCrashReport("ScreenCapture - Error in function plugin.", str(traceback.format_exc()))
         exit()
@@ -243,18 +154,18 @@ def plugin():
             return
 
         if LastScreenCaptureCheck + 0.5 < CurrentTime:
-            map_topleft, map_bottomright, arrow_topleft, arrow_bottomright = GetRouteAdvisorPosition()
-            screen_x, screen_y, _, _ = GetScreenDimensions(GetScreenIndex((map_topleft[0] + map_bottomright[0]) / 2, (map_topleft[1] + map_bottomright[1]) / 2))
-            if ScreenCapture.monitor_x1 != map_topleft[0] - screen_x or ScreenCapture.monitor_y1 != map_topleft[1] - screen_y or ScreenCapture.monitor_x2 != map_bottomright[0] - screen_x or ScreenCapture.monitor_y2 != map_bottomright[1] - screen_y:
-                ScreenIndex = GetScreenIndex((map_topleft[0] + map_bottomright[0]) / 2, (map_topleft[1] + map_bottomright[1]) / 2)
-                if ScreenCapture.display != ScreenIndex - 1:
+            MapTopLeft, MapBottomRight, ArrowTopLeft, ArrowBottomRight = ScreenCapture.GetRouteAdvisorPosition()
+            ScreenX, ScreenY, _, _ = ScreenCapture.GetScreenDimensions(ScreenCapture.GetScreenIndex((MapTopLeft[0] + MapBottomRight[0]) / 2, (MapTopLeft[1] + MapBottomRight[1]) / 2))
+            if ScreenCapture.MonitorX1 != MapTopLeft[0] - ScreenX or ScreenCapture.MonitorY1 != MapTopLeft[1] - ScreenY or ScreenCapture.MonitorX2 != MapBottomRight[0] - ScreenX or ScreenCapture.MonitorY2 != MapBottomRight[1] - ScreenY:
+                ScreenIndex = ScreenCapture.GetScreenIndex((MapTopLeft[0] + MapBottomRight[0]) / 2, (MapTopLeft[1] + MapBottomRight[1]) / 2)
+                if ScreenCapture.Display != ScreenIndex - 1:
                     settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
-                    if ScreenCapture.cam_library == "WindowsCapture":
+                    if ScreenCapture.CaptureLibrary == "WindowsCapture":
                         ScreenCapture.StopWindowsCapture = True
                         while ScreenCapture.StopWindowsCapture == True:
                             time.sleep(0.01)
                     ScreenCapture.Initialize()
-                ScreenCapture.monitor_x1, ScreenCapture.monitor_y1, ScreenCapture.monitor_x2, ScreenCapture.monitor_y2 = ValidateCaptureArea(ScreenIndex, map_topleft[0] - screen_x, map_topleft[1] - screen_y, map_bottomright[0] - screen_x, map_bottomright[1] - screen_y)
+                ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, MapTopLeft[0] - ScreenX, MapTopLeft[1] - ScreenY, MapBottomRight[0] - ScreenX, MapBottomRight[1] - ScreenY)
             LastScreenCaptureCheck = CurrentTime
 
         width = frame.shape[1]

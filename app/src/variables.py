@@ -42,8 +42,7 @@ DROPDOWN_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
 PLUGIN_QUEUE = multiprocessing.Queue()
 PLUGIN_PROCESSES = {}
-INVISIBLE_PLUGINS = ["ScreenCapture", "SDKController", "TruckSimAPI"]
-AVAILABLE_PLUGINS = [Plugin for Plugin in os.listdir(f"{PATH}app/plugins") if Plugin not in INVISIBLE_PLUGINS]
+AVAILABLE_PLUGINS = [Plugin for Plugin in os.listdir(f"{PATH}app/plugins")]
 AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}
 TABS = ["Menu", "Plugins", "Settings"]

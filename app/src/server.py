@@ -1,5 +1,6 @@
 import src.variables as variables
 import src.settings as settings
+import multiprocessing
 import traceback
 import requests
 import json
@@ -52,10 +53,12 @@ def SendCrashReport(type:str, message:str, additional=None):
             print(YELLOW + "\nCrash detected, but the crash report rate limit has been reached. No report was sent." + NORMAL)
     except:
         print(RED + f"\nCrash report sending failed due to an unexpected error:{NORMAL}\n{str(traceback.format_exc())}")
-    if message.endswith('\n'):
+    while message.endswith('\n'):
         message = message[:-1]
     message = f"{RED}>{NORMAL} " + message.replace("\n", f"\n{RED}>{NORMAL} ")
     print(f"{RED}{type}{NORMAL}\n{message}\n")
+    if multiprocessing.current_process().name != "MainProcess":
+        exit()
 
 
 def GetUserCount():

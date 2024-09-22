@@ -1,6 +1,6 @@
-from plugins.TruckSimAPI.main import scsTelemetry as SCSTelemetry
-from plugins.SDKController.main import SCSController
-import plugins.ScreenCapture.main as ScreenCapture
+from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
+from modules.SDKController.main import SCSController
+import modules.ScreenCapture.main as ScreenCapture
 from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
@@ -297,7 +297,7 @@ def plugin():
 
     data = {}
     data["api"] = TruckSimAPI.update()
-    frame = ScreenCapture.plugin(ImageType="cropped")
+    frame = ScreenCapture.Capture(ImageType="cropped")
 
     if type(frame) == type(None):
         return

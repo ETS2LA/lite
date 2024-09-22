@@ -1,3 +1,4 @@
--UI Fixes
--Moved the switches to enable/disable plugins to the new plugins tab
--Removed NavigationDetectioAI tab
+-Moved plugins to the new modules folder
+-Moved functions to manage the screen capture to the ScreenCapture module
+-Improved crash reports
+(Some Plugins might not work now)

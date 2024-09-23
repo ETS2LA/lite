@@ -1,4 +1,6 @@
--Moved plugins to the new modules folder
--Moved functions to manage the screen capture to the ScreenCapture module
--Improved crash reports
-(Some Plugins might not work now)
+Added the backend for the communication between plugins and the main app
+Plugins are now disabling themselves when they crash
+The crash reporter will catch every crash now
+Improved the PyTorch module
+Fixed context menu behavior
+(Currently some plugins are not working)

@@ -23,7 +23,7 @@ def Get(category:str, name:str, value:any=None):
 
         if settings[category][name] == None:
             return value
-        
+
         return settings[category][name]
     except:
         if value != None:

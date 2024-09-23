@@ -24,7 +24,7 @@ def SendCrashReport(type:str, message:str, additional=None):
     CurrentTime = time.time()
     console.RestoreConsole()
     try:
-        if ALLOW_CRASH_REPORTS == True and settings.Get("CrashReports", "LastCrashReport", 0) + 300 > CurrentTime:
+        if ALLOW_CRASH_REPORTS == True and settings.Get("CrashReports", "LastCrashReport", 0) + 300 < CurrentTime:
             additional = {
                 "version": variables.VERSION + " (ETS2LA-Lite)",
                 "os": variables.OS,

@@ -1,12 +1,11 @@
 import src.variables as variables
 import src.settings as settings
+import src.console as console
 import multiprocessing
 import traceback
 import requests
 import json
 import time
-import sys
-import os
 
 
 ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
@@ -23,6 +22,7 @@ def SendCrashReport(type:str, message:str, additional=None):
     if message.strip() == "":
         return
     CurrentTime = time.time()
+    console.RestoreConsole()
     try:
         if ALLOW_CRASH_REPORTS == True and settings.Get("CrashReports", "LastCrashReport", 0) + 300 > CurrentTime:
             additional = {

@@ -22,22 +22,25 @@ try:
 except:
     TorchAvailable = False
     exc = traceback.format_exc()
-    SendCrashReport("NavigationDetectionAI - PyTorch import error.", str(exc))
-    print(RED + "NavigationDetectionAI - PyTorch import error:\n" + NORMAL + str(exc))
-    console.RestoreConsole()
+    SendCrashReport("PyTorch - PyTorch import error.", str(exc))
 
 
 AIModelUpdateThread = None
 AIModelLoadThread = None
 
 
-def Initialize():
+def Initialize(ModelOwner="", ModelName=""):
+    global MODELOWNER
+    global MODELNAME
     global DEVICE
     global PATH
 
+    MODELOWNER = str(ModelOwner)
+    MODELNAME = str(ModelName)
+
     TryCuda = settings.Get("PyTorch", "TryCuda", True)
     DEVICE = torch.device("cuda" if torch.cuda.is_available() and TryCuda else "cpu")
-    PATH = f"{variables.PATH}cache/NavigationDetectionAI"
+    PATH = f"{variables.PATH}cache/{MODELNAME}"
 
 
 def LoadAIModel():
@@ -78,10 +81,7 @@ def LoadAIModel():
                     time.sleep(3)
                     HandleCorruptedAIModel()
             except:
-                exc = traceback.format_exc()
-                SendCrashReport("NavigationDetection - Loading AI Error.", str(exc))
-                print(RED + "NavigationDetection - Loading AI Error:\n" + NORMAL + str(exc))
-                console.RestoreConsole()
+                SendCrashReport("PyTorch- Loading AI Error.", str(traceback.format_exc()))
                 variables.QUEUE.put({"POPUP": ["Failed to load the AI model!", 0, 0.5]})
                 print(RED + "Failed to load the AI model!" + NORMAL)
                 ModelLoaded = False
@@ -92,10 +92,7 @@ def LoadAIModel():
             AIModelLoadThread.start()
 
     except:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function LoadAIModel.", str(exc))
-        print(RED + "NavigationDetection - Error in function LoadAIModel:\n" + NORMAL + str(exc))
-        console.RestoreConsole()
+        SendCrashReport("PyTorch - Error in function LoadAIModel.", str(traceback.format_exc()))
 
 
 def CheckForAIModelUpdates():
@@ -112,24 +109,24 @@ def CheckForAIModelUpdates():
                     variables.QUEUE.put({"POPUP": ["Checking for AI model updates...", 0, 0.5]})
                     print(GREEN + "Checking for AI model updates..." + NORMAL)
 
-                    if settings.Get("NavigationDetectionAI", "LastUpdateCheck", 0) + 600 > time.time():
-                        if settings.Get("NavigationDetectionAI", "LatestModel", "unset") == GetAIModelName():
+                    if settings.Get("PyTorch", f"{MODELNAME}-LastUpdateCheck", 0) + 600 > time.time():
+                        if settings.Get("PyTorch", f"{MODELNAME}-LatestModel", "unset") == GetAIModelName():
                             print(GREEN + "No AI model updates available!" + NORMAL)
                             return
 
-                    url = "https://huggingface.co/Glas42/NavigationDetectionAI/tree/main/model"
+                    url = f"https://huggingface.co/{MODELOWNER}/{MODELNAME}/tree/main/model"
                     response = requests.get(url)
                     soup = BeautifulSoup(response.content, 'html.parser')
 
                     LatestAIModel = None
-                    for link in soup.find_all('a', href=True):
-                        href = link['href']
-                        if href.startswith('/Glas42/NavigationDetectionAI/blob/main/model'):
+                    for link in soup.find_all("a", href=True):
+                        href = link["href"]
+                        if href.startswith(f"/{MODELOWNER}/{MODELNAME}/blob/main/model"):
                             LatestAIModel = href.split("/")[-1]
-                            settings.Set("NavigationDetectionAI", "LatestModel", LatestAIModel)
+                            settings.Set("PyTorch", f"{MODELNAME}-LatestModel", LatestAIModel)
                             break
                     if LatestAIModel == None:
-                        LatestAIModel = settings.Get("NavigationDetectionAI", "LatestModel", "unset")
+                        LatestAIModel = settings.Get("PyTorch", f"{MODELNAME}-LatestModel", "unset")
 
                     CurrentAIModel = GetAIModelName()
 
@@ -137,7 +134,7 @@ def CheckForAIModelUpdates():
                         variables.QUEUE.put({"POPUP": ["Updating the AI model...", 0, 0.5]})
                         print(GREEN + "Updating the AI model..." + NORMAL)
                         DeleteAllAIModels()
-                        response = requests.get(f"https://huggingface.co/Glas42/NavigationDetectionAI/resolve/main/model/{LatestAIModel}?download=true", stream=True)
+                        response = requests.get(f"https://huggingface.co/{MODELOWNER}/{MODELNAME}/resolve/main/model/{LatestAIModel}?download=true", stream=True)
                         with open(os.path.join(PATH, f"{LatestAIModel}"), "wb") as modelfile:
                             total_size = int(response.headers.get('content-length', 0))
                             downloaded_size = 0
@@ -152,7 +149,7 @@ def CheckForAIModelUpdates():
                     else:
                         variables.QUEUE.put({"POPUP": ["No AI model updates available!", 0, 0.5]})
                         print(GREEN + "No AI model updates available!" + NORMAL)
-                    settings.Set("NavigationDetectionAI", "LastUpdateCheck", time.time())
+                    settings.Set("PyTorch", f"{MODELNAME}-LastUpdateCheck", time.time())
 
                 else:
 
@@ -161,10 +158,7 @@ def CheckForAIModelUpdates():
                     print(RED + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + NORMAL)
 
             except:
-                exc = traceback.format_exc()
-                SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdatesThread.", str(exc))
-                print(RED + "NavigationDetection - Error in function CheckForAIModelUpdatesThread:\n" + NORMAL + str(exc))
-                console.RestoreConsole()
+                SendCrashReport("PyTorch - Error in function CheckForAIModelUpdatesThread.", str(traceback.format_exc()))
                 variables.QUEUE.put({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
                 print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
 
@@ -173,10 +167,7 @@ def CheckForAIModelUpdates():
         AIModelUpdateThread.start()
 
     except:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function CheckForAIModelUpdates.", str(exc))
-        print(RED + "NavigationDetection - Error in function CheckForAIModelUpdates:\n" + NORMAL + str(exc))
-        console.RestoreConsole()
+        SendCrashReport("PyTorch - Error in function CheckForAIModelUpdates.", str(traceback.format_exc()))
         variables.QUEUE.put({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
         print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
 
@@ -186,10 +177,7 @@ def ModelFolderExists():
         if os.path.exists(PATH) == False:
             os.makedirs(PATH)
     except:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function ModelFolderExists.", str(exc))
-        print(RED + "NavigationDetection - Error in function ModelFolderExists:\n" + NORMAL + str(exc))
-        console.RestoreConsole()
+        SendCrashReport("PyTorch - Error in function ModelFolderExists.", str(traceback.format_exc()))
 
 
 def GetAIModelName():
@@ -200,10 +188,7 @@ def GetAIModelName():
                 return file
         return None
     except:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Error in function GetAIModelName.", str(exc))
-        print(RED + "NavigationDetectionAI - Error in function GetAIModelName:\n" + NORMAL + str(exc))
-        console.RestoreConsole()
+        SendCrashReport("PyTorch - Error in function GetAIModelName.", str(traceback.format_exc()))
         return None
 
 
@@ -216,14 +201,10 @@ def DeleteAllAIModels():
     except PermissionError:
         global TorchAvailable
         TorchAvailable = False
-        exc = traceback.format_exc()
-        print(RED + "NavigationDetectionAI - PermissionError in function DeleteAllAIModels:\n" + NORMAL + str(exc))
+        print(RED + "PyTorch - PermissionError in function DeleteAllAIModels:\n" + NORMAL + str(traceback.format_exc()))
         console.RestoreConsole()
     except:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetectionAI - Error in function DeleteAllAIModels.", str(exc))
-        print(RED + "NavigationDetectionAI - Error in function DeleteAllAIModels:\n" + NORMAL + str(exc))
-        console.RestoreConsole()
+        SendCrashReport("PyTorch - Error in function DeleteAllAIModels.", str(traceback.format_exc()))
 
 
 def HandleCorruptedAIModel():
@@ -284,7 +265,4 @@ def GetAIModelProperties():
             if "training_date" in item:
                 MODEL_TRAINING_DATE = item.split("#")[1]
     except:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetectionAI - Error in function GetAIModelProperties.", str(exc))
-        print(RED + "NavigationDetectionAI - Error in function GetAIModelProperties:\n" + NORMAL + str(exc))
-        console.RestoreConsole()
+        SendCrashReport("PyTorch - Error in function GetAIModelProperties.", str(traceback.format_exc()))

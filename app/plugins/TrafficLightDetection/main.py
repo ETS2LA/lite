@@ -71,7 +71,7 @@ def Initialize():
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
 
-    pytorch.Initialize()
+    pytorch.Initialize(ModelOwner="Glas42", ModelName="TrafficLightDetectionAI")
     pytorch.LoadAIModel()
     ScreenCapture.Initialize()
 

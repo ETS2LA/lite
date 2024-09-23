@@ -23,6 +23,7 @@ def PluginProcessFunction(PluginName, Queue, DataQueue):
 def ManagePlugins(Plugin=None, Action=None):
     if Action == None:
         return
+    variables.DATA = {}
     if Plugin != None and Plugin != "All":
         if Plugin not in variables.AVAILABLE_PLUGINS:
             return
@@ -34,8 +35,9 @@ def ManagePlugins(Plugin=None, Action=None):
 
     for Plugin in Plugins:
         if Action == "Stop" or Action == "Restart":
-            variables.PLUGIN_PROCESSES[Plugin].terminate()
-            del variables.PLUGIN_PROCESSES[Plugin]
+            if Plugin in variables.PLUGIN_PROCESSES:
+                variables.PLUGIN_PROCESSES[Plugin].terminate()
+                del variables.PLUGIN_PROCESSES[Plugin]
 
         if Action == "Start" or Action == "Restart":
             variables.PLUGIN_PROCESSES[Plugin] = multiprocessing.Process(target=PluginProcessFunction, args=(Plugin, variables.PLUGIN_QUEUE, variables.DATA_QUEUE), name=Plugin, daemon=True)

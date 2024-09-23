@@ -65,12 +65,10 @@ if __name__ == '__main__':
                         if "plugins" in Path:
                             os.system("cls" if variables.OS == "nt" else "clear")
                             print("\nETS2LA-Lite\n-----------\n")
-                            variables.DATA = {}
                             plugins.ManagePlugins(Plugin=Script, Action="Restart")
                         elif "modules" in Path:
                             os.system("cls" if variables.OS == "nt" else "clear")
                             print("\nETS2LA-Lite\n-----------\n")
-                            variables.DATA = {}
                             plugins.ManagePlugins(Plugin="All", Action="Restart")
                         else:
                             ui.Restart()

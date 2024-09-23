@@ -52,7 +52,7 @@ def Initialize():
     LastScreenCaptureCheck = 0
     SteeringHistory = []
 
-    pytorch.Initialize()
+    pytorch.Initialize(ModelOwner="Glas42", ModelName="NavigationDetectionAI")
     pytorch.LoadAIModel()
 
     variables.POPUP = ["Loading...", 0, 0.5]
@@ -199,7 +199,6 @@ def Run(data):
             if pytorch.IMG_WIDTH == None or pytorch.IMG_HEIGHT == None or pytorch.MODEL_OUTPUTS == None:
                 global TorchAvailable
                 TorchAvailable = False
-                console.RestoreConsole()
                 return
             AIFrame = preprocess_image(mask)
             output = [[0] * pytorch.MODEL_OUTPUTS]
@@ -287,10 +286,7 @@ def Run(data):
         cv2.imshow("Lane Assist", frame)
         cv2.waitKey(1)
 
-    except Exception as e:
-        exc = traceback.format_exc()
-        SendCrashReport("NavigationDetection - Running AI Error.", str(exc))
-        console.RestoreConsole()
-        print("\033[91m" + f"NavigationDetection - Running AI Error: " + "\033[0m" + str(e))
+    except:
+        SendCrashReport("NavigationDetectionAI - Running AI Error.", str(traceback.format_exc()))
 
     return

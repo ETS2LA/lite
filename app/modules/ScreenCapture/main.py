@@ -3,6 +3,7 @@ import src.variables as variables
 import src.settings as settings
 import numpy as np
 import traceback
+import math
 import time
 import cv2
 import mss
@@ -21,7 +22,7 @@ ScreenX = Monitor["left"]
 ScreenY = Monitor["top"]
 ScreenWidth = Monitor["width"]
 ScreenHeight = Monitor["height"]
-LastWindowPosition = 0, ScreenX, ScreenY, ScreenWidth, ScreenHeight
+LastWindowPositions = {}
 
 
 def Initialize():
@@ -229,12 +230,15 @@ def ValidateCaptureArea(Display, X1, Y1, X2, Y2):
 
 
 def GetWindowPosition(Name="", Blacklist=[""]):
-    global LastWindowPosition
+    global LastWindowPositions
     if variables.OS == "nt":
-        if LastWindowPosition[0] + 1 < time.time():
+        Key = f"{Name}{Blacklist}"
+        if Key not in LastWindowPositions:
+            LastWindowPositions[Key] = [0, ScreenX, ScreenY, ScreenX + ScreenWidth, ScreenY + ScreenHeight]
+        if LastWindowPositions[Key][0] + 1 < time.time():
             HWND = None
             TopWindows = []
-            Window = LastWindowPosition[1], LastWindowPosition[2], LastWindowPosition[3], LastWindowPosition[4]
+            Window = LastWindowPositions[Key][1], LastWindowPositions[Key][2], LastWindowPositions[Key][3], LastWindowPositions[Key][4]
             win32gui.EnumWindows(lambda HWND, TopWindows: TopWindows.append((HWND, win32gui.GetWindowText(HWND))), TopWindows)
             for HWND, WindowText in TopWindows:
                 if Name in WindowText and all(BlacklistItem not in WindowText for BlacklistItem in Blacklist):
@@ -243,10 +247,10 @@ def GetWindowPosition(Name="", Blacklist=[""]):
                     BottomRight = win32gui.ClientToScreen(HWND, (RECT[2], RECT[3]))
                     Window = (TopLeft[0], TopLeft[1], BottomRight[0] - TopLeft[0], BottomRight[1] - TopLeft[1])
                     break
-            LastWindowPosition = time.time(), Window[0], Window[1], Window[0] + Window[2], Window[1] + Window[3]
+            LastWindowPositions[Key] = time.time(), Window[0], Window[1], Window[0] + Window[2], Window[1] + Window[3]
             return Window[0], Window[1], Window[0] + Window[2], Window[1] + Window[3]
         else:
-            return LastWindowPosition[1], LastWindowPosition[2], LastWindowPosition[3], LastWindowPosition[4]
+            return LastWindowPositions[Key][1], LastWindowPositions[Key][2], LastWindowPositions[Key][3], LastWindowPositions[Key][4]
     else:
         return ScreenX, ScreenY, ScreenX + ScreenWidth, ScreenY + ScreenHeight
 
@@ -298,3 +302,12 @@ def GetRouteAdvisorPosition(Side="Automatic"):
         return LeftMapTopLeft, LeftMapBottomRight, LeftArrowTopLeft, LeftArrowBottomRight
     elif Side == "Right":
         return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight
+
+
+def ConvertToAngle(X, Y):
+    _, _, WindowWidth, WindowHeight = GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+    FOV_RADIANS = math.radians(variables.FOV)
+    WindowDistance = (WindowHeight * (4 / 3) / 2) / math.tan(FOV_RADIANS / 2)
+    AngleX = math.atan2(X - WindowWidth / 2, WindowDistance) * (180 / math.pi)
+    AngleY = math.atan2(Y - WindowHeight / 2, WindowDistance) * (180 / math.pi)
+    return AngleX, AngleY

@@ -113,7 +113,7 @@ def preprocess_image(image):
     return transform(image).unsqueeze(0).to(pytorch.DEVICE)
 
 
-def Run():
+def Run(data):
     CurrentTime = time.time()
 
     global enabled
@@ -134,8 +134,7 @@ def Run():
 
     global SDKController
     global TruckSimAPI
-    1/0
-    data = {}
+
     data["api"] = TruckSimAPI.update()
     try:
         frame = ScreenCapture.Capture(ImageType="cropped")
@@ -145,10 +144,10 @@ def Run():
 
     try:
         try:
-            while pytorch.AIModelUpdateThread.is_alive(): return 0
-            while pytorch.AIModelLoadThread.is_alive(): return 0
+            while pytorch.AIModelUpdateThread.is_alive(): return
+            while pytorch.AIModelLoadThread.is_alive(): return
         except:
-            return 0
+            return
 
         if type(frame) == type(None):
             return

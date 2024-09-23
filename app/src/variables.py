@@ -40,6 +40,7 @@ SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 DROPDOWN_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
 DROPDOWN_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
+DATA_QUEUE = multiprocessing.Queue()
 PLUGIN_QUEUE = multiprocessing.Queue()
 PLUGIN_PROCESSES = {}
 AVAILABLE_PLUGINS = [Plugin for Plugin in os.listdir(f"{PATH}app/plugins")]
@@ -60,6 +61,8 @@ SWITCHES = {}
 FRAME = None
 ITEMS = []
 AREAS = []
+DATA = {}
+FOV = 80 # TODO: Somehow extract the FOV from the game automatically
 
 X = settings.Get("UI", "X", 0)
 Y = settings.Get("UI", "Y", 0)

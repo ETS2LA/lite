@@ -5,13 +5,15 @@ import multiprocessing
 import traceback
 
 
-def PluginProcessFunction(PluginName, Queue):
+def PluginProcessFunction(PluginName, Queue, DataQueue):
     variables.QUEUE = Queue
     Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
     Plugin.Initialize()
     while variables.BREAK == False:
         try:
-            Plugin.Run()
+            DATA = Plugin.Run(DataQueue.get())
+            if DATA != None:
+                variables.QUEUE.put({"DATA": [PluginName, DATA]})
             while variables.QUEUE.empty() == False:
                 Queue.put(variables.QUEUE.get())
         except:
@@ -36,12 +38,18 @@ def ManagePlugins(Plugin=None, Action=None):
             del variables.PLUGIN_PROCESSES[Plugin]
 
         if Action == "Start" or Action == "Restart":
-            variables.PLUGIN_PROCESSES[Plugin] = multiprocessing.Process(target=PluginProcessFunction, args=(Plugin, variables.PLUGIN_QUEUE), name=Plugin, daemon=True)
+            variables.PLUGIN_PROCESSES[Plugin] = multiprocessing.Process(target=PluginProcessFunction, args=(Plugin, variables.PLUGIN_QUEUE, variables.DATA_QUEUE), name=Plugin, daemon=True)
             variables.PLUGIN_PROCESSES[Plugin].start()
 
 
 def ManageQueues():
     if variables.PLUGIN_QUEUE.empty() == False:
-        variables.POPUP = variables.PLUGIN_QUEUE.get()
         while variables.PLUGIN_QUEUE.empty() == False:
-            variables.PLUGIN_QUEUE.get()
+            Dict = variables.PLUGIN_QUEUE.get()
+            if "DATA" in Dict:
+                variables.DATA[Dict["DATA"][0]] = Dict["DATA"][1]
+            elif "POPUP" in Dict:
+                variables.POPUP = Dict["POPUP"]
+            elif "MANAGEPLUGINS" in Dict:
+                ManagePlugins(Plugin=Dict["MANAGEPLUGINS"][0], Action=Dict["MANAGEPLUGINS"][1])
+    variables.DATA_QUEUE.put(variables.DATA)

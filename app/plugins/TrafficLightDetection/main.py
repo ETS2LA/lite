@@ -278,14 +278,6 @@ def GetGamePosition():
     else:
         return screen_x, screen_y, screen_x + screen_width, screen_y + screen_height
 
-def ConvertToAngle(x, y):
-    _, _, window_width, window_height = GetGamePosition()
-    fov_rad = math.radians(fov)
-    window_distance = (window_height * (4 / 3) / 2) / math.tan(fov_rad / 2)
-    angle_x = math.atan2(x - window_width / 2, window_distance) * (180 / math.pi)
-    angle_y = math.atan2(y - window_height / 2, window_distance) * (180 / math.pi)
-    return angle_x, angle_y
-
 
 def plugin():
     CurrentTime = time.time()

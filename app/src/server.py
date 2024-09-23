@@ -5,6 +5,8 @@ import traceback
 import requests
 import json
 import time
+import sys
+import os
 
 
 ALLOW_CRASH_REPORTS = settings.Get("CrashReports", "AllowCrashReports")
@@ -57,8 +59,11 @@ def SendCrashReport(type:str, message:str, additional=None):
         message = message[:-1]
     message = f"{RED}>{NORMAL} " + message.replace("\n", f"\n{RED}>{NORMAL} ")
     print(f"{RED}{type}{NORMAL}\n{message}\n")
-    if multiprocessing.current_process().name != "MainProcess":
-        exit()
+    ProcessName = multiprocessing.current_process().name
+    if ProcessName != "MainProcess":
+        variables.QUEUE.put({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
+        variables.QUEUE.put({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+        while True: time.sleep(1)
 
 
 def GetUserCount():

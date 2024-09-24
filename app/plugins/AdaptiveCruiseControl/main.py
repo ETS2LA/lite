@@ -16,8 +16,8 @@ if variables.OS == "nt":
     from ctypes import windll, byref, sizeof, c_int
 
 
-from torchvision import transforms
-import torch
+#from torchvision import transforms
+#import torch
 
 
 def Initialize():
@@ -37,15 +37,15 @@ def Initialize():
     global SteeringHistory
     SteeringHistory = []
 
-    global model
-    global device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
-    for file in os.listdir(f"{variables.PATH}"):
-        if file.endswith(".pt"):
-            model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
-            model.eval()
-            break
+    #global model
+    #global device
+    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    #print("Using device:", device)
+    #for file in os.listdir(f"{variables.PATH}"):
+    #    if file.endswith(".pt"):
+    #        model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
+    #        model.eval()
+    #        break
 
 
 def GetTextSize(text="NONE", text_width=100, max_text_height=100):
@@ -63,77 +63,6 @@ def GetTextSize(text="NONE", text_width=100, max_text_height=100):
     if thickness <= 0:
         thickness = 1
     return text, fontscale, thickness, textsize[0], textsize[1]
-
-
-sct = mss.mss()
-def GetScreenDimensions(monitor=1):
-    global screen_x, screen_y, screen_width, screen_height
-    monitor = sct.monitors[monitor]
-    screen_x = monitor["left"]
-    screen_y = monitor["top"]
-    screen_width = monitor["width"]
-    screen_height = monitor["height"]
-    return screen_x, screen_y, screen_width, screen_height
-GetScreenDimensions()
-
-
-def GetScreenIndex(x, y):
-    with mss.mss() as sct:
-        monitors = sct.monitors
-    closest_screen_index = None
-    closest_distance = float('inf')
-    for i, monitor in enumerate(monitors[1:]):
-        center_x = (monitor['left'] + monitor['left'] + monitor['width']) // 2
-        center_y = (monitor['top'] + monitor['top'] + monitor['height']) // 2
-        distance = ((center_x - x) ** 2 + (center_y - y) ** 2) ** 0.5
-        if distance < closest_distance:
-            closest_screen_index = i + 1
-            closest_distance = distance
-    return closest_screen_index
-
-
-def ValidateCaptureArea(monitor, x1, y1, x2, y2):
-    monitor = sct.monitors[monitor]
-    width, height = monitor["width"], monitor["height"]
-    x1 = max(0, min(width - 1, x1))
-    x2 = max(0, min(width - 1, x2))
-    y1 = max(0, min(height - 1, y1))
-    y2 = max(0, min(height - 1, y2))
-    if x1 == x2:
-        if x1 == 0:
-            x2 = width - 1
-        else:
-            x1 = 0
-    if y1 == y2:
-        if y1 == 0:
-            y2 = height - 1
-        else:
-            y1 = 0
-    return x1, y1, x2, y2
-
-
-def GetGamePosition():
-    global LastGetGamePosition
-    if variables.OS == "nt":
-        if LastGetGamePosition[0] + 1 < time.time():
-            hwnd = None
-            top_windows = []
-            window = LastGetGamePosition[1], LastGetGamePosition[2], LastGetGamePosition[3], LastGetGamePosition[4]
-            win32gui.EnumWindows(lambda hwnd, top_windows: top_windows.append((hwnd, win32gui.GetWindowText(hwnd))), top_windows)
-            for hwnd, window_text in top_windows:
-                if "Truck Simulator" in window_text and "Discord" not in window_text:
-                    rect = win32gui.GetClientRect(hwnd)
-                    tl = win32gui.ClientToScreen(hwnd, (rect[0], rect[1]))
-                    br = win32gui.ClientToScreen(hwnd, (rect[2], rect[3]))
-                    window = (tl[0], tl[1], br[0] - tl[0], br[1] - tl[1])
-                    break
-            LastGetGamePosition = time.time(), window[0], window[1], window[0] + window[2], window[1] + window[3]
-            return window[0], window[1], window[0] + window[2], window[1] + window[3]
-        else:
-            return LastGetGamePosition[1], LastGetGamePosition[2], LastGetGamePosition[3], LastGetGamePosition[4]
-    else:
-        return screen_x, screen_y, screen_x + screen_width, screen_y + screen_height
-LastGetGamePosition = 0, screen_x, screen_y, screen_width, screen_height
 
 
 def ConvertToScreenCoordinate(x:float, y:float, z:float):
@@ -212,7 +141,7 @@ def Run(data):
     if LastScreenCaptureCheck + 0.5 < CurrentTime:
         WindowX1, WindowY1, WindowX2, WindowY2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
         if ScreenCapture.MonitorX1 != WindowX1 or ScreenCapture.MonitorY1 != WindowY1 or ScreenCapture.MonitorX2!= WindowX2 or ScreenCapture.MonitorY2 != WindowY2:
-            ScreenIndex = GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
+            ScreenIndex = ScreenCapture.GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
             if ScreenCapture.Display != ScreenIndex - 1:
                 settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
                 if ScreenCapture.CaptureLibrary == "WindowsCapture":
@@ -229,22 +158,29 @@ def Run(data):
         truck_y = data["api"]["truckPlacement"]["coordinateY"]
         truck_z = data["api"]["truckPlacement"]["coordinateZ"]
         truck_rotation_x = data["api"]["truckPlacement"]["rotationX"]
-        truck_rotation_y = data["api"]["truckPlacement"]["rotationY"]
-        truck_rotation_z = data["api"]["truckPlacement"]["rotationZ"]
+        truck_rotation_y = 0
+        truck_rotation_z = 0
+
+        WheelRadii = data["api"]["configFloat"]["truckWheelRadius"]
+        WheelYs = data["api"]["configVector"]["truckWheelPositionY"]
+        if len(WheelRadii) >= 4:
+            AverageWheelRadius = WheelRadii[0] + WheelRadii[1] + WheelRadii[2] + WheelRadii[3]
+        else:
+            AverageWheelRadius = 0
 
         cabin_offset_x = data["api"]["headPlacement"]["cabinOffsetX"] + data["api"]["configVector"]["cabinPositionX"]
         cabin_offset_y = data["api"]["headPlacement"]["cabinOffsetY"] + data["api"]["configVector"]["cabinPositionY"]
         cabin_offset_z = data["api"]["headPlacement"]["cabinOffsetZ"] + data["api"]["configVector"]["cabinPositionZ"]
         cabin_offset_rotation_x = data["api"]["headPlacement"]["cabinOffsetrotationX"]
         cabin_offset_rotation_y = data["api"]["headPlacement"]["cabinOffsetrotationY"]
-        cabin_offset_rotation_z = data["api"]["headPlacement"]["cabinOffsetrotationZ"]
+        cabin_offset_rotation_z = 0
 
         head_offset_x = data["api"]["headPlacement"]["headOffsetX"] + data["api"]["configVector"]["headPositionX"] + cabin_offset_x
         head_offset_y = data["api"]["headPlacement"]["headOffsetY"] + data["api"]["configVector"]["headPositionY"] + cabin_offset_y
         head_offset_z = data["api"]["headPlacement"]["headOffsetZ"] + data["api"]["configVector"]["headPositionZ"] + cabin_offset_z
         head_offset_rotation_x = data["api"]["headPlacement"]["headOffsetrotationX"]
         head_offset_rotation_y = data["api"]["headPlacement"]["headOffsetrotationY"]
-        head_offset_rotation_z = data["api"]["headPlacement"]["headOffsetrotationZ"]
+        head_offset_rotation_z = 0
         
         truck_rotation_degrees_x = truck_rotation_x * 360
         truck_rotation_radians_x = -math.radians(truck_rotation_degrees_x)

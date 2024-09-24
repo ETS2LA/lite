@@ -7,17 +7,17 @@ import traceback
 
 def PluginProcessFunction(PluginName, Queue, DataQueue):
     variables.QUEUE = Queue
-    Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
-    Plugin.Initialize()
-    while variables.BREAK == False:
-        try:
+    try:
+        Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
+        Plugin.Initialize()
+        while variables.BREAK == False:
             DATA = Plugin.Run(DataQueue.get())
             if DATA != None:
                 variables.QUEUE.put({"DATA": [PluginName, DATA]})
             while variables.QUEUE.empty() == False:
                 Queue.put(variables.QUEUE.get())
-        except:
-            SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
+    except:
+        SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
 
 
 def ManagePlugins(Plugin=None, Action=None):

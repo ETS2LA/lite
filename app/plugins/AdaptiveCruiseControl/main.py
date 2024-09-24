@@ -177,7 +177,7 @@ def ConvertToScreenCoordinate(x:float, y:float, z:float):
     return screen_x, screen_y, distance
 
 
-def plugin():
+def Run(data):
     CurrentTime = time.time()
 
     global LastScreenCaptureCheck
@@ -210,17 +210,17 @@ def plugin():
         return
 
     if LastScreenCaptureCheck + 0.5 < CurrentTime:
-        game_x1, game_y1, game_x2, game_y2 = GetGamePosition()
-        if ScreenCapture.monitor_x1 != game_x1 or ScreenCapture.monitor_y1 != game_y1 or ScreenCapture.monitor_x2 != game_x2 or ScreenCapture.monitor_y2 != game_y2:
-            ScreenIndex = GetScreenIndex((game_x1 + game_x2) / 2, (game_y1 + game_y2) / 2)
-            if ScreenCapture.display != ScreenIndex - 1:
+        WindowX1, WindowY1, WindowX2, WindowY2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+        if ScreenCapture.MonitorX1 != WindowX1 or ScreenCapture.MonitorY1 != WindowY1 or ScreenCapture.MonitorX2!= WindowX2 or ScreenCapture.MonitorY2 != WindowY2:
+            ScreenIndex = GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
+            if ScreenCapture.Display != ScreenIndex - 1:
                 settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
-                if ScreenCapture.cam_library == "WindowsCapture":
+                if ScreenCapture.CaptureLibrary == "WindowsCapture":
                     ScreenCapture.StopWindowsCapture = True
                     while ScreenCapture.StopWindowsCapture == True:
                         time.sleep(0.01)
                 ScreenCapture.Initialize()
-            ScreenCapture.monitor_x1, ScreenCapture.monitor_y1, ScreenCapture.monitor_x2, ScreenCapture.monitor_y2 = ValidateCaptureArea(ScreenIndex, game_x1, game_y1, game_x2, game_y2)
+            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, WindowX1, WindowY1, WindowX2, WindowY2)
         LastScreenCaptureCheck = CurrentTime
 
     
@@ -302,13 +302,12 @@ def plugin():
     all_valid = True
 
 
-    offset_x = 1
-    offset_y = 0.1
-    offset_z = 0.35
+    offset_x = 50
+    offset_z = 4
 
-    point_x = head_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
-    point_y = head_y + offset_y
-    point_z = head_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
+    point_x = truck_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
+    point_y = truck_y
+    point_z = truck_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
 
     x1, y1, d1 = ConvertToScreenCoordinate(point_x, point_y, point_z)
     if x1 == None or y1 == None:
@@ -317,13 +316,12 @@ def plugin():
         top_left = x1, y1
 
 
-    offset_x = 1
-    offset_y = 0.1
-    offset_z = -0.35
+    offset_x = 50
+    offset_z = -4
 
-    point_x = head_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
-    point_y = head_y + offset_y
-    point_z = head_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
+    point_x = truck_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
+    point_y = truck_y
+    point_z = truck_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
 
     x1, y1, d1 = ConvertToScreenCoordinate(point_x, point_y, point_z)
     if x1 == None or y1 == None:
@@ -332,13 +330,12 @@ def plugin():
         top_right = x1, y1
 
 
-    offset_x = 1
-    offset_y = -0.3
-    offset_z = 0.35
+    offset_x = 12.5
+    offset_z = 4
 
-    point_x = head_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
-    point_y = head_y + offset_y
-    point_z = head_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
+    point_x = truck_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
+    point_y = truck_y
+    point_z = truck_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
 
     x1, y1, d1 = ConvertToScreenCoordinate(point_x, point_y, point_z)
     if x1 == None or y1 == None:
@@ -347,13 +344,12 @@ def plugin():
         bottom_left = x1, y1
 
 
-    offset_x = 1
-    offset_y = -0.3
-    offset_z = -0.35
+    offset_x = 12.5
+    offset_z = -4
 
-    point_x = head_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
-    point_y = head_y + offset_y 
-    point_z = head_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
+    point_x = truck_x + offset_x * math.sin(truck_rotation_radians_x) - offset_z * math.cos(truck_rotation_radians_x)
+    point_y = truck_y
+    point_z = truck_z - offset_x * math.cos(truck_rotation_radians_x) - offset_z * math.sin(truck_rotation_radians_x)
 
     x1, y1, d1 = ConvertToScreenCoordinate(point_x, point_y, point_z)
     if x1 == None or y1 == None:
@@ -371,44 +367,44 @@ def plugin():
         frame = cv2.warpPerspective(frame, matrix, (cropped_width, cropped_height))
 
 
-    frame = cv2.resize(frame, (100, 100))
-    image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    image = np.array(image, dtype=np.float32) / 255.0
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-    ])
-    image = transform(image).unsqueeze(0)
-    with torch.no_grad():
-        prediction = model(image.to(device))
+    # frame = cv2.resize(frame, (100, 100))
+    # image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    # image = np.array(image, dtype=np.float32) / 255.0
+    # transform = transforms.Compose([
+    #     transforms.ToTensor(),
+    # ])
+    # image = transform(image).unsqueeze(0)
+    # with torch.no_grad():
+    #     prediction = model(image.to(device))
 
-    prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
+    # prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
 
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
-    prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
+    # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
+    # prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
 
-    prediction_overlay[:, :, 2] = 0
-    prediction_overlay = prediction_overlay.astype(np.uint8) * 255
+    # prediction_overlay[:, :, 2] = 0
+    # prediction_overlay = prediction_overlay.astype(np.uint8) * 255
 
-    frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
+    # frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
 
-    non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
-    if len(non_black_pixels[0]) > 0:
-        x_center = int(np.mean(non_black_pixels[1]))
-    else:
-        x_center = width // 2
-    cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
+    # non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
+    # if len(non_black_pixels[0]) > 0:
+    #     x_center = int(np.mean(non_black_pixels[1]))
+    # else:
+    #     x_center = width // 2
+    # cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
 
 
 
-    Steering = (x_center/frame.shape[1] - 0.5) * 0.3 - 0.0125
+    # Steering = (x_center/frame.shape[1] - 0.5) * 0.3 - 0.0125
 
-    SteeringHistory.append((Steering, CurrentTime))
-    SteeringHistory.sort(key=lambda x: x[1])
-    while CurrentTime - SteeringHistory[0][1] > 0.2:
-        SteeringHistory.pop(0)
-    Steering = sum(x[0] for x in SteeringHistory) / len(SteeringHistory)
+    # SteeringHistory.append((Steering, CurrentTime))
+    # SteeringHistory.sort(key=lambda x: x[1])
+    # while CurrentTime - SteeringHistory[0][1] > 0.2:
+    #     SteeringHistory.pop(0)
+    # Steering = sum(x[0] for x in SteeringHistory) / len(SteeringHistory)
 
-    SDKController.steering = float(Steering)
+    # SDKController.steering = float(Steering)
 
     try:
         _, _, _, _ = cv2.getWindowImageRect("AdaptiveCruiseControl")

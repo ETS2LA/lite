@@ -305,7 +305,6 @@ def plugin():
         if ScreenCapture.monitor_x1 != game_x1 or ScreenCapture.monitor_y1 != game_y1 or ScreenCapture.monitor_x2 != game_x2 or ScreenCapture.monitor_y2 != game_y2:
             ScreenIndex = GetScreenIndex((game_x1 + game_x2) / 2, (game_y1 + game_y2) / 2)
             if ScreenCapture.display != ScreenIndex - 1:
-                settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
                 if ScreenCapture.cam_library == "WindowsCapture":
                     ScreenCapture.StopWindowsCapture = True
                     while ScreenCapture.StopWindowsCapture == True:

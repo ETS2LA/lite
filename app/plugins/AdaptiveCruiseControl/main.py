@@ -156,7 +156,6 @@ def Run(data):
         if ScreenCapture.MonitorX1 != WindowX1 or ScreenCapture.MonitorY1 != WindowY1 or ScreenCapture.MonitorX2!= WindowX2 or ScreenCapture.MonitorY2 != WindowY2:
             ScreenIndex = ScreenCapture.GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
             if ScreenCapture.Display != ScreenIndex - 1:
-                settings.Set("ScreenCapture", "Display", ScreenIndex - 1)
                 if ScreenCapture.CaptureLibrary == "WindowsCapture":
                     ScreenCapture.StopWindowsCapture = True
                     while ScreenCapture.StopWindowsCapture == True:

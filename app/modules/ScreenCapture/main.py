@@ -35,7 +35,7 @@ def Initialize():
     global Cam
     global CaptureLibrary
 
-    Display = settings.Get("ScreenCapture", "Display", 0)
+    Display = 0
     Monitor = sct.monitors[(Display + 1)]
     MonitorX1 = Monitor["left"]
     MonitorY1 = Monitor["top"]

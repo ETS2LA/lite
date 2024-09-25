@@ -38,10 +38,12 @@ def Initialize():
     SteeringHistory = []
 
     global Images
+    global RESOLUTION
     global FRAME
     global last_scale
     Images = []
-    FRAME = np.zeros((700, 700, 3), np.uint8)
+    RESOLUTION = 700
+    FRAME = np.zeros((RESOLUTION, RESOLUTION, 3), np.uint8)
     last_scale = None
 
     #global model
@@ -174,10 +176,14 @@ def Run(data):
 
         WheelRadii = data["api"]["configFloat"]["truckWheelRadius"]
         WheelYs = data["api"]["configVector"]["truckWheelPositionY"]
-        if len(WheelRadii) >= 4:
+        if len(WheelRadii) >= 4 and len(WheelYs) >= 4:
             AverageWheelRadius = WheelRadii[0] + WheelRadii[1] + WheelRadii[2] + WheelRadii[3]
+            AverageWheelRadius = AverageWheelRadius / 4
+            AverageWheelHeight = WheelYs[0] + WheelYs[1] + WheelYs[2] + WheelYs[3]
+            AverageWheelHeight = AverageWheelHeight / 4
         else:
             AverageWheelRadius = 0
+            AverageWheelHeight = truck_y
 
         cabin_offset_x = data["api"]["headPlacement"]["cabinOffsetX"] + data["api"]["configVector"]["cabinPositionX"]
         cabin_offset_y = data["api"]["headPlacement"]["cabinOffsetY"] + data["api"]["configVector"]["cabinPositionY"]
@@ -333,13 +339,13 @@ def Run(data):
             max_z = max(max_z, point_z)
 
 
-    scale_x = 700 / (max_x - min_x)
-    scale_z = 700 / (max_z - min_z)
+    scale_x = RESOLUTION / (max_x - min_x)
+    scale_z = RESOLUTION / (max_z - min_z)
     scale = min(scale_x, scale_z)
     if scale != last_scale:
         for i, (image, points, rendered) in enumerate(Images):
             Images[i] = (image, points, False)
-        FRAME = np.zeros((700, 700, 3), np.uint8)
+        FRAME = np.zeros((RESOLUTION, RESOLUTION, 3), np.uint8)
     last_scale = scale
 
     for i, (image, points, rendered) in enumerate(Images):
@@ -358,7 +364,7 @@ def Run(data):
         src_pts = np.float32([[0, 0], [image.shape[1], 0], [0, image.shape[0]], [image.shape[1], image.shape[0]]])
         dst_pts = np.float32([[onframe_x1, onframe_y1], [onframe_x4, onframe_y4], [onframe_x2, onframe_y2], [onframe_x3, onframe_y3]])
         matrix = cv2.getPerspectiveTransform(src_pts, dst_pts)
-        warped_image = cv2.warpPerspective(image, matrix, (700, 700), flags=cv2.INTER_NEAREST)
+        warped_image = cv2.warpPerspective(image, matrix, (RESOLUTION, RESOLUTION), flags=cv2.INTER_NEAREST)
         mask = cv2.inRange(warped_image, np.array([1, 1, 1]), np.array([255, 255, 255]))
         FRAME[mask > 0] = warped_image[mask > 0]
 

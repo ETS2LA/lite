@@ -6,8 +6,8 @@ import traceback
 
 
 def PluginProcessFunction(PluginName, Queue, DataQueue):
-    variables.QUEUE = Queue
     try:
+        variables.QUEUE = multiprocessing.Queue()
         Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
         Plugin.Initialize()
         while variables.BREAK == False:

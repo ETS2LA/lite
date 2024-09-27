@@ -14,35 +14,60 @@ def Initialize():
     MAIN_LOCK = multiprocessing.Lock()
 
 
-def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED_MEMORY_NAME, LOCK):
+def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED_MEMORY_NAME, LOCK, DEVMODE):
     try:
+        import time
+        variables.DEVMODE = DEVMODE
         MAIN_SHARED_MEMORY = shared_memory.SharedMemory(name=MAIN_SHARED_MEMORY_NAME)
         SHARED_MEMORY = shared_memory.SharedMemory(name=SHARED_MEMORY_NAME)
+        LAST_MEMORY_UPDATE = 0
+        DATA_REFRESH_RATE = 100
+        LAST_DATA = None
         Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
         Plugin.Initialize()
-
         while variables.BREAK == False:
+            START = time.time()
 
-            with LOCK:
-                DataBytes = bytes(MAIN_SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE]).rstrip(b'\x00')
-                if DataBytes:
-                    Data = pickle.loads(DataBytes)
-                else:
-                    Data = None
+            if LAST_MEMORY_UPDATE + 1/DATA_REFRESH_RATE < time.time():
+                LAST_MEMORY_UPDATE = time.time()
+                UPDATE_MEMORY = True
+            else:
+                UPDATE_MEMORY = False
 
-            DATA = Plugin.Run(Data)
+            if UPDATE_MEMORY:
+                with MAIN_LOCK:
+                    DataBytes = bytes(MAIN_SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE]).rstrip(b'\x00')
+                    if DataBytes:
+                        DATA = pickle.loads(DataBytes)
+                    else:
+                        DATA = None
+                    LAST_DATA = DATA
+            else:
+                DATA = LAST_DATA
 
-            if DATA != None:
+            try:
+                DATA = Plugin.Run(DATA)
+            except:
+                SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
+                variables.BREAK = True
+                DATA = None
+
+            if DATA != None and DATA not in str(variables.QUEUE):
                 variables.QUEUE.append({"DATA": [PluginName, DATA]})
 
-            with LOCK:
-                Data = variables.QUEUE
-                DataBytes = pickle.dumps(Data)
-                if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
-                    SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {Data}\nSize: {len(DataBytes)}")
-                SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
+            if UPDATE_MEMORY:
+                with LOCK:
+                    DATA = variables.QUEUE
+                    DataBytes = pickle.dumps(DATA)
+                    if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
+                        SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
+                    SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
 
-            variables.QUEUE = []
+                variables.QUEUE = []
+
+            TIME_TO_SLEEP = 1/1000 - (time.time() - START)
+            if TIME_TO_SLEEP > 0:
+                time.sleep(TIME_TO_SLEEP)
 
     except:
         SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
@@ -66,13 +91,15 @@ def ManagePlugins(Plugin=None, Action=None):
             if Plugin in variables.PLUGIN_PROCESSES:
                 variables.PLUGIN_PROCESSES[Plugin].terminate()
                 del variables.PLUGIN_PROCESSES[Plugin]
+                variables.SHARED_MEMORYS[Plugin].close()
+                del variables.SHARED_MEMORYS[Plugin]
 
         if Action == "Start" or Action == "Restart":
             SHARED_MEMORY = shared_memory.SharedMemory(create=True, size=variables.SHARED_MEMORY_SIZE)
             LOCK = multiprocessing.Lock()
             variables.PLUGIN_PROCESSES[Plugin] = multiprocessing.Process(
                 target=PluginProcessFunction,
-                args=(Plugin, MAIN_SHARED_MEMORY.name, MAIN_LOCK, SHARED_MEMORY.name, LOCK),
+                args=(Plugin, MAIN_SHARED_MEMORY.name, MAIN_LOCK, SHARED_MEMORY.name, LOCK, variables.DEVMODE),
                 name=Plugin,
                 daemon=True
             )

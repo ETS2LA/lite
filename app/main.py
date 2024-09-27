@@ -31,6 +31,7 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.Ping())
     helpers.RunEvery(60, lambda: server.GetUserCount())
 
+    server.SendCrashReport("Main", "test")
     FPS = 0
     FPS_UpdateTime = 0
     MainMenu_UpdateTime = 0
@@ -63,11 +64,11 @@ if __name__ == '__main__':
                 try:
                     hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
                     if hash != LastScripts[i]:
-                        if "plugins" in Path:
+                        if "plugins" in os.path.dirname(Path):
                             os.system("cls" if variables.OS == "nt" else "clear")
                             print("\nETS2LA-Lite\n-----------\n")
                             plugins.ManagePlugins(Plugin=Script, Action="Restart")
-                        elif "modules" in Path:
+                        elif "modules" in os.path.dirname(Path):
                             os.system("cls" if variables.OS == "nt" else "clear")
                             print("\nETS2LA-Lite\n-----------\n")
                             plugins.ManagePlugins(Plugin="All", Action="Restart")

@@ -58,13 +58,13 @@ def SendCrashReport(type:str, message:str, additional=None):
         print(RED + f"\nCrash report sending failed due to an unexpected error:{NORMAL}\n{str(traceback.format_exc())}")
     while message.endswith('\n'):
         message = message[:-1]
-    message = f"{RED}>{NORMAL} " + message.replace("\n", f"\n{RED}>{NORMAL} ")
+    if variables.DEVMODE == False:
+        message = f"{RED}>{NORMAL} " + message.replace("\n", f"\n{RED}>{NORMAL} ")
     print(f"{RED}{type}{NORMAL}\n{message}\n")
     ProcessName = multiprocessing.current_process().name
     if ProcessName != "MainProcess":
         variables.QUEUE.append({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
         variables.QUEUE.append({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
-        while True: time.sleep(1)
 
 
 def GetUserCount():

@@ -12,7 +12,7 @@ def Initialize():
 
 def Run(data):
     CurrentTime = time.time()
-
+    1/0
     global LastScreenCaptureCheck
     global LastCapture
 

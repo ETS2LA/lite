@@ -57,7 +57,7 @@ def LoadAIModel():
                 if GetAIModelName() == None:
                     return
 
-                variables.QUEUE.put({"POPUP": ["Loading the AI model...", 0, 0.5]})
+                variables.QUEUE.append({"POPUP": ["Loading the AI model...", 0, 0.5]})
                 print(GREEN + "Loading the AI model..." + NORMAL)
 
                 GetAIModelProperties()
@@ -71,18 +71,18 @@ def LoadAIModel():
                     ModelFileCorrupted = True
 
                 if ModelFileCorrupted == False:
-                    variables.QUEUE.put({"POPUP": ["Successfully loaded the AI model!", 0, 0.5]})
+                    variables.QUEUE.append({"POPUP": ["Successfully loaded the AI model!", 0, 0.5]})
                     print(GREEN + "Successfully loaded the AI model!" + NORMAL)
                     ModelLoaded = True
                 else:
-                    variables.QUEUE.put({"POPUP": ["Failed to load the AI model because the model file is corrupted.", 0, 0.5]})
+                    variables.QUEUE.append({"POPUP": ["Failed to load the AI model because the model file is corrupted.", 0, 0.5]})
                     print(RED + "Failed to load the AI model because the model file is corrupted." + NORMAL)
                     ModelLoaded = False
                     time.sleep(3)
                     HandleCorruptedAIModel()
             except:
                 SendCrashReport("PyTorch- Loading AI Error.", str(traceback.format_exc()))
-                variables.QUEUE.put({"POPUP": ["Failed to load the AI model!", 0, 0.5]})
+                variables.QUEUE.append({"POPUP": ["Failed to load the AI model!", 0, 0.5]})
                 print(RED + "Failed to load the AI model!" + NORMAL)
                 ModelLoaded = False
 
@@ -106,7 +106,7 @@ def CheckForAIModelUpdates():
                     response = None
 
                 if response == 200:
-                    variables.QUEUE.put({"POPUP": ["Checking for AI model updates...", 0, 0.5]})
+                    variables.QUEUE.append({"POPUP": ["Checking for AI model updates...", 0, 0.5]})
                     print(GREEN + "Checking for AI model updates..." + NORMAL)
 
                     if settings.Get("PyTorch", f"{MODELNAME}-LastUpdateCheck", 0) + 600 > time.time():
@@ -131,7 +131,7 @@ def CheckForAIModelUpdates():
                     CurrentAIModel = GetAIModelName()
 
                     if str(LatestAIModel) != str(CurrentAIModel):
-                        variables.QUEUE.put({"POPUP": ["Updating the AI model...", 0, 0.5]})
+                        variables.QUEUE.append({"POPUP": ["Updating the AI model...", 0, 0.5]})
                         print(GREEN + "Updating the AI model..." + NORMAL)
                         DeleteAllAIModels()
                         response = requests.get(f"https://huggingface.co/{MODELOWNER}/{MODELNAME}/resolve/main/model/{LatestAIModel}?download=true", stream=True)
@@ -143,23 +143,23 @@ def CheckForAIModelUpdates():
                                 downloaded_size += len(data)
                                 modelfile.write(data)
                                 progress = round((downloaded_size / total_size) * 100)
-                                variables.QUEUE.put({"POPUP": [f"Downloading the AI model: {progress}%", progress, 0.5]})
-                        variables.QUEUE.put({"POPUP": ["Successfully updated the AI model!", 0, 0.5]})
+                                variables.QUEUE.append({"POPUP": [f"Downloading the AI model: {progress}%", progress, 0.5]})
+                        variables.QUEUE.append({"POPUP": ["Successfully updated the AI model!", 0, 0.5]})
                         print(GREEN + "Successfully updated the AI model!" + NORMAL)
                     else:
-                        variables.QUEUE.put({"POPUP": ["No AI model updates available!", 0, 0.5]})
+                        variables.QUEUE.append({"POPUP": ["No AI model updates available!", 0, 0.5]})
                         print(GREEN + "No AI model updates available!" + NORMAL)
                     settings.Set("PyTorch", f"{MODELNAME}-LastUpdateCheck", time.time())
 
                 else:
 
                     console.RestoreConsole()
-                    variables.QUEUE.put({"POPUP": ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5]})
+                    variables.QUEUE.append({"POPUP": ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5]})
                     print(RED + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + NORMAL)
 
             except:
                 SendCrashReport("PyTorch - Error in function CheckForAIModelUpdatesThread.", str(traceback.format_exc()))
-                variables.QUEUE.put({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
+                variables.QUEUE.append({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
                 print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
 
         global AIModelUpdateThread
@@ -168,7 +168,7 @@ def CheckForAIModelUpdates():
 
     except:
         SendCrashReport("PyTorch - Error in function CheckForAIModelUpdates.", str(traceback.format_exc()))
-        variables.QUEUE.put({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
+        variables.QUEUE.append({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
         print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
 
 

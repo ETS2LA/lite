@@ -2,7 +2,6 @@ import modules.ScreenCapture.main as ScreenCapture
 import src.variables as variables
 import time
 import cv2
-import os
 
 def Initialize():
     global LastScreenCaptureCheck
@@ -38,4 +37,4 @@ def Run(data):
     cv2.imshow("NavigationDetectionDataCollection", Frame)
     cv2.waitKey(1)
 
-    variables.QUEUE.put({"MANAGEPLUGINS": ["NavigationDetectionDataCollection", "Restart"]})
+    variables.QUEUE.append({"MANAGEPLUGINS": ["NavigationDetectionDataCollection", "Restart"]})

@@ -24,6 +24,7 @@ if __name__ == '__main__':
         console.HideConsole()
 
     translate.Initialize()
+    plugins.Initialize()
     plugins.ManagePlugins(Plugin="All", Action="Start")
     ui.Initialize()
     updater.CheckForUpdates()
@@ -55,7 +56,7 @@ if __name__ == '__main__':
     while variables.BREAK == False:
         start = time.time()
 
-        plugins.ManageQueues()
+        plugins.ManageSharedMemory()
 
         if variables.DEVMODE:
             for i, (Script, Path) in enumerate(Scripts):

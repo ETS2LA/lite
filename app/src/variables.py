@@ -40,9 +40,11 @@ SWITCH_ENABLED_HOVER_COLOR = (255, 200, 87) if THEME == "dark" else (184, 95, 0)
 DROPDOWN_COLOR = (42, 42, 42) if THEME == "dark" else (236, 236, 236)
 DROPDOWN_HOVER_COLOR = (47, 47, 47) if THEME == "dark" else (231, 231, 231)
 
-DATA_QUEUE = multiprocessing.Queue()
-PLUGIN_QUEUE = multiprocessing.Queue()
+QUEUE = []
+LOCKS = {}
+SHARED_MEMORYS = {}
 PLUGIN_PROCESSES = {}
+SHARED_MEMORY_SIZE = 1024
 AVAILABLE_PLUGINS = [Plugin for Plugin in os.listdir(f"{PATH}app/plugins")]
 AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}
@@ -73,7 +75,6 @@ HWND = None
 NAME = "ETS2LA-Lite"
 PAGE = settings.Get("UI", "Page", "Menu")
 BREAK = False
-QUEUE = None
 
 CONSOLENAME = None
 CONSOLEHWND = None

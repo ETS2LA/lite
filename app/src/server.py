@@ -62,8 +62,8 @@ def SendCrashReport(type:str, message:str, additional=None):
     print(f"{RED}{type}{NORMAL}\n{message}\n")
     ProcessName = multiprocessing.current_process().name
     if ProcessName != "MainProcess":
-        variables.QUEUE.put({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-        variables.QUEUE.put({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+        variables.QUEUE.append({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
+        variables.QUEUE.append({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
         while True: time.sleep(1)
 
 

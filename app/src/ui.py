@@ -42,7 +42,7 @@ def Initialize():
         {"name": "Close",
         "function": lambda: {Close(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}},
         {"name": "Search for updates",
-        "function": lambda: {updater.CheckForUpdates(False), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}}]
+        "function": lambda: {updater.CheckForUpdates(), setattr(variables, "CONTEXT_MENU", [False, 0, 0]), setattr(variables, "RENDER_FRAME", True)}}]
 
     cv2.namedWindow(variables.NAME, cv2.WINDOW_NORMAL)
     cv2.resizeWindow(variables.NAME, width, height)

@@ -7,7 +7,10 @@ import requests
 import time
 import os
 
-def CheckForUpdates(do_ui_update = True):
+def CheckForUpdates():
+    if variables.DEVMODE:
+        variables.POPUP = ["Ignoring update check because of development mode.", 0, 0.65]
+        return
     if settings.Get("Updater", "LastRemoteCheck", 0) + 600 < time.time():
         try:
             remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/version.txt").text.strip()
@@ -27,12 +30,15 @@ def CheckForUpdates(do_ui_update = True):
     if remote_version != variables.VERSION:
         variables.PAGE = "Update"
         ui.SetTitleBarHeight(0)
-        if do_ui_update:
-            ui.Update()
     else:
         variables.POPUP = ["No updates available.", 0, 0.5]
 
 def Update():
+    if variables.DEVMODE:
+        variables.POPUP = ["Ignoring update request because of development mode.", 0, 0.65]
+        ui.SetTitleBarHeight(50)
+        variables.PAGE = "Menu"
+        return
     plugins.ManagePlugins(Plugin="All", Action="Stop")
     try:
         os.chdir(variables.PATH)

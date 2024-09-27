@@ -31,11 +31,6 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.Ping())
     helpers.RunEvery(60, lambda: server.GetUserCount())
 
-    server.SendCrashReport("Main", "test")
-    FPS = 0
-    FPS_UpdateTime = 0
-    MainMenu_UpdateTime = 0
-
     if variables.DEVMODE:
         import hashlib
         Scripts = []

@@ -1,6 +1,4 @@
-Added the backend for the communication between plugins and the main app
-Plugins are now disabling themselves when they crash
-The crash reporter will catch every crash now
-Improved the PyTorch module
-Fixed context menu behavior
-(Currently some plugins are not working)
+Plugins can now communicate with each other and the main process using the shared memory directly instead of using the queues
+Added the new mapping code temporarily to the ACC plugins
+Fixed development mode
+Small fixes in the crash reporter and the main process

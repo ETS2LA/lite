@@ -39,7 +39,7 @@ def CreateWindow(Name=""):
 
 def Show(Name="", Frame=None):
     try:
-        cv2.getWindowImageRect(variables.NAME)
+        cv2.getWindowImageRect(Name)
     except:
         CreateWindow(Name)
     cv2.imshow(Name, Frame)

@@ -1,7 +1,9 @@
 import modules.ScreenCapture.main as ScreenCapture
+import modules.ShowImage.main as ShowImage
 import src.variables as variables
 import time
 import cv2
+
 
 def Initialize():
     global LastScreenCaptureCheck
@@ -9,6 +11,8 @@ def Initialize():
     LastScreenCaptureCheck = 0
     LastCapture = 0
     ScreenCapture.Initialize()
+    ShowImage.Initialize("NavigationDetectionDataCollection", (0, 0, 0))
+
 
 def Run(data):
     CurrentTime = time.time()
@@ -34,7 +38,4 @@ def Run(data):
     if type(Frame) == type(None) or Frame.shape[0] <= 0 or Frame.shape[1] <= 0:
         return
 
-    cv2.imshow("NavigationDetectionDataCollection", Frame)
-    cv2.waitKey(1)
-
-    variables.QUEUE.append({"MANAGEPLUGINS": ["NavigationDetectionDataCollection", "Restart"]})
+    ShowImage.Show("NavigationDetectionDataCollection", Frame)

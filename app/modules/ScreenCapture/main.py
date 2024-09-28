@@ -264,16 +264,16 @@ def GetRouteAdvisorPosition(Side="Automatic"):
     Scale = (Y2 - Y1) / 1080
 
     if Side == "Left" or Side == "Automatic":
-        X = X1 + (DistanceFromRight * Scale)
+        X = X1 + (DistanceFromRight * Scale) - 1
         Y = Y1 + (Y2 - Y1) - (DistanceFromBottom * Scale + Height * Scale)
         LeftMapTopLeft = (round(X), round(Y))
-        X = X1 + (DistanceFromRight * Scale + Width * Scale)
+        X = X1 + (DistanceFromRight * Scale + Width * Scale) - 1
         Y = Y1 + (Y2 - Y1) - (DistanceFromBottom * Scale)
         LeftMapBottomRight = (round(X), round(Y))
-        X = LeftMapBottomRight[0] - (LeftMapBottomRight[0] - LeftMapTopLeft[0]) * 0.57
+        X = LeftMapBottomRight[0] - (LeftMapBottomRight[0] - LeftMapTopLeft[0]) * 0.57 - 1
         Y = LeftMapBottomRight[1] - (LeftMapBottomRight[1] - LeftMapTopLeft[1]) * 0.575
         LeftArrowTopLeft = (round(X), round(Y))
-        X = LeftMapBottomRight[0] - (LeftMapBottomRight[0] - LeftMapTopLeft[0]) * 0.43
+        X = LeftMapBottomRight[0] - (LeftMapBottomRight[0] - LeftMapTopLeft[0]) * 0.43 - 1
         Y = LeftMapBottomRight[1] - (LeftMapBottomRight[1] - LeftMapTopLeft[1]) * 0.39
         LeftArrowBottomRight = (round(X), round(Y))
         if Side == "Automatic":

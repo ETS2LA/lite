@@ -3,7 +3,6 @@ from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import multiprocessing
-import threading
 import traceback
 import pickle
 import time

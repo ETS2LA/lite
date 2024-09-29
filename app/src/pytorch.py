@@ -126,12 +126,12 @@ def CheckForUpdates(Model):
         def CheckForUpdatesFunction(Model):
             try:
                 try:
-                    response = requests.get("https://huggingface.co/", timeout=3)
-                    response = response.status_code
+                    Response = requests.get("https://huggingface.co/", timeout=3)
+                    Response = Response.status_code
                 except requests.exceptions.RequestException:
-                    response = None
+                    Response = None
 
-                if response == 200:
+                if Response == 200:
                     plugins.AddToQueue({"POPUP": ["Checking for model updates...", 0, 0.5]})
                     print(DARK_GREY + f"[{Model}] " + GREEN + "Checking for model updates..." + NORMAL)
 
@@ -140,15 +140,15 @@ def CheckForUpdates(Model):
                             print(DARK_GREY + f"[{Model}] " + GREEN + "No model updates available!" + NORMAL)
                             return
 
-                    url = f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/tree/main/model'
-                    response = requests.get(url)
-                    soup = BeautifulSoup(response.content, 'html.parser')
+                    Url = f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/tree/main/model'
+                    Response = requests.get(Url)
+                    Soup = BeautifulSoup(Response.content, 'html.parser')
 
                     LatestModel = None
-                    for link in soup.find_all("a", href=True):
-                        href = link["href"]
-                        if href.startswith(f'/{MODELS[Model]["ModelOwner"]}/{Model}/blob/main/model'):
-                            LatestModel = href.split("/")[-1]
+                    for Link in Soup.find_all("a", href=True):
+                        HREF = Link["href"]
+                        if HREF.startswith(f'/{MODELS[Model]["ModelOwner"]}/{Model}/blob/main/model'):
+                            LatestModel = HREF.split("/")[-1]
                             settings.Set("PyTorch", f"{Model}-LatestModel", LatestModel)
                             break
                     if LatestModel == None:
@@ -160,16 +160,16 @@ def CheckForUpdates(Model):
                         plugins.AddToQueue({"POPUP": ["Updating the model...", 0, 0.5]})
                         print(DARK_GREY + f"[{Model}] " + GREEN + "Updating the model..." + NORMAL)
                         Delete(Model)
-                        response = requests.get(f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/resolve/main/model/{LatestModel}?download=true', stream=True)
-                        with open(os.path.join(MODELS[Model]["Path"], f"{LatestModel}"), "wb") as modelfile:
-                            total_size = int(response.headers.get('content-length', 0))
-                            downloaded_size = 0
-                            chunk_size = 1024
-                            for data in response.iter_content(chunk_size=chunk_size):
-                                downloaded_size += len(data)
-                                modelfile.write(data)
-                                progress = round((downloaded_size / total_size) * 100)
-                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {progress}%", progress, 0.5]})
+                        Response = requests.get(f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/resolve/main/model/{LatestModel}?download=true', stream=True)
+                        with open(os.path.join(MODELS[Model]["Path"], f"{LatestModel}"), "wb") as ModelFile:
+                            TotalSize = int(Response.headers.get('content-length', 0))
+                            DownloadedSize = 0
+                            ChunkSize = 1024
+                            for Data in Response.iter_content(chunk_size=ChunkSize):
+                                DownloadedSize += len(Data)
+                                ModelFile.write(Data)
+                                Progress = round((DownloadedSize / TotalSize) * 100)
+                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {Progress}%", Progress, 0.5]})
                         plugins.AddToQueue({"POPUP": ["Successfully updated the model!", 0, 0.5]})
                         print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully updated the model!" + NORMAL)
                     else:
@@ -211,9 +211,9 @@ def FolderExists(Model):
 def GetName(Model):
     try:
         FolderExists(Model)
-        for file in os.listdir(MODELS[Model]["Path"]):
-            if file.endswith(".pt"):
-                return file
+        for File in os.listdir(MODELS[Model]["Path"]):
+            if File.endswith(".pt"):
+                return File
         return None
     except:
         SendCrashReport("PyTorch - Error in function GetName.", str(traceback.format_exc()))
@@ -223,9 +223,9 @@ def GetName(Model):
 def Delete(Model):
     try:
         FolderExists(Model)
-        for file in os.listdir(MODELS[Model]["Path"]):
-            if file.endswith(".pt"):
-                os.remove(os.path.join(MODELS[Model]["Path"], file))
+        for File in os.listdir(MODELS[Model]["Path"]):
+            if File.endswith(".pt"):
+                os.remove(os.path.join(MODELS[Model]["Path"], File))
     except PermissionError:
         global TorchAvailable
         TorchAvailable = False

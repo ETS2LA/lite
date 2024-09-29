@@ -11,71 +11,71 @@ TRANSLATING = False
 
 
 def Initialize():
-    global translator
-    languages = GetAvailableLanguages()
-    language_is_valid = False
-    for language in languages:
-        if str(languages[language]) == str(variables.LANGUAGE):
-            language_is_valid = True
+    global Translator
+    Languages = GetAvailableLanguages()
+    LanugageIsValid = False
+    for Language in Languages:
+        if str(Languages[Language]) == str(variables.LANGUAGE):
+            LanugageIsValid = True
             break
-    if language_is_valid == False:
+    if LanugageIsValid == False:
         variables.LANGUAGE = "en"
-    translator = GoogleTranslator(source="en", target=variables.LANGUAGE)
+    Translator = GoogleTranslator(source="en", target=variables.LANGUAGE)
 
     if os.path.exists(f"{variables.PATH}cache/Translations/{variables.LANGUAGE}.json"):
         with open(f"{variables.PATH}cache/Translations/{variables.LANGUAGE}.json", "r") as f:
             try:
-                file = json.load(f)
+                File = json.load(f)
             except:
-                file = {}
+                File = {}
                 with open(f"{variables.PATH}cache/Translations/{variables.LANGUAGE}.json", "w") as f:
                     json.dump({}, f, indent=4)
-            variables.TRANSLATION_CACHE = file
+            variables.TRANSLATION_CACHE = File
 
 
-def TranslateThread(text):
+def TranslateThread(Text):
     global TRANSLATING
     while TRANSLATING:
         time.sleep(0.1)
     TRANSLATING = True
     variables.POPUP = ["Translating...", 0, 0.5]
-    translation = translator.translate(text)
-    variables.TRANSLATION_CACHE[text] = unidecode.unidecode(translation)
+    Translation = Translator.translate(Text)
+    variables.TRANSLATION_CACHE[Text] = unidecode.unidecode(Translation)
     variables.RENDER_FRAME = True
     TRANSLATING = False
-    return translation
+    return Translation
 
 
-def TranslationRequest(text):
-    threading.Thread(target=TranslateThread, args=(text,), daemon=True).start()
+def TranslationRequest(Text):
+    threading.Thread(target=TranslateThread, args=(Text,), daemon=True).start()
 
 
-def Translate(text):
+def Translate(Text):
     if variables.LANGUAGE == "en":
-        return text
-    elif text in variables.TRANSLATION_CACHE:
-        translation = variables.TRANSLATION_CACHE[text]
-        return translation
+        return Text
+    elif Text in variables.TRANSLATION_CACHE:
+        Translation = variables.TRANSLATION_CACHE[Text]
+        return Translation
     elif TRANSLATING:
-        return text
+        return Text
     else:
-        if text != "":
-            TranslationRequest(text)
-        return text
+        if Text != "":
+            TranslationRequest(Text)
+        return Text
 
 
 def GetAvailableLanguages(ForceNewSearch=False):
     if ForceNewSearch == False and variables.AVAILABLE_LANGUAGES != {}:
         return variables.AVAILABLE_LANGUAGES
-    languages = GoogleTranslator().get_supported_languages(as_dict=True)
-    formatted_languages = {}
-    for language in languages:
-        formatted_language = ""
-        for i, part in enumerate(str(language).split("(")):
-            formatted_language += ("(" if i > 0 else "") + part.capitalize()
-        formatted_languages[formatted_language] = languages[language]
-    variables.AVAILABLE_LANGUAGES = formatted_languages
-    return formatted_languages
+    Languages = GoogleTranslator().get_supported_languages(as_dict=True)
+    FormattedLanguages = {}
+    for Language in Languages:
+        FormattedLanguage = ""
+        for i, Part in enumerate(str(Language).split("(")):
+            FormattedLanguage += ("(" if i > 0 else "") + Part.capitalize()
+        FormattedLanguages[FormattedLanguage] = Languages[Language]
+    variables.AVAILABLE_LANGUAGES = FormattedLanguages
+    return FormattedLanguages
 
 
 def SaveCache():

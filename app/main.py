@@ -44,21 +44,21 @@ if __name__ == '__main__':
         LastScripts = {}
         for i, (Script, Path) in enumerate(Scripts):
             try:
-                hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
-                LastScripts[i] = hash
+                Hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
+                LastScripts[i] = Hash
             except:
                 pass
 
     while variables.BREAK == False:
-        start = time.time()
+        Start = time.time()
 
         plugins.ManageSharedMemory()
 
         if variables.DEVMODE:
             for i, (Script, Path) in enumerate(Scripts):
                 try:
-                    hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
-                    if hash != LastScripts[i]:
+                    Hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
+                    if Hash != LastScripts[i]:
                         if "plugins" in os.path.dirname(Path):
                             os.system("cls" if variables.OS == "nt" else "clear")
                             print("\nETS2LA-Lite\n-----------\n")
@@ -69,16 +69,16 @@ if __name__ == '__main__':
                             plugins.ManagePlugins(Plugin="All", Action="Restart")
                         else:
                             ui.Restart()
-                        LastScripts[i] = hash
+                        LastScripts[i] = Hash
                         break
                 except:
                     pass
 
         ui.Update()
 
-        time_to_sleep = 1/60 - (time.time() - start)
-        if time_to_sleep > 0:
-            time.sleep(time_to_sleep)
+        TimeToSleep = 1/60 - (time.time() - Start)
+        if TimeToSleep > 0:
+            time.sleep(TimeToSleep)
 
     if settings.Get("Console", "HideConsole", False):
         console.RestoreConsole()

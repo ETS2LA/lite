@@ -1,32 +1,25 @@
 import time
 import threading
 
-def RunEvery(duration, function, *args, **kwargs):
-    def wrapper():
+def RunEvery(Duration, Function, *args, **kwargs):
+    def Wrapper():
         while True:
-            start = time.time()
-            function(*args, **kwargs)
-            time.sleep(duration - (time.time() - start))
+            Start = time.time()
+            Function(*args, **kwargs)
+            time.sleep(Duration - (time.time() - Start))
+    threading.Thread(target=Wrapper, daemon=True).start()
 
-    thread = threading.Thread(target=wrapper, daemon=True)
-    thread.daemon = True
-    thread.start()
-
-def RunIn(duration, function, mainThread=False, *args, **kwargs):
-    if not mainThread:
-        def wrapper():
-            time.sleep(duration)
-            function(*args, **kwargs)
-
-        thread = threading.Thread(target=wrapper, daemon=True)
-        thread.daemon = True
-        thread.start()
+def RunIn(Duration, Function, MainThread=False, *args, **kwargs):
+    if not MainThread:
+        def Wrapper():
+            time.sleep(Duration)
+            Function(*args, **kwargs)
+        threading.Thread(target=Wrapper, daemon=True).start()
     else:
-        def wrapper():
-            time.sleep(duration)
-            function(*args, **kwargs)
+        def Wrapper():
+            time.sleep(Duration)
+            Function(*args, **kwargs)
+        threading.Timer(Duration, Wrapper).start()
 
-        threading.Timer(duration, wrapper).start()
-
-def RunInMainThread(function, *args, **kwargs):
-    RunIn(0, function, mainThread=True, *args, **kwargs)
+def RunInMainThread(Function, *args, **kwargs):
+    RunIn(0, Function, MainThread=True, *args, **kwargs)

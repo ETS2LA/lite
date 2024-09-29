@@ -13,21 +13,21 @@ def CheckForUpdates():
         return
     if settings.Get("Updater", "LastRemoteCheck", 0) + 600 < time.time():
         try:
-            remote_version = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/version.txt").text.strip()
-            changelog = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/changelog.txt").text.strip()
+            RemoteVersion = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/version.txt").text.strip()
+            Changelog = requests.get("https://raw.githubusercontent.com/ETS2LA/lite/main/config/changelog.txt").text.strip()
         except:
-            remote_version = "404: Not Found"
-            changelog = "404: Not Found"
-        if remote_version != "404: Not Found" and changelog != "404: Not Found":
+            RemoteVersion = "404: Not Found"
+            Changelog = "404: Not Found"
+        if RemoteVersion != "404: Not Found" and Changelog != "404: Not Found":
             settings.Set("Updater", "LastRemoteCheck", time.time())
-            settings.Set("Updater", "RemoteVersion", remote_version)
-            settings.Set("Updater", "Changelog", changelog)
+            settings.Set("Updater", "RemoteVersion", RemoteVersion)
+            settings.Set("Updater", "Changelog", Changelog)
     else:
-        remote_version = settings.Get("Updater", "RemoteVersion")
-        changelog = settings.Get("Updater", "Changelog")
-    variables.REMOTE_VERSION = remote_version
-    variables.CHANGELOG = changelog
-    if remote_version != variables.VERSION:
+        RemoteVersion = settings.Get("Updater", "RemoteVersion")
+        Changelog = settings.Get("Updater", "Changelog")
+    variables.REMOTE_VERSION = RemoteVersion
+    variables.CHANGELOG = Changelog
+    if RemoteVersion != variables.VERSION:
         variables.PAGE = "Update"
         ui.SetTitleBarHeight(0)
     else:

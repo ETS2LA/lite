@@ -52,8 +52,8 @@ def Initialize():
     LastScreenCaptureCheck = 0
     SteeringHistory = []
 
-    pytorch.Initialize(ModelOwner="Glas42", ModelName="NavigationDetectionAI")
-    pytorch.LoadAIModel()
+    pytorch.Initialize(Owner="Glas42", Model="NavigationDetectionAI")
+    pytorch.Load("NavigationDetectionAI")
 
     variables.POPUP = ["Loading...", 0, 0.5]
 

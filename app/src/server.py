@@ -1,6 +1,7 @@
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.plugins as plugins
 import multiprocessing
 import traceback
 import requests
@@ -63,8 +64,8 @@ def SendCrashReport(type:str, message:str, additional=None):
     print(f"{RED}{type}{NORMAL}\n{message}\n")
     ProcessName = multiprocessing.current_process().name
     if ProcessName != "MainProcess":
-        variables.QUEUE.append({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-        variables.QUEUE.append({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+        plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
+        plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
 
 
 def GetUserCount():

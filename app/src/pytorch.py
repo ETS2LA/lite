@@ -2,6 +2,7 @@ from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import src.console as console
+import src.plugins as plugins
 from bs4 import BeautifulSoup
 import threading
 import traceback
@@ -24,80 +25,72 @@ except:
     exc = traceback.format_exc()
     SendCrashReport("PyTorch - PyTorch import error.", str(exc))
 
+MODELS = {}
 
-AIModelUpdateThread = None
-AIModelLoadThread = None
-
-
-def Initialize(ModelOwner="", ModelName=""):
-    global MODELOWNER
-    global MODELNAME
-    global DEVICE
-    global PATH
-
-    MODELOWNER = str(ModelOwner)
-    MODELNAME = str(ModelName)
-
-    TryCuda = settings.Get("PyTorch", "TryCuda", True)
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() and TryCuda else "cpu")
-    PATH = f"{variables.PATH}cache/{MODELNAME}"
+def Initialize(Owner="", Model="", Threaded=False):
+    MODELS[Model] = {}
+    MODELS[Model]["Device"] = torch.device("cuda" if torch.cuda.is_available() and settings.Get("PyTorch", "TryCuda", True) else "cpu")
+    MODELS[Model]["Path"] = f"{variables.PATH}cache/{Model}"
+    MODELS[Model]["Threaded"] = Threaded
+    MODELS[Model]["ModelOwner"] = str(Owner)
 
 
-def LoadAIModel():
+def Load(Model):
     try:
-        def LoadAIModelThread():
+        def LoadFunction(Model):
             try:
-                global Model
-                global ModelLoaded
+                CheckForUpdates(Model)
+                if "UpdateThread" in MODELS[Model]:
+                    while MODELS[Model]["UpdateThread"].is_alive():
+                        time.sleep(0.1)
 
-                CheckForAIModelUpdates()
-                while AIModelUpdateThread.is_alive():
-                    time.sleep(0.1)
-
-                if GetAIModelName() == None:
+                if GetName(Model) == None:
                     return
 
-                variables.QUEUE.append({"POPUP": ["Loading the AI model...", 0, 0.5]})
-                print(GREEN + "Loading the AI model..." + NORMAL)
+                plugins.AddToQueue({"POPUP": ["Loading the model...", 0, 0.5]})
+                print(DARK_GREY + f"[{Model}] " + GREEN + "Loading the model..." + NORMAL)
 
-                GetAIModelProperties()
+                GetProperties(Model)
 
-                ModelFileCorrupted = False
+                ModelFileBroken = False
 
                 try:
-                    Model = torch.jit.load(os.path.join(PATH, GetAIModelName()), map_location=DEVICE)
-                    Model.eval()
+                    MODELS[Model]["Model"] = torch.jit.load(os.path.join(MODELS[Model]["Path"], GetName(Model)), map_location=MODELS[Model]["Device"])
+                    MODELS[Model]["Model"].eval()
                 except:
-                    ModelFileCorrupted = True
+                    ModelFileBroken = True
 
-                if ModelFileCorrupted == False:
-                    variables.QUEUE.append({"POPUP": ["Successfully loaded the AI model!", 0, 0.5]})
-                    print(GREEN + "Successfully loaded the AI model!" + NORMAL)
-                    ModelLoaded = True
+                if ModelFileBroken == False:
+                    plugins.AddToQueue({"POPUP": ["Successfully loaded the model!", 0, 0.5]})
+                    print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully loaded the model!" + NORMAL)
+                    MODELS[Model]["ModelLoaded"] = True
                 else:
-                    variables.QUEUE.append({"POPUP": ["Failed to load the AI model because the model file is corrupted.", 0, 0.5]})
-                    print(RED + "Failed to load the AI model because the model file is corrupted." + NORMAL)
-                    ModelLoaded = False
-                    time.sleep(3)
-                    HandleCorruptedAIModel()
+                    plugins.AddToQueue({"POPUP": ["Failed to load the model because the model file is broken.", 0, 0.5]})
+                    print(DARK_GREY + f"[{Model}] " + RED + "Failed to load the model because the model file is broken." + NORMAL)
+                    MODELS[Model]["ModelLoaded"] = False
+                    HandleBroken(Model)
             except:
-                SendCrashReport("PyTorch- Loading AI Error.", str(traceback.format_exc()))
-                variables.QUEUE.append({"POPUP": ["Failed to load the AI model!", 0, 0.5]})
-                print(RED + "Failed to load the AI model!" + NORMAL)
-                ModelLoaded = False
+                SendCrashReport("PyTorch - Loading Error.", str(traceback.format_exc()))
+                plugins.AddToQueue({"POPUP": ["Failed to load the model!", 0, 0.5]})
+                print(DARK_GREY + f"[{Model}] " + RED + "Failed to load the model!" + NORMAL)
+                MODELS[Model]["ModelLoaded"] = False
 
         if TorchAvailable:
-            global AIModelLoadThread
-            AIModelLoadThread = threading.Thread(target=LoadAIModelThread, daemon=True)
-            AIModelLoadThread.start()
+            if MODELS[Model]["Threaded"]:
+                MODELS[Model]["LoadThread"] = threading.Thread(target=LoadFunction, args=(Model,), daemon=True)
+                MODELS[Model]["LoadThread"].start()
+            else:
+                LoadFunction(Model)
 
     except:
-        SendCrashReport("PyTorch - Error in function LoadAIModel.", str(traceback.format_exc()))
+        SendCrashReport("PyTorch - Error in function Load.", str(traceback.format_exc()))
+        plugins.AddToQueue({"POPUP": ["Failed to load the model.", 0, 0.5]})
+        print(DARK_GREY + f"[{Model}] " + RED + "Failed to load the model." + NORMAL)
 
 
-def CheckForAIModelUpdates():
+def CheckForUpdates(Model):
     try:
-        def CheckForAIModelUpdatesThread():
+        def CheckForUpdatesFunction(Model):
             try:
                 try:
                     response = requests.get("https://huggingface.co/", timeout=3)
@@ -106,36 +99,36 @@ def CheckForAIModelUpdates():
                     response = None
 
                 if response == 200:
-                    variables.QUEUE.append({"POPUP": ["Checking for AI model updates...", 0, 0.5]})
-                    print(GREEN + "Checking for AI model updates..." + NORMAL)
+                    plugins.AddToQueue({"POPUP": ["Checking for model updates...", 0, 0.5]})
+                    print(DARK_GREY + f"[{Model}] " + GREEN + "Checking for model updates..." + NORMAL)
 
-                    if settings.Get("PyTorch", f"{MODELNAME}-LastUpdateCheck", 0) + 600 > time.time():
-                        if settings.Get("PyTorch", f"{MODELNAME}-LatestModel", "unset") == GetAIModelName():
-                            print(GREEN + "No AI model updates available!" + NORMAL)
+                    if settings.Get("PyTorch", f"{Model}-LastUpdateCheck", 0) + 600 > time.time():
+                        if settings.Get("PyTorch", f"{Model}-LatestModel", "unset") == GetName(Model):
+                            print(DARK_GREY + f"[{Model}] " + GREEN + "No model updates available!" + NORMAL)
                             return
 
-                    url = f"https://huggingface.co/{MODELOWNER}/{MODELNAME}/tree/main/model"
+                    url = f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/tree/main/model'
                     response = requests.get(url)
                     soup = BeautifulSoup(response.content, 'html.parser')
 
-                    LatestAIModel = None
+                    LatestModel = None
                     for link in soup.find_all("a", href=True):
                         href = link["href"]
-                        if href.startswith(f"/{MODELOWNER}/{MODELNAME}/blob/main/model"):
-                            LatestAIModel = href.split("/")[-1]
-                            settings.Set("PyTorch", f"{MODELNAME}-LatestModel", LatestAIModel)
+                        if href.startswith(f'/{MODELS[Model]["ModelOwner"]}/{Model}/blob/main/model'):
+                            LatestModel = href.split("/")[-1]
+                            settings.Set("PyTorch", f"{Model}-LatestModel", LatestModel)
                             break
-                    if LatestAIModel == None:
-                        LatestAIModel = settings.Get("PyTorch", f"{MODELNAME}-LatestModel", "unset")
+                    if LatestModel == None:
+                        LatestModel = settings.Get("PyTorch", f"{Model}-LatestModel", "unset")
 
-                    CurrentAIModel = GetAIModelName()
+                    CurrentModel = GetName(Model)
 
-                    if str(LatestAIModel) != str(CurrentAIModel):
-                        variables.QUEUE.append({"POPUP": ["Updating the AI model...", 0, 0.5]})
-                        print(GREEN + "Updating the AI model..." + NORMAL)
-                        DeleteAllAIModels()
-                        response = requests.get(f"https://huggingface.co/{MODELOWNER}/{MODELNAME}/resolve/main/model/{LatestAIModel}?download=true", stream=True)
-                        with open(os.path.join(PATH, f"{LatestAIModel}"), "wb") as modelfile:
+                    if str(LatestModel) != str(CurrentModel):
+                        plugins.AddToQueue({"POPUP": ["Updating the model...", 0, 0.5]})
+                        print(DARK_GREY + f"[{Model}] " + GREEN + "Updating the model..." + NORMAL)
+                        Delete(Model)
+                        response = requests.get(f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/resolve/main/model/{LatestModel}?download=true', stream=True)
+                        with open(os.path.join(MODELS[Model]["Path"], f"{LatestModel}"), "wb") as modelfile:
                             total_size = int(response.headers.get('content-length', 0))
                             downloaded_size = 0
                             chunk_size = 1024
@@ -143,126 +136,113 @@ def CheckForAIModelUpdates():
                                 downloaded_size += len(data)
                                 modelfile.write(data)
                                 progress = round((downloaded_size / total_size) * 100)
-                                variables.QUEUE.append({"POPUP": [f"Downloading the AI model: {progress}%", progress, 0.5]})
-                        variables.QUEUE.append({"POPUP": ["Successfully updated the AI model!", 0, 0.5]})
-                        print(GREEN + "Successfully updated the AI model!" + NORMAL)
+                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {progress}%", progress, 0.5]})
+                        plugins.AddToQueue({"POPUP": ["Successfully updated the model!", 0, 0.5]})
+                        print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully updated the model!" + NORMAL)
                     else:
-                        variables.QUEUE.append({"POPUP": ["No AI model updates available!", 0, 0.5]})
-                        print(GREEN + "No AI model updates available!" + NORMAL)
-                    settings.Set("PyTorch", f"{MODELNAME}-LastUpdateCheck", time.time())
+                        plugins.AddToQueue({"POPUP": ["No model updates available!", 0, 0.5]})
+                        print(DARK_GREY + f"[{Model}] " + GREEN + "No model updates available!" + NORMAL)
+                    settings.Set("PyTorch", f"{Model}-LastUpdateCheck", time.time())
 
                 else:
 
                     console.RestoreConsole()
-                    variables.QUEUE.append({"POPUP": ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates.", 0, 0.5]})
-                    print(RED + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for AI model updates." + NORMAL)
+                    plugins.AddToQueue({"POPUP": ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for model updates.", 0, 0.5]})
+                    print(DARK_GREY + f"[{Model}] " + RED + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for model updates." + NORMAL)
 
             except:
-                SendCrashReport("PyTorch - Error in function CheckForAIModelUpdatesThread.", str(traceback.format_exc()))
-                variables.QUEUE.append({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
-                print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
+                SendCrashReport("PyTorch - Error in function CheckForUpdatesFunction.", str(traceback.format_exc()))
+                plugins.AddToQueue({"POPUP": ["Failed to check for model updates or update the model.", 0, 0.5]})
+                print(DARK_GREY + f"[{Model}] " + RED + "Failed to check for model updates or update the model." + NORMAL)
 
-        global AIModelUpdateThread
-        AIModelUpdateThread = threading.Thread(target=CheckForAIModelUpdatesThread, daemon=True)
-        AIModelUpdateThread.start()
+        if MODELS[Model]["Threaded"]:
+            MODELS[Model]["UpdateThread"] = threading.Thread(target=CheckForUpdatesFunction, args=(Model,), daemon=True)
+            MODELS[Model]["UpdateThread"].start()
+        else:
+            CheckForUpdatesFunction(Model)
 
     except:
-        SendCrashReport("PyTorch - Error in function CheckForAIModelUpdates.", str(traceback.format_exc()))
-        variables.QUEUE.append({"POPUP": ["Failed to check for AI model updates or update the AI model.", 0, 0.5]})
-        print(RED + "Failed to check for AI model updates or update the AI model." + NORMAL)
+        SendCrashReport("PyTorch - Error in function CheckForUpdates.", str(traceback.format_exc()))
+        plugins.AddToQueue({"POPUP": ["Failed to check for model updates or update the model.", 0, 0.5]})
+        print(DARK_GREY + f"[{Model}] " + RED + "Failed to check for model updates or update the model." + NORMAL)
 
 
-def ModelFolderExists():
+def FolderExists(Model):
     try:
-        if os.path.exists(PATH) == False:
-            os.makedirs(PATH)
+        if os.path.exists(MODELS[Model]["Path"]) == False:
+            os.makedirs(MODELS[Model]["Path"])
     except:
-        SendCrashReport("PyTorch - Error in function ModelFolderExists.", str(traceback.format_exc()))
+        SendCrashReport("PyTorch - Error in function FolderExists.", str(traceback.format_exc()))
 
 
-def GetAIModelName():
+def GetName(Model):
     try:
-        ModelFolderExists()
-        for file in os.listdir(PATH):
+        FolderExists(Model)
+        for file in os.listdir(MODELS[Model]["Path"]):
             if file.endswith(".pt"):
                 return file
         return None
     except:
-        SendCrashReport("PyTorch - Error in function GetAIModelName.", str(traceback.format_exc()))
+        SendCrashReport("PyTorch - Error in function GetName.", str(traceback.format_exc()))
         return None
 
 
-def DeleteAllAIModels():
+def Delete(Model):
     try:
-        ModelFolderExists()
-        for file in os.listdir(PATH):
+        FolderExists(Model)
+        for file in os.listdir(MODELS[Model]["Path"]):
             if file.endswith(".pt"):
-                os.remove(os.path.join(PATH, file))
+                os.remove(os.path.join(MODELS[Model]["Path"], file))
     except PermissionError:
         global TorchAvailable
         TorchAvailable = False
-        print(RED + "PyTorch - PermissionError in function DeleteAllAIModels:\n" + NORMAL + str(traceback.format_exc()))
+        print(DARK_GREY + f"[{Model}] " + RED + "PyTorch - PermissionError in function Delete:\n" + NORMAL + str(traceback.format_exc()))
         console.RestoreConsole()
     except:
-        SendCrashReport("PyTorch - Error in function DeleteAllAIModels.", str(traceback.format_exc()))
+        SendCrashReport("PyTorch - Error in function Delete.", str(traceback.format_exc()))
 
 
-def HandleCorruptedAIModel():
-    DeleteAllAIModels()
-    CheckForAIModelUpdates()
-    while AIModelUpdateThread.is_alive():
-        time.sleep(0.1)
-    time.sleep(0.5)
-    if TorchAvailable == True:
-        LoadAIModel()
-
-
-def GetAIModelProperties():
-    global MODEL_METADATA
-    global IMG_WIDTH
-    global IMG_HEIGHT
-    global IMG_CHANNELS
-    global MODEL_OUTPUTS
-    global MODEL_EPOCHS
-    global MODEL_BATCH_SIZE
-    global MODEL_IMAGE_COUNT
-    global MODEL_TRAINING_TIME
-    global MODEL_TRAINING_DATE
+def HandleBroken(Model):
     try:
-        ModelFolderExists()
-        MODEL_METADATA = {"data": []}
-        IMG_WIDTH = None
-        IMG_HEIGHT = None
-        IMG_CHANNELS = None
-        MODEL_OUTPUTS = None
-        MODEL_EPOCHS = None
-        MODEL_BATCH_SIZE = None
-        MODEL_IMAGE_COUNT = None
-        MODEL_TRAINING_TIME = None
-        MODEL_TRAINING_DATE = None
-        if GetAIModelName() == None or TorchAvailable == False:
+        Delete(Model)
+        CheckForUpdates(Model)
+        if "UpdateThread" in MODELS[Model]:
+            while MODELS[Model]["UpdateThread"].is_alive():
+                time.sleep(0.1)
+        time.sleep(0.5)
+        if TorchAvailable == True:
+            Load(Model)
+    except:
+        SendCrashReport("PyTorch - Error in function HandleBroken.", str(traceback.format_exc()))
+
+
+def GetProperties(Model):
+    try:
+        FolderExists(Model)
+        MODELS[Model]["Metadata"] = {"data": []}
+        if GetName(Model) == None or TorchAvailable == False:
             return
-        torch.jit.load(os.path.join(PATH, GetAIModelName()), _extra_files=MODEL_METADATA, map_location=DEVICE)
-        MODEL_METADATA = eval(MODEL_METADATA["data"])
-        for item in MODEL_METADATA:
+        torch.jit.load(os.path.join(MODELS[Model]["Path"], GetName(Model)), _extra_files=MODELS[Model]["Metadata"], map_location=MODELS[Model]["Device"])
+        MODELS[Model]["Metadata"] = eval(MODELS[Model]["Metadata"]["data"])
+        for item in MODELS[Model]["Metadata"]:
             item = str(item)
             if "image_width" in item:
-                IMG_WIDTH = int(item.split("#")[1])
+                MODELS[Model]["IMG_WIDTH"] = int(item.split("#")[1])
             if "image_height" in item:
-                IMG_HEIGHT = int(item.split("#")[1])
+                MODELS[Model]["IMG_HEIGHT"] = int(item.split("#")[1])
             if "image_channels" in item:
-                IMG_CHANNELS = str(item.split("#")[1])
+                MODELS[Model]["IMG_CHANNELS"] = str(item.split("#")[1])
             if "outputs" in item:
-                MODEL_OUTPUTS = int(item.split("#")[1])
+                MODELS[Model]["OUTPUTS"] = int(item.split("#")[1])
             if "epochs" in item:
-                MODEL_EPOCHS = int(item.split("#")[1])
+                MODELS[Model]["EPOCHS"] = int(item.split("#")[1])
             if "batch" in item:
-                MODEL_BATCH_SIZE = int(item.split("#")[1])
+                MODELS[Model]["BATCH_SIZE"] = int(item.split("#")[1])
             if "image_count" in item:
-                MODEL_IMAGE_COUNT = int(item.split("#")[1])
+                MODELS[Model]["IMAGE_COUNT"] = int(item.split("#")[1])
             if "training_time" in item:
-                MODEL_TRAINING_TIME = item.split("#")[1]
+                MODELS[Model]["TRAINING_TIME"] = item.split("#")[1]
             if "training_date" in item:
-                MODEL_TRAINING_DATE = item.split("#")[1]
+                MODELS[Model]["TRAINING_DATE"] = item.split("#")[1]
     except:
-        SendCrashReport("PyTorch - Error in function GetAIModelProperties.", str(traceback.format_exc()))
+        SendCrashReport("PyTorch - Error in function GetProperties.", str(traceback.format_exc()))

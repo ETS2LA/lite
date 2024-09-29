@@ -1,6 +1,6 @@
 from src.server import SendCrashReport
 import src.variables as variables
-import src.settings as settings
+import src.pytorch as pytorch
 import numpy as np
 import traceback
 import math
@@ -43,6 +43,9 @@ def Initialize():
     MonitorY2 = Monitor["height"]
     Cam = None
     CaptureLibrary = None
+
+    pytorch.Initialize(Owner="Glas42", Model="RouteAdvisorClassification")
+    pytorch.Load("RouteAdvisorClassification")
 
     try:
 

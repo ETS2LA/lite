@@ -3,8 +3,10 @@ from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import multiprocessing
+import threading
 import traceback
 import pickle
+import time
 
 
 def Initialize():
@@ -14,17 +16,27 @@ def Initialize():
     MAIN_LOCK = multiprocessing.Lock()
 
 
+def AddToQueue(DATA):
+    if DATA is not None and str(DATA) not in str(variables.QUEUE):
+        variables.QUEUE.append(DATA)
+
+
 def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED_MEMORY_NAME, LOCK, DEVMODE):
     try:
-        import time
         variables.DEVMODE = DEVMODE
         MAIN_SHARED_MEMORY = shared_memory.SharedMemory(name=MAIN_SHARED_MEMORY_NAME)
         SHARED_MEMORY = shared_memory.SharedMemory(name=SHARED_MEMORY_NAME)
         LAST_MEMORY_UPDATE = 0
         DATA_REFRESH_RATE = 100
         LAST_DATA = None
-        Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
-        Plugin.Initialize()
+        INITIALIZING = True
+        def InitializePlugin():
+            global INITIALIZING
+            global Plugin
+            Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
+            Plugin.Initialize()
+            INITIALIZING = False
+        threading.Thread(target=InitializePlugin, daemon=True).start()
         while variables.BREAK == False:
             START = time.time()
 
@@ -45,15 +57,17 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
             else:
                 DATA = LAST_DATA
 
-            try:
-                DATA = Plugin.Run(DATA)
-            except:
-                SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
-                variables.BREAK = True
+            if INITIALIZING == False:
+                try:
+                    DATA = Plugin.Run(DATA)
+                except:
+                    SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
+                    variables.BREAK = True
+                    DATA = None
+            else:
                 DATA = None
 
-            if DATA != None and DATA not in str(variables.QUEUE):
-                variables.QUEUE.append({"DATA": [PluginName, DATA]})
+            AddToQueue({"DATA": [PluginName, DATA]})
 
             if UPDATE_MEMORY:
                 with LOCK:
@@ -61,6 +75,10 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
                     DataBytes = pickle.dumps(DATA)
                     if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
                         SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
+                        while True:
+                            variables.QUEUE.pop(0)
+                            if len(DataBytes) <= variables.SHARED_MEMORY_SIZE:
+                                break
                     SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
 
                 variables.QUEUE = []

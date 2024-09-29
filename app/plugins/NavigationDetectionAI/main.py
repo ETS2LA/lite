@@ -49,11 +49,11 @@ def Initialize():
     pytorch.Initialize(Owner="Glas42", Model="NavigationDetectionAI")
     pytorch.Load("NavigationDetectionAI")
 
-    ScreenCapture.Initialize()
-    ShowImage.Initialize(Name="NavigationDetectionAI", TitleBarColor=(0, 0, 0))
-
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
+
+    ScreenCapture.Initialize()
+    ShowImage.Initialize(Name="NavigationDetectionAI", TitleBarColor=(0, 0, 0))
 
 
 def GetTextSize(text="NONE", text_width=100, max_text_height=100):
@@ -83,7 +83,7 @@ def preprocess_image(image):
     return transform(image).unsqueeze(0).to(pytorch.MODELS["NavigationDetectionAI"]["Device"])
 
 
-def Run(data):
+def Run(Data):
     CurrentTime = time.time()
 
     global Enabled
@@ -102,14 +102,15 @@ def Run(data):
     global SDKController
     global TruckSimAPI
 
-    data["api"] = TruckSimAPI.update()
+    Data["api"] = TruckSimAPI.update()
     Frame = ScreenCapture.Capture(ImageType="cropped")
 
-    if pytorch.MODELS["NavigationDetectionAI"]["Threaded"] == True:
-        while pytorch.MODELS["NavigationDetectionAI"]["UpdateThread"].is_alive(): return
-        while pytorch.MODELS["NavigationDetectionAI"]["LoadThread"].is_alive(): return
+    if pytorch.Loaded("NavigationDetectionAI") == False: return
+    if type(Frame) == type(None): return
 
-    if type(Frame) == type(None):
+    FrameWidth = Frame.shape[1]
+    FrameHeight = Frame.shape[0]
+    if FrameWidth <= 0 or FrameHeight <= 0:
         return
 
     if LastScreenCaptureCheck + 0.5 < CurrentTime:
@@ -125,12 +126,6 @@ def Run(data):
                 ScreenCapture.Initialize()
             ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, MapTopLeft[0] - ScreenX, MapTopLeft[1] - ScreenY, MapBottomRight[0] - ScreenX, MapBottomRight[1] - ScreenY)
         LastScreenCaptureCheck = CurrentTime
-
-    FrameWidth = Frame.shape[1]
-    FrameHeight = Frame.shape[0]
-
-    if FrameWidth <= 0 or FrameHeight <= 0:
-        return
 
     EnableKeyPressed = keyboard.is_pressed(EnableKey)
     if EnableKeyPressed == False and LastEnableKeyPressed == True:
@@ -169,8 +164,8 @@ def Run(data):
         RightIndicator = False
 
     try:
-        IndicatorLeft = data["api"]["truckBool"]["blinkerLeftActive"]
-        IndicatorRight = data["api"]["truckBool"]["blinkerRightActive"]
+        IndicatorLeft = Data["api"]["truckBool"]["blinkerLeftActive"]
+        IndicatorRight = Data["api"]["truckBool"]["blinkerRightActive"]
     except:
         IndicatorLeft = False
         IndicatorRight = False
@@ -212,7 +207,7 @@ def Run(data):
     cv2.putText(Frame, Text, (5, 5 + TextHeight), cv2.FONT_HERSHEY_SIMPLEX, Fontscale, (0, 255, 0) if Enabled else (0, 0, 255), Thickness, cv2.LINE_AA)
 
     CurrentDesired = Steering
-    ActualSteering = -data["api"]["truckFloat"]["gameSteer"]
+    ActualSteering = -Data["api"]["truckFloat"]["gameSteer"]
 
     divider = 5
     cv2.line(Frame, (int(FrameWidth/divider), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/divider*(divider-1)), int(FrameHeight - FrameHeight/10)), (100, 100, 100), 6, cv2.LINE_AA)

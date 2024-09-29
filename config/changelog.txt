@@ -1,4 +1,3 @@
-NavigationDetectionAI now automatically detects on which side the route advisor is
-Fixed the NavigationDetectionDataCollection plugin (not meant to use for normal users)
-Added the ShowImage module
-Fixes in the updater
+Fixes in the PyTorch module
+Fixed some Plugins
+The RouteAdvisorClassification model should now work reliably

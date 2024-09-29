@@ -1,7 +1,8 @@
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
-import src.variables as variables
 from torchvision import transforms
+import src.variables as variables
+import src.plugins as plugins
 import numpy as np
 import torch
 import time
@@ -105,7 +106,17 @@ def Run(data):
     with torch.no_grad():
         output = np.array(MODEL(image)[0].tolist())
 
-    Values = [True if output[i] > 0.5 else False for i in range(3)]
-    print(f"SideCorrect: {Values[0]}, ZoomCorrect: {Values[1]}, TabCorrect: {Values[2]}   {[round(output[i], 2) for i in range(3)]}")
+    Values = [round(output[i], 2) for i in range(6)]
+
+    LowerRed = np.array([round((Values[0] - 0.1) * 255), round((Values[1] - 0.1) * 255), round((Values[2] - 0.1) * 255)])
+    UpperRed = np.array([round((Values[0] + 0.1) * 255), round((Values[1] + 0.1) * 255), round((Values[2] + 0.1) * 255)])
+    LowerGreen = np.array([round((Values[3] - 0.1) * 255), round((Values[4] - 0.1) * 255), round((Values[5] - 0.1) * 255)])
+    UpperGreen = np.array([round((Values[3] + 0.1) * 255), round((Values[4] + 0.1) * 255), round((Values[5] + 0.1) * 255)])
+
+    MaskRed = cv2.inRange(Frame, LowerRed, UpperRed)
+    MaskGreen = cv2.inRange(Frame, LowerGreen, UpperGreen)
+    Mask = cv2.bitwise_or(MaskRed, MaskGreen)
+
+    Frame = cv2.bitwise_and(Frame, Frame, mask=Mask)
 
     ShowImage.Show("RouteAdvisorClassification", Frame)

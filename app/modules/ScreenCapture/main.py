@@ -50,9 +50,6 @@ def Initialize():
     RouteAdvisorZoomCorrect = True
     RouteAdvisorTabCorrect = True
 
-    pytorch.Initialize(Owner="Glas42", Model="RouteAdvisorClassification")
-    pytorch.Load("RouteAdvisorClassification")
-
     try:
 
         if variables.OS == "nt":
@@ -312,8 +309,18 @@ def GetRouteAdvisorPosition(Side="Automatic"):
         global RouteAdvisorZoomCorrect
         global RouteAdvisorTabCorrect
 
+        if "RouteAdvisorClassification" not in pytorch.MODELS:
+            pytorch.Initialize(Owner="Glas42", Model="RouteAdvisorClassification")
+            pytorch.Load("RouteAdvisorClassification")
+        if pytorch.Loaded("RouteAdvisorClassification") == False:
+            return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight
+
         Outputs = []
         for Image in [LeftImage, RightImage]:
+            if type(Image) == type(None):
+                return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight
+            if Image.shape[1] <= 0 or Image.shape[0] <= 0:
+                return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight
             if pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'Binarize':
                 Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
             if pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'RG':

@@ -35,6 +35,19 @@ def Initialize(Owner="", Model="", Threaded=True):
     MODELS[Model]["ModelOwner"] = str(Owner)
 
 
+def Loaded(Model="All"):
+    if Model == "All":
+        for Model in MODELS:
+            if MODELS[Model]["Threaded"] == True:
+                if MODELS[Model]["UpdateThread"].is_alive(): return False
+                if MODELS[Model]["LoadThread"].is_alive(): return False
+    else:
+        if MODELS[Model]["Threaded"] == True:
+            if MODELS[Model]["UpdateThread"].is_alive(): return False
+            if MODELS[Model]["LoadThread"].is_alive(): return False
+    return True
+
+
 def Load(Model):
     try:
         def LoadFunction(Model):
@@ -50,13 +63,33 @@ def Load(Model):
                 plugins.AddToQueue({"POPUP": ["Loading the model...", 0, 0.5]})
                 print(DARK_GREY + f"[{Model}] " + GREEN + "Loading the model..." + NORMAL)
 
-                GetProperties(Model)
-
                 ModelFileBroken = False
 
                 try:
-                    MODELS[Model]["Model"] = torch.jit.load(os.path.join(MODELS[Model]["Path"], GetName(Model)), map_location=MODELS[Model]["Device"])
+                    MODELS[Model]["Metadata"] = {"data": []}
+                    MODELS[Model]["Model"] = torch.jit.load(os.path.join(MODELS[Model]["Path"], GetName(Model)), _extra_files=MODELS[Model]["Metadata"], map_location=MODELS[Model]["Device"])
                     MODELS[Model]["Model"].eval()
+                    MODELS[Model]["Metadata"] = eval(MODELS[Model]["Metadata"]["data"])
+                    for Item in MODELS[Model]["Metadata"]:
+                        Item = str(Item)
+                        if "image_width" in Item:
+                            MODELS[Model]["IMG_WIDTH"] = int(Item.split("#")[1])
+                        if "image_height" in Item:
+                            MODELS[Model]["IMG_HEIGHT"] = int(Item.split("#")[1])
+                        if "image_channels" in Item:
+                            MODELS[Model]["IMG_CHANNELS"] = str(Item.split("#")[1])
+                        if "outputs" in Item:
+                            MODELS[Model]["OUTPUTS"] = int(Item.split("#")[1])
+                        if "epochs" in Item:
+                            MODELS[Model]["EPOCHS"] = int(Item.split("#")[1])
+                        if "batch" in Item:
+                            MODELS[Model]["BATCH_SIZE"] = int(Item.split("#")[1])
+                        if "image_count" in Item:
+                            MODELS[Model]["IMAGE_COUNT"] = int(Item.split("#")[1])
+                        if "training_time" in Item:
+                            MODELS[Model]["TRAINING_TIME"] = Item.split("#")[1]
+                        if "training_date" in Item:
+                            MODELS[Model]["TRAINING_DATE"] = Item.split("#")[1]
                 except:
                     ModelFileBroken = True
 
@@ -214,35 +247,3 @@ def HandleBroken(Model):
             Load(Model)
     except:
         SendCrashReport("PyTorch - Error in function HandleBroken.", str(traceback.format_exc()))
-
-
-def GetProperties(Model):
-    try:
-        FolderExists(Model)
-        MODELS[Model]["Metadata"] = {"data": []}
-        if GetName(Model) == None or TorchAvailable == False:
-            return
-        torch.jit.load(os.path.join(MODELS[Model]["Path"], GetName(Model)), _extra_files=MODELS[Model]["Metadata"], map_location=MODELS[Model]["Device"])
-        MODELS[Model]["Metadata"] = eval(MODELS[Model]["Metadata"]["data"])
-        for item in MODELS[Model]["Metadata"]:
-            item = str(item)
-            if "image_width" in item:
-                MODELS[Model]["IMG_WIDTH"] = int(item.split("#")[1])
-            if "image_height" in item:
-                MODELS[Model]["IMG_HEIGHT"] = int(item.split("#")[1])
-            if "image_channels" in item:
-                MODELS[Model]["IMG_CHANNELS"] = str(item.split("#")[1])
-            if "outputs" in item:
-                MODELS[Model]["OUTPUTS"] = int(item.split("#")[1])
-            if "epochs" in item:
-                MODELS[Model]["EPOCHS"] = int(item.split("#")[1])
-            if "batch" in item:
-                MODELS[Model]["BATCH_SIZE"] = int(item.split("#")[1])
-            if "image_count" in item:
-                MODELS[Model]["IMAGE_COUNT"] = int(item.split("#")[1])
-            if "training_time" in item:
-                MODELS[Model]["TRAINING_TIME"] = item.split("#")[1]
-            if "training_date" in item:
-                MODELS[Model]["TRAINING_DATE"] = item.split("#")[1]
-    except:
-        SendCrashReport("PyTorch - Error in function GetProperties.", str(traceback.format_exc()))

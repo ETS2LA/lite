@@ -27,7 +27,7 @@ except:
 
 MODELS = {}
 
-def Initialize(Owner="", Model="", Threaded=False):
+def Initialize(Owner="", Model="", Threaded=True):
     MODELS[Model] = {}
     MODELS[Model]["Device"] = torch.device("cuda" if torch.cuda.is_available() and settings.Get("PyTorch", "TryCuda", True) else "cpu")
     MODELS[Model]["Path"] = f"{variables.PATH}cache/{Model}"

@@ -64,8 +64,14 @@ def SendCrashReport(type:str, message:str, additional=None):
     print(f"{RED}{type}{NORMAL}\n{message}\n")
     ProcessName = multiprocessing.current_process().name
     if ProcessName != "MainProcess":
-        plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-        plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+        while True:
+            variables.QUEUE = []
+            plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
+            plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+            DATA = variables.QUEUE
+            DataBytes = plugins.pickle.dumps(DATA)
+            plugins.SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
+            time.sleep(0.1)
 
 
 def GetUserCount():

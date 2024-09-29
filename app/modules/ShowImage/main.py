@@ -10,7 +10,6 @@ WINDOWS = {}
 
 def Initialize(Name="", TitleBarColor=(0, 0, 0), Normal=True, TopMost=True, Position=(None, None), Size=(None, None)):
     WINDOWS[Name] = {"TitleBarColor": TitleBarColor, "Normal": Normal, "TopMost": TopMost, "Position": Position, "Size": Size}
-    CreateWindow(Name)
 
 
 def CreateWindow(Name=""):

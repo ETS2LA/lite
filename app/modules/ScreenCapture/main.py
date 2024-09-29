@@ -34,6 +34,9 @@ def Initialize():
     global MonitorY2
     global Cam
     global CaptureLibrary
+    global RouteAdvisorSide
+    global RouteAdvisorZoomCorrect
+    global RouteAdvisorTabCorrect
 
     Display = 0
     Monitor = sct.monitors[(Display + 1)]
@@ -43,6 +46,9 @@ def Initialize():
     MonitorY2 = Monitor["height"]
     Cam = None
     CaptureLibrary = None
+    RouteAdvisorSide = "Right"
+    RouteAdvisorZoomCorrect = True
+    RouteAdvisorTabCorrect = True
 
     pytorch.Initialize(Owner="Glas42", Model="RouteAdvisorClassification")
     pytorch.Load("RouteAdvisorClassification")
@@ -266,6 +272,9 @@ def GetRouteAdvisorPosition(Side="Automatic"):
     Height = 219
     Scale = (Y2 - Y1) / 1080
 
+    if Side == "Automatic" and pytorch.TorchAvailable == False:
+        Side = "Right"
+
     if Side == "Left" or Side == "Automatic":
         X = X1 + (DistanceFromRight * Scale) - 1
         Y = Y1 + (Y2 - Y1) - (DistanceFromBottom * Scale + Height * Scale)
@@ -280,7 +289,7 @@ def GetRouteAdvisorPosition(Side="Automatic"):
         Y = LeftMapBottomRight[1] - (LeftMapBottomRight[1] - LeftMapTopLeft[1]) * 0.39
         LeftArrowBottomRight = (round(X), round(Y))
         if Side == "Automatic":
-            LeftImage = np.array(sct.grab({"left": LeftMapTopLeft[0], "top": LeftMapTopLeft[1], "width": LeftMapBottomRight[0] - LeftMapTopLeft[0], "height": LeftMapBottomRight[1] - LeftMapTopLeft[1]}))
+            LeftImage = np.array(sct.grab({"left": LeftMapTopLeft[0], "top": LeftMapTopLeft[1], "width": LeftMapBottomRight[0] - LeftMapTopLeft[0], "height": LeftMapBottomRight[1] - LeftMapTopLeft[1]}), dtype=np.float32)
 
     if Side == "Right" or Side == "Automatic":
         X = X1 + (X2 - X1) - (DistanceFromRight * Scale + Width * Scale)
@@ -296,11 +305,51 @@ def GetRouteAdvisorPosition(Side="Automatic"):
         Y = RightMapBottomRight[1] - (RightMapBottomRight[1] - RightMapTopLeft[1]) * 0.39
         RightArrowBottomRight = (round(X), round(Y))
         if Side == "Automatic":
-            RightImage = np.array(sct.grab({"left": RightMapTopLeft[0], "top": RightMapTopLeft[1], "width": RightMapBottomRight[0] - RightMapTopLeft[0], "height": RightMapBottomRight[1] - RightMapTopLeft[1]}))
+            RightImage = np.array(sct.grab({"left": RightMapTopLeft[0], "top": RightMapTopLeft[1], "width": RightMapBottomRight[0] - RightMapTopLeft[0], "height": RightMapBottomRight[1] - RightMapTopLeft[1]}), dtype=np.float32)
 
     if Side == "Automatic":
-        # TODO: Classify both images and pick the one where it is more certain that there is a route advisor
-        return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight
+        global RouteAdvisorSide
+        global RouteAdvisorZoomCorrect
+        global RouteAdvisorTabCorrect
+
+        Outputs = []
+        for Image in [LeftImage, RightImage]:
+            if pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'Binarize':
+                Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
+            if pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'RG':
+                Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
+            elif pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'GB':
+                Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
+            elif pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'RB':
+                Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
+            elif pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'R':
+                Image = Image[:, :, 0]
+                Image = np.expand_dims(Image, axis=2)
+            elif pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'G':
+                Image = Image[:, :, 1]
+                Image = np.expand_dims(Image, axis=2)
+            elif pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'B':
+                Image = Image[:, :, 2]
+                Image = np.expand_dims(Image, axis=2)
+            Image = cv2.resize(Image, (pytorch.MODELS["RouteAdvisorClassification"]["IMG_WIDTH"], pytorch.MODELS["RouteAdvisorClassification"]["IMG_HEIGHT"]))
+            Image = Image / 255.0
+            if pytorch.MODELS["RouteAdvisorClassification"]["IMG_CHANNELS"] == 'Binarize':
+                Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
+
+            Image = pytorch.transforms.ToTensor()(Image).unsqueeze(0).to(pytorch.MODELS["RouteAdvisorClassification"]["Device"])
+            with pytorch.torch.no_grad():
+                Output = np.array(pytorch.MODELS["RouteAdvisorClassification"]["Model"](Image)[0].tolist())
+            Outputs.append(Output)
+
+        RouteAdvisorSide = "Left" if Outputs[0][0] > Outputs[1][0] else "Right"
+        RouteAdvisorZoomCorrect = Outputs[0 if RouteAdvisorSide == "Left" else 1][1] > 0.5
+        RouteAdvisorTabCorrect = Outputs[0 if RouteAdvisorSide == "Left" else 1][2] > 0.5
+
+        if RouteAdvisorSide == "Right":
+            return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight
+        else:
+            return LeftMapTopLeft, LeftMapBottomRight, LeftArrowTopLeft, LeftArrowBottomRight
+
     elif Side == "Left":
         return LeftMapTopLeft, LeftMapBottomRight, LeftArrowTopLeft, LeftArrowBottomRight
     elif Side == "Right":

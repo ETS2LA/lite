@@ -24,19 +24,14 @@ def AddToQueue(DATA):
 def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED_MEMORY_NAME, LOCK, DEVMODE):
     try:
         variables.DEVMODE = DEVMODE
+        global SHARED_MEMORY
         MAIN_SHARED_MEMORY = shared_memory.SharedMemory(name=MAIN_SHARED_MEMORY_NAME)
         SHARED_MEMORY = shared_memory.SharedMemory(name=SHARED_MEMORY_NAME)
         LAST_MEMORY_UPDATE = 0
         DATA_REFRESH_RATE = 100
         LAST_DATA = None
-        INITIALIZING = True
-        def InitializePlugin():
-            global INITIALIZING
-            global Plugin
-            Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
-            Plugin.Initialize()
-            INITIALIZING = False
-        threading.Thread(target=InitializePlugin, daemon=True).start()
+        Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
+        Plugin.Initialize()
         while variables.BREAK == False:
             START = time.time()
 
@@ -57,16 +52,7 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
             else:
                 DATA = LAST_DATA
 
-            if INITIALIZING == False:
-                try:
-                    DATA = Plugin.Run(DATA)
-                except:
-                    SendCrashReport(f"Error in plugin {PluginName}.", str(traceback.format_exc()))
-                    variables.BREAK = True
-                    DATA = None
-            else:
-                DATA = None
-
+            DATA = Plugin.Run(DATA)
             AddToQueue({"DATA": [PluginName, DATA]})
 
             if UPDATE_MEMORY:

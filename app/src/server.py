@@ -35,7 +35,7 @@ def SendCrashReport(Type:str, Message:str, Additional=None):
             }
 
             JsonData = {
-                "type": type,
+                "type": Type,
                 "message": Message,
                 "additional": Additional
             }

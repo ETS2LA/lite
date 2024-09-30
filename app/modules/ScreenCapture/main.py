@@ -189,15 +189,12 @@ def Capture(ImageType:str = "both"):
 
 
 def GetScreenDimensions(Display=1):
-    try:
-        global ScreenX, ScreenY, ScreenWidth, ScreenHeight
-        Monitor = sct.monitors[Display]
-        ScreenX = Monitor["left"]
-        ScreenY = Monitor["top"]
-        ScreenWidth = Monitor["width"]
-        ScreenHeight = Monitor["height"]
-    except:
-        SendCrashReport("ScreenCapture - Error in function GetScreenDimensions.", str(traceback.format_exc()))
+    global ScreenX, ScreenY, ScreenWidth, ScreenHeight
+    Monitor = sct.monitors[Display]
+    ScreenX = Monitor["left"]
+    ScreenY = Monitor["top"]
+    ScreenWidth = Monitor["width"]
+    ScreenHeight = Monitor["height"]
     return ScreenX, ScreenY, ScreenWidth, ScreenHeight
 
 

@@ -41,7 +41,6 @@ def RestoreConsole():
 def HideConsole():
     try:
         if variables.OS == "nt":
-            1/0
             if variables.CONSOLEHWND != None and variables.CONSOLENAME != None:
                 win32gui.ShowWindow(variables.CONSOLEHWND, win32con.SW_HIDE)
             else:

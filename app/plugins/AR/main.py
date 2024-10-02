@@ -15,12 +15,12 @@ if variables.OS == "nt":
 
 def Initialize():
     global TruckSimAPI
-    global Fov
     global LastWindowPosition
+    global DRAWLIST
     global FRAME
     TruckSimAPI = SCSTelemetry()
-    Fov = settings.Get("AR", "FOV", 80)
     LastWindowPosition = None, None, None, None
+    DRAWLIST = []
     FRAME = None
     InitializeWindow()
 
@@ -42,7 +42,6 @@ def InitializeWindow():
 
     hwnd = win32gui.FindWindow(None, 'ETS2LA - AR/Overlay')
     margins = MARGINS(-1, -1, -1, -1)
-    dwm = ctypes.windll.dwmapi
     ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(hwnd, margins)
     win32gui.SetWindowLong(hwnd, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(hwnd, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT)
 
@@ -53,16 +52,83 @@ def Resize():
     dpg.set_viewport_height(WindowPosition[3] - WindowPosition[1])
 
 
-def DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=[0, 255, 0, 255], FillColor=[0, 0, 0, 0], Thickness=5):
-    global FRAME
+def DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1):
+    global DRAWLIST
     FillColor = list(FillColor)
     Color = list(Color)
     if len(FillColor) <= 3:
         FillColor.append(255)
     if len(Color) <= 3:
         Color.append(255)
+    DRAWLIST.append(("Rectangle", [X1, Y1], [X2, Y2], Color, FillColor, Thickness))
+
+
+def DrawLine(X1=0, Y1=0, X2=100, Y2=100, Color=[255, 255, 255, 255], Thickness=1):
+    global DRAWLIST
+    Color = list(Color)
+    if len(Color) <= 3:
+        Color.append(255)
+    DRAWLIST.append(("Line", [X1, Y1], [X2, Y2], Color, Thickness))
+
+
+def DrawPolygon(Points=[(100, 0), (100, 100), (0, 100)], Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1, Closed=False):
+    global DRAWLIST
+    FillColor = list(FillColor)
+    Color = list(Color)
+    if len(FillColor) <= 3:
+        FillColor.append(255)
+    if len(Color) <= 3:
+        Color.append(255)
+    Points = [(X, Y) for X, Y in Points if X != None and Y != None]
+    if len(Points) <= 1:
+        return
+    if Closed:
+        if Points[0] != Points[-1]:
+            Points.append(Points[0])
+    DRAWLIST.append(("Polygon", Points, Color, FillColor, Thickness))
+
+
+def DrawCircle(X=0, Y=0, R=100, Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1):
+    global DRAWLIST
+    Color = list(Color)
+    if len(Color) <= 3:
+        Color.append(255)
+    DRAWLIST.append(("Circle", [X, Y], R, Color, FillColor, Thickness))
+
+
+def Render():
+    global FRAME
+    global DRAWLIST
+    dpg.delete_item(FRAME)
     with dpg.viewport_drawlist(label="draw") as FRAME:
-        dpg.draw_rectangle([X1 * (WindowPosition[2] - WindowPosition[0]), Y1 * (WindowPosition[3] - WindowPosition[1])], [X2 * (WindowPosition[2] - WindowPosition[0]), Y2 * (WindowPosition[3] - WindowPosition[1])], fill=FillColor, color=Color, thickness=Thickness)
+        for Item in DRAWLIST:
+            if Item[0] == "Rectangle":
+                dpg.draw_rectangle(pmin=Item[1], pmax=Item[2], color=Item[3], fill=Item[4], thickness=Item[5])
+            elif Item[0] == "Line":
+                dpg.draw_line(p1=Item[1], p2=Item[2], color=Item[3], thickness=Item[4])
+            elif Item[0] == "Polygon":
+                dpg.draw_polygon(points=Item[1], color=Item[2], fill=Item[3], thickness=Item[4])
+            elif Item[0] == "Circle":
+                dpg.draw_circle(center=Item[1], radius=Item[2], color=Item[3], fill=Item[4], thickness=Item[5])
+    dpg.render_dearpygui_frame()
+    DRAWLIST = []
+
+
+def CalculateAlpha(Distances=()):
+    Distances = [Distance for Distance in Distances if Distance != None]
+    if len(Distances) == 0:
+        return 0
+    AverageDistance = sum(Distances) / len(Distances)
+    if AverageDistance < 10:
+        return 0
+    elif 10 <= AverageDistance < 30:
+        return (255 * (AverageDistance - 10) / 20)
+    elif 30 <= AverageDistance < 150:
+        return 255
+    elif 150 <= AverageDistance < 170:
+        return (255 * (170 - AverageDistance) / 20)
+    else:
+        return 0
 
 
 def ConvertToScreenCoordinate(x: float, y: float, z: float):
@@ -92,7 +158,7 @@ def ConvertToScreenCoordinate(x: float, y: float, z: float):
     if final_z >= 0:
         return None, None, None
 
-    fov_rad = math.radians(Fov)
+    fov_rad = math.radians(variables.FOV)
     
     window_distance = ((WindowPosition[3] - WindowPosition[1]) * (4 / 3) / 2) / math.tan(fov_rad / 2)
 
@@ -107,7 +173,6 @@ def ConvertToScreenCoordinate(x: float, y: float, z: float):
 
 
 def Run(data):
-    global FRAME
     global LastWindowPosition
     global WindowPosition
 
@@ -124,9 +189,6 @@ def Run(data):
     WindowPosition = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
     if LastWindowPosition != WindowPosition:
         Resize()
-
-    if FRAME is not None:
-        dpg.delete_item(FRAME)
 
 
     truck_x = data["api"]["truckPlacement"]["coordinateX"]
@@ -175,23 +237,14 @@ def Run(data):
 
     x3, y3, d3 = ConvertToScreenCoordinate(x=10453.237, y=34.324, z=-10130.404)
     
-    alpha_zones = [(30, 10, 255), (150, float('inf'), lambda x: 255 - int((x - 10) / 20 * 255))]
+    Alpha = CalculateAlpha(Distances=(d1, d2, d3))
 
-    def calculate_alpha(avg_d):
-        for zone in alpha_zones:
-            if avg_d < zone[1]:
-                if callable(zone[2]):
-                    return zone[2](avg_d)
-                else:
-                    return zone[2]
-        return 0
 
-    if d1 != None and d2 != None and d3 != None:
-        avg_d = (d1 + d2 + d3) / 3
-    else:
-        avg_d = 0
-    alpha = calculate_alpha(avg_d)
+    DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=(255, 255, 255), Thickness=2)
+    DrawLine(X1=0, Y1=0, X2=100, Y2=100, Color=(255, 255, 255), Thickness=2)
+    DrawPolygon(Points=[(125, 0), (125, 125), (0, 125)], Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2, Closed=False)
+    DrawCircle(X=0, Y=0, R=100, Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2)
 
-    DrawRectangle(X1=0, Y1=0, X2=0.1, Y2=0.1, Color=(255, 255, 255), Thickness=1)
+    DrawPolygon(Points=[(x1, y1), (x2, y2), (x3, y3)], Color=(255, 255, 255, Alpha), FillColor=(127, 127, 127, Alpha / 2), Thickness=2, Closed=True)
 
-    dpg.render_dearpygui_frame()
+    Render()

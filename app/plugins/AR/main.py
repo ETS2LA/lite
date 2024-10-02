@@ -29,7 +29,7 @@ def InitializeWindow():
     WindowX1, WindowY1, WindowX2, WindowY2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
 
     dpg.create_context()
-    dpg.create_viewport(title=f'ETS2LA - AR/Overlay', always_on_top=True, decorated=False, clear_color=[0.0,0.0,0.0,0.0], vsync=False, x_pos=WindowX1, y_pos=WindowY1, width=WindowX2-WindowX1, height=WindowY2-WindowY1, small_icon=f"{variables.PATH}app/assets/favicon.ico", large_icon=f"{variables.PATH}app/assets/favicon.ico")
+    dpg.create_viewport(title=f'ETS2LA-Lite AR Overlay', always_on_top=True, decorated=False, clear_color=[0.0,0.0,0.0,0.0], vsync=False, x_pos=WindowX1, y_pos=WindowY1, width=WindowX2-WindowX1, height=WindowY2-WindowY1, small_icon=f"{variables.PATH}app/assets/favicon.ico", large_icon=f"{variables.PATH}app/assets/favicon.ico")
     dpg.set_viewport_always_top(True)
     dpg.setup_dearpygui()
     dpg.show_viewport()
@@ -40,7 +40,7 @@ def InitializeWindow():
                     ("cyTopHeight", ctypes.c_int),
                     ("cyBottomHeight", ctypes.c_int)]
 
-    HWND = win32gui.FindWindow(None, 'ETS2LA - AR/Overlay')
+    HWND = win32gui.FindWindow(None, 'ETS2LA-Lite AR Overlay')
     Margins = MARGINS(-1, -1, -1, -1)
     ctypes.windll.dwmapi.DwmExtendFrameIntoClientArea(HWND, Margins)
     win32gui.SetWindowLong(HWND, win32con.GWL_EXSTYLE, win32gui.GetWindowLong(HWND, win32con.GWL_EXSTYLE) | win32con.WS_EX_LAYERED | win32con.WS_EX_TRANSPARENT)

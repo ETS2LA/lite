@@ -186,6 +186,11 @@ def Run(Data):
     Data = {}
     Data["api"] = TruckSimAPI.update()
 
+    if Data["api"]["pause"] == True or ScreenCapture.IsForegroundWindow(Name="Truck Simulator", Blacklist=["Discord"]) == False:
+        time.sleep(0.1)
+        Render()
+        return
+
     WindowPosition = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
     if LastWindowPosition != WindowPosition:
         Resize()
@@ -235,10 +240,14 @@ def Run(Data):
     TruckWheelPointsY = [Point for Point in Data["api"]["configVector"]["truckWheelPositionY"] if Point != 0]
     TruckWheelPointsZ = [Point for Point in Data["api"]["configVector"]["truckWheelPositionZ"] if Point != 0]
 
+    WheelAngles = [Angle for Angle in Data["api"]["truckFloat"]["truck_wheelSteering"] if Angle != 0]
+    while int(Data["api"]["configUI"]["truckWheelCount"]) > len(WheelAngles):
+        WheelAngles.append(0)
+
     for i in range(len(TruckWheelPointsX)):
-        PointX = TruckWheelPointsX[i] + TruckX
-        PointY = TruckWheelPointsY[i] + TruckY
-        PointZ = TruckWheelPointsZ[i] + TruckZ
+        PointX = TruckX + TruckWheelPointsX[i] * math.cos(TruckRotationRadiansX) - TruckWheelPointsZ[i] * math.sin(TruckRotationRadiansX)
+        PointY = TruckY + TruckWheelPointsY[i]
+        PointZ = TruckZ + TruckWheelPointsZ[i] * math.cos(TruckRotationRadiansX) + TruckWheelPointsX[i] * math.sin(TruckRotationRadiansX)
         X, Y, D = ConvertToScreenCoordinate(X=PointX, Y=PointY, Z=PointZ)
         DrawCircle(X=X, Y=Y, R=10, Color=(255, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2)
 

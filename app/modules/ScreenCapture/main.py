@@ -23,6 +23,7 @@ ScreenY = Monitor["top"]
 ScreenWidth = Monitor["width"]
 ScreenHeight = Monitor["height"]
 LastWindowPositions = {}
+LastForegroundWindows = {}
 
 
 def Initialize():
@@ -230,6 +231,27 @@ def ValidateCaptureArea(Display, X1, Y1, X2, Y2):
         else:
             Y1 = 0
     return X1, Y1, X2, Y2
+
+
+def IsForegroundWindow(Name="", Blacklist=[""]):
+    if variables.OS == "nt":
+        Key = f"{Name}{Blacklist}"
+        if Key not in LastForegroundWindows:
+            LastForegroundWindows[Key] = [0, ScreenX, ScreenY, ScreenX + ScreenWidth, ScreenY + ScreenHeight]
+        if LastForegroundWindows[Key][0] + 1 < time.time():
+            HWND = None
+            TopWindows = []
+            IsForeground = LastForegroundWindows[Key][1]
+            win32gui.EnumWindows(lambda HWND, TopWindows: TopWindows.append((HWND, win32gui.GetWindowText(HWND))), TopWindows)
+            for HWND, WindowText in TopWindows:
+                if Name in WindowText and all(BlacklistItem not in WindowText for BlacklistItem in Blacklist):
+                    IsForeground = (HWND == win32gui.GetForegroundWindow())
+            LastForegroundWindows[Key] = time.time(), IsForeground
+            return IsForeground
+        else:
+            return LastForegroundWindows[Key][1]
+    else:
+        return True
 
 
 def GetWindowPosition(Name="", Blacklist=[""]):

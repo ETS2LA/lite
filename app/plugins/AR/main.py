@@ -227,13 +227,13 @@ def Run(Data):
     PointY = HeadOffsetY
     PointZ = HeadOffsetZ
     HeadX = PointX * math.cos(TruckRotationRadiansX) - PointZ * math.sin(TruckRotationRadiansX) + TruckX
-    HeadY = PointY * math.cos(math.radians(HeadRotationDegreesY)) - PointZ * math.sin(math.radians(HeadRotationDegreesY)) + TruckY
+    HeadY = PointY + TruckY
     HeadZ = PointX * math.sin(TruckRotationRadiansX) + PointZ * math.cos(TruckRotationRadiansX) + TruckZ
 
 
-    TruckWheelPointsX = [Point for Point in Data["api"]["configVector"]["truckWheelPositionX"]]
-    TruckWheelPointsY = [Point for Point in Data["api"]["configVector"]["truckWheelPositionY"]]
-    TruckWheelPointsZ = [Point for Point in Data["api"]["configVector"]["truckWheelPositionZ"]]
+    TruckWheelPointsX = [Point for Point in Data["api"]["configVector"]["truckWheelPositionX"] if Point != 0]
+    TruckWheelPointsY = [Point for Point in Data["api"]["configVector"]["truckWheelPositionY"] if Point != 0]
+    TruckWheelPointsZ = [Point for Point in Data["api"]["configVector"]["truckWheelPositionZ"] if Point != 0]
 
     for i in range(len(TruckWheelPointsX)):
         PointX = TruckWheelPointsX[i] + TruckX

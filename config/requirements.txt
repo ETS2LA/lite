@@ -6,6 +6,7 @@ torchvision==0.19.1
 setuptools
 torchaudio==2.4.1
 bettercam
+dearpygui
 unidecode
 keyboard
 requests

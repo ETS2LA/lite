@@ -1,3 +1,2 @@
-Fixes in the PyTorch module
-Fixed some Plugins
-The RouteAdvisorClassification model should now work reliably
+Added a new AR plugin, a demo can be found when going right from the service spawn in Berlin (Germany).
+Backend changes and fixes.

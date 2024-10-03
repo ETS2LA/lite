@@ -468,7 +468,7 @@ def Update():
                 "Y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + Offset + 30})
             Offset += 35
 
-    if variables.LAST_POPUP[0] != variables.POPUP or variables.POPUP[1] < 0:
+    if variables.LAST_POPUP[0] != variables.POPUP or variables.POPUP[1] != 0:
         if variables.LAST_POPUP[0][0] == None:
             variables.LAST_POPUP = variables.POPUP, CurrentTime
             variables.POPUP_SHOW_VALUE = 1

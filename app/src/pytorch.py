@@ -55,7 +55,10 @@ def InstallCUDA():
             if len(Output) == 2:
                 TotalSize = Output[1]
                 DownloadedSize = Output[0]
-                variables.POPUP = [f"Installing CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", (int(DownloadedSize) / int(TotalSize)) * 100, 0.5]
+                try:
+                    variables.POPUP = [f"Installing CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", (int(DownloadedSize) / int(TotalSize)) * 100, 0.5]
+                except:
+                    variables.POPUP = [f"Installing CUDA...", -1, 0.5]
             else:
                 variables.POPUP = [f"Installing CUDA...", -1, 0.5]
         if os.path.exists(LOCK_FILE_PATH):
@@ -92,7 +95,10 @@ def UninstallCUDA():
             if len(Output) == 2:
                 TotalSize = Output[1]
                 DownloadedSize = Output[0]
-                variables.POPUP = [f"Uninstalling CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", (int(DownloadedSize) / int(TotalSize)) * 100, 0.5]
+                try:
+                    variables.POPUP = [f"Uninstalling CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", (int(DownloadedSize) / int(TotalSize)) * 100, 0.5]
+                except:
+                    variables.POPUP = [f"Uninstalling CUDA...", -1, 0.5]
             else:
                 variables.POPUP = [f"Uninstalling CUDA...", -1, 0.5]
         if os.path.exists(LOCK_FILE_PATH):

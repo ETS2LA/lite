@@ -12,6 +12,7 @@ keyboard
 requests
 pywin32
 gputil
+psutil
 pynput
 mouse
 numpy==1.26.4

@@ -21,6 +21,9 @@ if __name__ == '__main__':
     if "--dev" in sys.argv:
         variables.DEVMODE = True
 
+    if os.path.exists(f"{variables.PATH}cache") == False:
+        os.makedirs(f"{variables.PATH}cache")
+
     if settings.Get("Console", "HideConsole", False):
         console.HideConsole()
 

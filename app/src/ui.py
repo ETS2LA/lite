@@ -4,6 +4,7 @@ import src.variables as variables
 import src.settings as settings
 import src.console as console
 import src.plugins as plugins
+import src.pytorch as pytorch
 import src.updater as updater
 import src.server as server
 
@@ -265,7 +266,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Install CUDA libraries (3GB)",
-                "Function": lambda: {SetTitleBarHeight(50), print("The code would now download cuda")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu"), pytorch.InstallCUDA()},
                 "X1": variables.CANVAS_RIGHT / 2 + 10,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT - 20,
@@ -274,7 +275,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Keep running on CPU",
-                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on CPU")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu")},
                 "X1": 20,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT / 2 - 10,
@@ -283,7 +284,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Install CUDA libraries anyway (3GB)",
-                "Function": lambda: {SetTitleBarHeight(50), print("The code would now install cuda")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu"), pytorch.InstallCUDA()},
                 "X1": variables.CANVAS_RIGHT / 2 + 10,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT - 20,
@@ -292,7 +293,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Keep running on CPU",
-                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on cpu")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu")},
                 "X1": 20,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT / 2 - 10,
@@ -301,7 +302,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Uninstall CUDA libraries",
-                "Function": lambda: {SetTitleBarHeight(50), print("The code would now uninstall cuda")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu"), pytorch.UninstallCUDA()},
                 "X1": variables.CANVAS_RIGHT / 2 + 10,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT - 20,
@@ -310,7 +311,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Keep running on GPU with CUDA",
-                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on GPU with cuda installed")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu")},
                 "X1": 20,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT / 2 - 10,
@@ -319,7 +320,7 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Uninstall CUDA libraries",
-                "Function": lambda: {SetTitleBarHeight(50), print("The code would now uninstall cuda")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu"), pytorch.UninstallCUDA()},
                 "X1": variables.CANVAS_RIGHT / 2 + 10,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT - 20,
@@ -328,12 +329,11 @@ def Update():
             variables.ITEMS.append({
                 "Type": "Button",
                 "Text": "Keep running on CPU with CUDA",
-                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on CPU with cuda installed")},
+                "Function": lambda: {setattr(variables, "PAGE", "Menu")},
                 "X1": 20,
                 "Y1": variables.CANVAS_BOTTOM - 70,
                 "X2": variables.CANVAS_RIGHT / 2 - 10,
                 "Y2": variables.CANVAS_BOTTOM - 20})
-
 
     if variables.PAGE == "Menu":
         variables.ITEMS.append({
@@ -468,7 +468,7 @@ def Update():
                 "Y2": variables.CONTEXT_MENU[2] * (variables.CANVAS_BOTTOM + variables.TITLE_BAR_HEIGHT) - variables.TITLE_BAR_HEIGHT + Offset + 30})
             Offset += 35
 
-    if variables.LAST_POPUP[0] != variables.POPUP:
+    if variables.LAST_POPUP[0] != variables.POPUP or variables.POPUP[1] < 0:
         if variables.LAST_POPUP[0][0] == None:
             variables.LAST_POPUP = variables.POPUP, CurrentTime
             variables.POPUP_SHOW_VALUE = 1
@@ -572,6 +572,19 @@ def Update():
                 cv2.line(variables.FRAME,
                         (round(X1 + round(variables.POPUP_HEIGHT / 20) / 2), round(variables.POPUP_HEIGHT + Y2 + variables.POPUP_HEIGHT / 40)),
                         (round(X1 - round(variables.POPUP_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * (variables.POPUP[1] / 100)), round(variables.POPUP_HEIGHT + Y2 + variables.POPUP_HEIGHT / 40)),
+                        variables.POPUP_PROGRESS_COLOR, round(variables.POPUP_HEIGHT / 20))
+            elif variables.POPUP[1] < 0:
+                X = time.time() % 2
+                if X < 1:
+                    Left = 0.5 - math.cos(X ** 2 * math.pi) / 2
+                    Right = 0.5 - math.cos((X + (X - X ** 2)) * math.pi) / 2
+                else:
+                    X -= 1
+                    Left = 0.5 + math.cos((X + (X - X ** 2)) * math.pi) / 2
+                    Right = 0.5 + math.cos(X ** 2 * math.pi) / 2
+                cv2.line(variables.FRAME,
+                        (round(X1 + round(variables.POPUP_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * Left), round(variables.POPUP_HEIGHT + Y2 + variables.POPUP_HEIGHT / 40)),
+                        (round(X1 - round(variables.POPUP_HEIGHT / 20) / 2 + variables.CANVAS_RIGHT * variables.POPUP[2] * Right), round(variables.POPUP_HEIGHT + Y2 + variables.POPUP_HEIGHT / 40)),
                         variables.POPUP_PROGRESS_COLOR, round(variables.POPUP_HEIGHT / 20))
 
         variables.CACHED_FRAME = variables.FRAME.copy()

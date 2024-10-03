@@ -4,11 +4,13 @@ import src.settings as settings
 import src.console as console
 import src.plugins as plugins
 from bs4 import BeautifulSoup
+import src.ui as ui
 import subprocess
 import threading
 import traceback
 import requests
 import GPUtil
+import psutil
 import torch
 import time
 import os
@@ -37,6 +39,80 @@ def Initialize(Owner="", Model="", Threaded=True):
     MODELS[Model]["ModelOwner"] = str(Owner)
 
 
+def InstallCUDA():
+    def InstallCUDAFunction():
+        Command = ["cmd", "/c", "cd", variables.PATH + "venv/Scripts", "&&", ".\\activate.bat", "&&", "cd", variables.PATH, "&&", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124", "--progress-bar", "raw", "--force-reinstall"]
+        Process = subprocess.Popen(Command, cwd=variables.PATH, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with open(LOCK_FILE_PATH, "w") as f:
+            f.write(str(Process.pid))
+            f.close()
+        while True:
+            time.sleep(0.1)
+            Output = Process.stdout.readline()
+            if Output == b'' and Process.poll() is not None:
+                break
+            Output = str(Output.decode().strip()).replace("Progress ", "").split(" of ")
+            if len(Output) == 2:
+                TotalSize = Output[1]
+                DownloadedSize = Output[0]
+                variables.POPUP = [f"Installing CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", (int(DownloadedSize) / int(TotalSize)) * 100, 0.5]
+            else:
+                variables.POPUP = [f"Installing CUDA...", -1, 0.5]
+        if os.path.exists(LOCK_FILE_PATH):
+            os.remove(LOCK_FILE_PATH)
+        print(GREEN + "CUDA installation completed." + NORMAL)
+        variables.POPUP = [f"CUDA installation completed.", 0, 0.5]
+        ui.Restart()
+    print(GREEN + "Installing CUDA..." + NORMAL)
+    variables.POPUP = [f"Installing CUDA...", 0, 0.5]
+    LOCK_FILE_PATH = f"{variables.PATH}cache/CUDAInstall.txt"
+    if os.path.exists(LOCK_FILE_PATH):
+        with open(LOCK_FILE_PATH, "r") as f:
+            PID = int(f.read().strip())
+            f.close()
+        if str(PID) in str(psutil.pids()):
+            print(RED + "CUDA is already being installed." + NORMAL)
+            return
+    threading.Thread(target=InstallCUDAFunction, daemon=True).start()
+
+
+def UninstallCUDA():
+    def UninstallCUDAFunction():
+        Command = ["cmd", "/c", "cd", variables.PATH + "venv/Scripts", "&&", ".\\activate.bat", "&&", "cd", variables.PATH, "&&", "pip", "install", "torch", "torchvision", "torchaudio", "--progress-bar", "raw", "--force-reinstall"]
+        Process = subprocess.Popen(Command, cwd=variables.PATH, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        with open(LOCK_FILE_PATH, "w") as f:
+            f.write(str(Process.pid))
+            f.close()
+        while True:
+            time.sleep(0.1)
+            Output = Process.stdout.readline()
+            if Output == b'' and Process.poll() is not None:
+                break
+            Output = str(Output.decode().strip()).replace("Progress ", "").split(" of ")
+            if len(Output) == 2:
+                TotalSize = Output[1]
+                DownloadedSize = Output[0]
+                variables.POPUP = [f"Uninstalling CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", (int(DownloadedSize) / int(TotalSize)) * 100, 0.5]
+            else:
+                variables.POPUP = [f"Uninstalling CUDA...", -1, 0.5]
+        if os.path.exists(LOCK_FILE_PATH):
+            os.remove(LOCK_FILE_PATH)
+        print(GREEN + "CUDA uninstallation completed." + NORMAL)
+        variables.POPUP = [f"CUDA uninstallation completed.", 0, 0.5]
+        ui.Restart()
+    print(GREEN + "Uninstalling CUDA..." + NORMAL)
+    variables.POPUP = [f"Uninstalling CUDA...", 0, 0.5]
+    LOCK_FILE_PATH = f"{variables.PATH}cache/CUDAInstall.txt"
+    if os.path.exists(LOCK_FILE_PATH):
+        with open(LOCK_FILE_PATH, "r") as f:
+            PID = int(f.read().strip())
+            f.close()
+        if str(PID) in str(psutil.pids()):
+            print(RED + "CUDA is already being uninstalled." + NORMAL)
+            return
+    threading.Thread(target=UninstallCUDAFunction, daemon=True).start()
+
+
 def CheckCuda():
     def CheckCudaFunction():
         result = subprocess.run("cd " + variables.PATH + "venv/Scripts & .\\activate.bat & cd " + variables.PATH + " & pip list", shell=True, capture_output=True, text=True)
@@ -56,11 +132,8 @@ def CheckCuda():
         variables.CUDA_AVAILABLE = torch.cuda.is_available()
         variables.CUDA_COMPATIBLE = ("nvidia" in str([str(GPU.name).lower() for GPU in GPUtil.getGPUs()]))
         if variables.CUDA_INSTALLED == False and variables.CUDA_COMPATIBLE == True:
-            variables.CUDA_INSTALLED = False
-            variables.CUDA_AVAILABLE = False
-            variables.CUDA_COMPATIBLE = False
             variables.PAGE = "CUDA"
-    threading.Thread(target=CheckCudaFunction).start()
+    threading.Thread(target=CheckCudaFunction, daemon=True).start()
 
 
 def Loaded(Model="All"):
@@ -196,8 +269,8 @@ def CheckForUpdates(Model):
                             for Data in Response.iter_content(chunk_size=ChunkSize):
                                 DownloadedSize += len(Data)
                                 ModelFile.write(Data)
-                                Progress = round((DownloadedSize / TotalSize) * 100)
-                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {Progress}%", Progress, 0.5]})
+                                Progress = (DownloadedSize / TotalSize) * 100
+                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {round(Progress)}%", Progress, 0.5]})
                         plugins.AddToQueue({"POPUP": ["Successfully updated the model!", 0, 0.5]})
                         print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully updated the model!" + NORMAL)
                     else:

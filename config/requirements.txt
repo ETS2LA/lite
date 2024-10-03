@@ -11,6 +11,7 @@ unidecode
 keyboard
 requests
 pywin32
+gputil
 pynput
 mouse
 numpy==1.26.4

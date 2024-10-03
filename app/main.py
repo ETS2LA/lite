@@ -4,6 +4,7 @@ import src.settings as settings
 import src.console as console
 import src.helpers as helpers
 import src.plugins as plugins
+import src.pytorch as pytorch
 import src.updater as updater
 import src.server as server
 import src.ui as ui
@@ -26,6 +27,7 @@ if __name__ == '__main__':
     translate.Initialize()
     plugins.Initialize()
     plugins.ManagePlugins(Plugin="All", Action="Start")
+    pytorch.CheckCuda()
     ui.Initialize()
     updater.CheckForUpdates()
     helpers.RunEvery(60, lambda: server.Ping())

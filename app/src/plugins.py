@@ -87,7 +87,7 @@ def ManagePlugins(Plugin=None, Action=None):
         if Action != "Stop":
             variables.POPUP = [f"{Action}ing {Plugin}...", 0, 0.5]
     else:
-        Plugins = [Plugin for Plugin in variables.AVAILABLE_PLUGINS if settings.Get("EnabledPlugins", Plugin, True)]
+        Plugins = [Plugin for Plugin in variables.AVAILABLE_PLUGINS if settings.Get("EnabledPlugins", Plugin, False)]
 
     for Plugin in Plugins:
         if Action == "Stop" or Action == "Restart":

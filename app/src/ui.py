@@ -240,6 +240,101 @@ def Update():
             "X2": variables.CANVAS_RIGHT / 2 - 10,
             "Y2": variables.CANVAS_BOTTOM - 20})
 
+    if variables.PAGE == "CUDA":
+        if variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == False:
+            Message = "CUDA is not installed, not available and not compatible."
+        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == False:
+            Message = "CUDA is installed but not available and not compatible."
+        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == True:
+            Message = "CUDA is installed but not available,\nprobably because your NVIDIA GPU is not compatible."
+        elif variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == True:
+            Message = "CUDA is not installed and not available, but it is compatible."
+        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == True and variables.CUDA_COMPATIBLE == True:
+            Message = "CUDA is installed, available and compatible."
+        else:
+            Message = ""
+        variables.ITEMS.append({
+            "Type": "Label",
+            "Text": f"{'CUDA is installed' if variables.CUDA_INSTALLED else 'CUDA is not installed'}\n{'CUDA is available' if variables.CUDA_AVAILABLE else 'CUDA is not available'}\n{'CUDA is compatible' if variables.CUDA_COMPATIBLE else 'CUDA is not compatible'}\n\nWhen CUDA is installed and available, the app will run AI models\non your NVIDIA GPU which will result in a significant speed increase.\n\n{Message}",
+            "X1": 0,
+            "Y1": 10,
+            "X2": variables.CANVAS_RIGHT,
+            "Y2": variables.CANVAS_BOTTOM - 90})
+
+        if variables.CUDA_INSTALLED == False and variables.CUDA_COMPATIBLE == True:
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Install CUDA libraries (3GB)",
+                "Function": lambda: {SetTitleBarHeight(50), print("The code would now download cuda")},
+                "X1": variables.CANVAS_RIGHT / 2 + 10,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT - 20,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Keep running on CPU",
+                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on CPU")},
+                "X1": 20,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT / 2 - 10,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+        elif variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == False:
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Install CUDA libraries anyway (3GB)",
+                "Function": lambda: {SetTitleBarHeight(50), print("The code would now install cuda")},
+                "X1": variables.CANVAS_RIGHT / 2 + 10,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT - 20,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Keep running on CPU",
+                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on cpu")},
+                "X1": 20,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT / 2 - 10,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == True and variables.CUDA_COMPATIBLE == True:
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Uninstall CUDA libraries",
+                "Function": lambda: {SetTitleBarHeight(50), print("The code would now uninstall cuda")},
+                "X1": variables.CANVAS_RIGHT / 2 + 10,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT - 20,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Keep running on GPU with CUDA",
+                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on GPU with cuda installed")},
+                "X1": 20,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT / 2 - 10,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+        else:
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Uninstall CUDA libraries",
+                "Function": lambda: {SetTitleBarHeight(50), print("The code would now uninstall cuda")},
+                "X1": variables.CANVAS_RIGHT / 2 + 10,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT - 20,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+
+            variables.ITEMS.append({
+                "Type": "Button",
+                "Text": "Keep running on CPU with CUDA",
+                "Function": lambda: {SetTitleBarHeight(50), setattr(variables, "PAGE", "Menu"), print("The code would now exit the page and keep running on CPU with cuda installed")},
+                "X1": 20,
+                "Y1": variables.CANVAS_BOTTOM - 70,
+                "X2": variables.CANVAS_RIGHT / 2 - 10,
+                "Y2": variables.CANVAS_BOTTOM - 20})
+
+
     if variables.PAGE == "Menu":
         variables.ITEMS.append({
             "Type": "Label",
@@ -287,25 +382,16 @@ def Update():
             "Y2": variables.CANVAS_BOTTOM / 2 + variables.TITLE_BAR_HEIGHT * 1.5 - 5})
 
     if variables.PAGE == "Plugins":
-        variables.ITEMS.append({
-            "Type": "Label",
-            "Text": "Enabled Plugins",
-            "X1": 10,
-            "Y1": 4,
-            "X2": variables.CANVAS_RIGHT - 10,
-            "Y2": 31,
-            "Align": "Left"})
-
         for i, plugin in enumerate(variables.AVAILABLE_PLUGINS):
             variables.ITEMS.append({
                 "Type": "Switch",
                 "Text": plugin,
-                "Setting": ("EnabledPlugins", plugin, True),
-                "Function": lambda plugin=plugin: {plugins.ManagePlugins(Plugin=plugin, Action="Start" if settings.Get("EnabledPlugins", plugin, True) else "Stop")},
+                "Setting": ("EnabledPlugins", plugin, False),
+                "Function": lambda plugin=plugin: {plugins.ManagePlugins(Plugin=plugin, Action="Start" if settings.Get("EnabledPlugins", plugin, False) else "Stop")},
                 "X1": 10,
-                "Y1": 35 + 30 * i,
+                "Y1": 11 + 30 * i,
                 "X2": variables.CANVAS_RIGHT - 10,
-                "Y2": 55 + 30 * i})
+                "Y2": 31 + 30 * i})
 
     if variables.PAGE == "Settings":
         variables.ITEMS.append({
@@ -329,6 +415,15 @@ def Update():
             "Y2": 61})
 
         variables.ITEMS.append({
+            "Type": "Button",
+            "Text": "Check Cuda (GPU) Support",
+            "Function": lambda: setattr(variables, "PAGE", "CUDA"),
+            "X1": 10,
+            "Y1": 71,
+            "X2": variables.CANVAS_RIGHT / 2 - 5,
+            "Y2": 106})
+
+        variables.ITEMS.append({
             "Type": "Dropdown",
             "Text": "Language",
             "Items": [Name for Name, _ in translate.GetAvailableLanguages().items()],
@@ -342,9 +437,9 @@ def Update():
                 translate.Initialize()
                 },
             "X1": 10,
-            "Y1": 71,
+            "Y1": 116,
             "X2": variables.CANVAS_RIGHT / 2 - 5,
-            "Y2": 106})
+            "Y2": 151})
 
         variables.ITEMS.append({
             "Type": "Dropdown",
@@ -356,9 +451,9 @@ def Update():
                 Restart() if variables.THEME != settings.Get("UI", "Theme", "Dark") else None
                 },
             "X1": variables.CANVAS_RIGHT / 2 + 5,
-            "Y1": 71,
+            "Y1": 116,
             "X2": variables.CANVAS_RIGHT - 10,
-            "Y2": 106})
+            "Y2": 151})
 
     if variables.CONTEXT_MENU[0]:
         Offset = 0

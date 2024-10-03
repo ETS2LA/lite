@@ -4,9 +4,11 @@ import src.settings as settings
 import src.console as console
 import src.plugins as plugins
 from bs4 import BeautifulSoup
+import subprocess
 import threading
 import traceback
 import requests
+import GPUtil
 import torch
 import time
 import os
@@ -29,10 +31,36 @@ MODELS = {}
 
 def Initialize(Owner="", Model="", Threaded=True):
     MODELS[Model] = {}
-    MODELS[Model]["Device"] = torch.device("cuda" if torch.cuda.is_available() and settings.Get("PyTorch", "TryCuda", True) else "cpu")
+    MODELS[Model]["Device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     MODELS[Model]["Path"] = f"{variables.PATH}cache/{Model}"
     MODELS[Model]["Threaded"] = Threaded
     MODELS[Model]["ModelOwner"] = str(Owner)
+
+
+def CheckCuda():
+    def CheckCudaFunction():
+        result = subprocess.run("cd " + variables.PATH + "venv/Scripts & .\\activate.bat & cd " + variables.PATH + " & pip list", shell=True, capture_output=True, text=True)
+        modules = result.stdout
+        CUDA_INSTALLED = True
+        for module in modules.splitlines():
+            if "torch " in module:
+                if "cu" not in module:
+                    CUDA_INSTALLED = False
+            elif "torchvision " in module:
+                if "cu" not in module:
+                    CUDA_INSTALLED = False
+            elif "torchaudio " in module:
+                if "cu" not in module:
+                    CUDA_INSTALLED = False
+        variables.CUDA_INSTALLED = CUDA_INSTALLED
+        variables.CUDA_AVAILABLE = torch.cuda.is_available()
+        variables.CUDA_COMPATIBLE = ("nvidia" in str([str(GPU.name).lower() for GPU in GPUtil.getGPUs()]))
+        if variables.CUDA_INSTALLED == False and variables.CUDA_COMPATIBLE == True:
+            variables.CUDA_INSTALLED = False
+            variables.CUDA_AVAILABLE = False
+            variables.CUDA_COMPATIBLE = False
+            variables.PAGE = "CUDA"
+    threading.Thread(target=CheckCudaFunction).start()
 
 
 def Loaded(Model="All"):

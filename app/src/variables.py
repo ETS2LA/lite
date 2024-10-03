@@ -48,6 +48,10 @@ SHARED_MEMORY_SIZE = 1024
 AVAILABLE_PLUGINS = [Plugin for Plugin in os.listdir(f"{PATH}app/plugins")]
 AVAILABLE_LANGUAGES = {}
 TRANSLATION_CACHE = {}
+CUDA_AVAILABLE = False
+CUDA_INSTALLED = False
+CUDA_COMPATIBLE = False
+
 TABS = ["Menu", "Plugins", "Settings"]
 CANVAS_BOTTOM = settings.Get("UI", "Height", 400) - TITLE_BAR_HEIGHT - 1
 CANVAS_RIGHT = settings.Get("UI", "Width", 700) - 1

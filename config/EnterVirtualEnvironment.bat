@@ -1,12 +1,12 @@
 @echo off
-title ETS2LA-Lite Updater
+title ETS2LA-Lite Virtual Environment
 
 echo.
-echo ETS2LA-Lite Updater
-echo -------------------
+echo ETS2LA-Lite Virtual Environment
+echo -------------------------------
 echo.
 
-cd %~dp0
+cd %~dp0..
 if not exist venv (
     echo Creating venv...
     python -m venv venv
@@ -45,17 +45,11 @@ if %MISSING_PACKAGES% equ 1 (
 echo All required packages installed.
 
 echo.
-echo Updating App
-echo ------------
+echo Entering Virtual Environment
+echo ----------------------------
 echo.
 
-git stash
-git pull
-
-echo.
-echo App Updated
-echo -----------
-echo.
+cmd /k
 
 :end
 pause

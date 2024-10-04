@@ -276,7 +276,7 @@ def CheckForUpdates(Model):
                                 DownloadedSize += len(Data)
                                 ModelFile.write(Data)
                                 Progress = (DownloadedSize / TotalSize) * 100
-                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {round(Progress)}%", Progress, 0.5]})
+                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {round(Progress)}%", round(Progress), 0.5]})
                         plugins.AddToQueue({"POPUP": ["Successfully updated the model!", 0, 0.5]})
                         print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully updated the model!" + NORMAL)
                     else:

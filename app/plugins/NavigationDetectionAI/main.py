@@ -5,6 +5,7 @@ import modules.ShowImage.main as ShowImage
 import src.variables as variables
 import src.settings as settings
 import src.pytorch as pytorch
+import plugins.AR.main as AR
 import numpy as np
 import keyboard
 import time
@@ -20,6 +21,8 @@ def Initialize():
     global EnableKeyPressed
     global LastEnableKeyPressed
     global LastScreenCaptureCheck
+    global ARData
+    global LastARCheck
     global SteeringHistory
 
     global LastIndicatorLeft
@@ -37,6 +40,8 @@ def Initialize():
     EnableKeyPressed = False
     LastEnableKeyPressed = False
     LastScreenCaptureCheck = 0
+    ARData = []
+    LastARCheck = 0
     SteeringHistory = []
 
     LastIndicatorLeft = False
@@ -83,6 +88,11 @@ def preprocess_image(image):
     return transform(image).unsqueeze(0).to(pytorch.MODELS["NavigationDetectionAI"]["Device"])
 
 
+def UpdateAR(Frame, Data):
+    Data["NavigationDetectionAI"]["AR"] = []
+    Data["NavigationDetectionAI"]["AR"].append(AR.DrawPolygon(Points=[(10448.742, 35.324, -10132.315), (10453.237, 36.324, -10130.404), (10453.237, 34.324, -10130.404)], Color=(255, 255, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2, Closed=True))
+
+
 def Run(Data):
     CurrentTime = time.time()
 
@@ -91,6 +101,7 @@ def Run(Data):
     global EnableKeyPressed
     global LastEnableKeyPressed
     global LastScreenCaptureCheck
+    global LastARCheck
 
     global LastIndicatorLeft
     global LastIndicatorRight
@@ -102,7 +113,7 @@ def Run(Data):
     global SDKController
     global TruckSimAPI
 
-    Data["api"] = TruckSimAPI.update()
+    APIDATA = TruckSimAPI.update()
     Frame = ScreenCapture.Capture(ImageType="cropped")
 
     if pytorch.Loaded("NavigationDetectionAI") == False: return
@@ -126,6 +137,10 @@ def Run(Data):
                 ScreenCapture.Initialize()
             ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, MapTopLeft[0] - ScreenX, MapTopLeft[1] - ScreenY, MapBottomRight[0] - ScreenX, MapBottomRight[1] - ScreenY)
         LastScreenCaptureCheck = CurrentTime
+
+    if LastARCheck + 0.5 < CurrentTime:
+        UpdateAR(Frame, Data)
+        LastARCheck = CurrentTime
 
     EnableKeyPressed = keyboard.is_pressed(EnableKey)
     if EnableKeyPressed == False and LastEnableKeyPressed == True:
@@ -164,8 +179,8 @@ def Run(Data):
         RightIndicator = False
 
     try:
-        IndicatorLeft = Data["api"]["truckBool"]["blinkerLeftActive"]
-        IndicatorRight = Data["api"]["truckBool"]["blinkerRightActive"]
+        IndicatorLeft = APIDATA["truckBool"]["blinkerLeftActive"]
+        IndicatorRight = APIDATA["truckBool"]["blinkerRightActive"]
     except:
         IndicatorLeft = False
         IndicatorRight = False
@@ -207,7 +222,7 @@ def Run(Data):
     cv2.putText(Frame, Text, (5, 5 + TextHeight), cv2.FONT_HERSHEY_SIMPLEX, Fontscale, (0, 255, 0) if Enabled else (0, 0, 255), Thickness, cv2.LINE_AA)
 
     CurrentDesired = Steering
-    ActualSteering = -Data["api"]["truckFloat"]["gameSteer"]
+    ActualSteering = -APIDATA["truckFloat"]["gameSteer"]
 
     divider = 5
     cv2.line(Frame, (int(FrameWidth/divider), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/divider*(divider-1)), int(FrameHeight - FrameHeight/10)), (100, 100, 100), 6, cv2.LINE_AA)
@@ -215,3 +230,4 @@ def Run(Data):
     cv2.line(Frame, (int(FrameWidth/2), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/2 + (CurrentDesired if abs(CurrentDesired) < 1 else (1 if CurrentDesired > 0 else -1)) * (FrameWidth/2 - FrameWidth/divider)), int(FrameHeight - FrameHeight/10)), (0, 100, 255), 2, cv2.LINE_AA)
 
     ShowImage.Show("NavigationDetectionAI", Frame)
+    return Data["NavigationDetectionAI"]

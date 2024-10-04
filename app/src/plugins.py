@@ -28,7 +28,7 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
         SHARED_MEMORY = shared_memory.SharedMemory(name=SHARED_MEMORY_NAME)
         LAST_MEMORY_UPDATE = 0
         DATA_REFRESH_RATE = 100
-        LAST_DATA = None
+        LAST_DATA = {}
         Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
         Plugin.Initialize()
         while variables.BREAK == False:
@@ -46,12 +46,14 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
                     if DataBytes:
                         DATA = pickle.loads(DataBytes)
                     else:
-                        DATA = None
+                        DATA = {}
                     LAST_DATA = DATA
             else:
                 DATA = LAST_DATA
 
             DATA = Plugin.Run(DATA)
+            if DATA is None:
+                DATA = {}
             AddToQueue({"DATA": [PluginName, DATA]})
 
             if UPDATE_MEMORY:

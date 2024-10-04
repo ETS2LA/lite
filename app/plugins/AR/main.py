@@ -4,6 +4,7 @@ import src.variables as variables
 import src.settings as settings
 
 import dearpygui.dearpygui as dpg
+import multiprocessing
 import ctypes
 import math
 import time
@@ -11,6 +12,8 @@ import time
 if variables.OS == "nt":
     import win32con
     import win32gui
+
+PROCESS = multiprocessing.current_process().name
 
 
 def Initialize():
@@ -52,7 +55,7 @@ def Resize():
     dpg.set_viewport_height(WindowPosition[3] - WindowPosition[1])
 
 
-def DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1):
+def DrawRectangle(Start=[0, 0] if PROCESS == "AR" else [0, 0, 0], End=[100, 100] if PROCESS == "AR" else [1, 1, 1], Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1):
     global DRAWLIST
     FillColor = list(FillColor)
     Color = list(Color)
@@ -60,18 +63,24 @@ def DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=[255, 255, 255, 255], FillCo
         FillColor.append(255)
     if len(Color) <= 3:
         Color.append(255)
-    DRAWLIST.append(("Rectangle", [X1, Y1], [X2, Y2], Color, FillColor, Thickness))
+    if PROCESS == "AR":
+        DRAWLIST.append(("Rectangle", Start, End, Color, FillColor, Thickness))
+    else:
+        return ["DrawRectangle", Start, End, Color, FillColor, Thickness]
 
 
-def DrawLine(X1=0, Y1=0, X2=100, Y2=100, Color=[255, 255, 255, 255], Thickness=1):
+def DrawLine(Start=[0, 0] if PROCESS == "AR" else [0, 0, 0], End=[100, 100] if PROCESS == "AR" else [1, 1, 1], Color=[255, 255, 255, 255], Thickness=1):
     global DRAWLIST
     Color = list(Color)
     if len(Color) <= 3:
         Color.append(255)
-    DRAWLIST.append(("Line", [X1, Y1], [X2, Y2], Color, Thickness))
+    if PROCESS == "AR":
+        DRAWLIST.append(("Line", Start, End, Color, Thickness))
+    else:
+        return ["DrawLine", Start, End, Color, Thickness]
 
 
-def DrawPolygon(Points=[(100, 0), (100, 100), (0, 100)], Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1, Closed=False):
+def DrawPolygon(Points=[(100, 0), (100, 100), (0, 100)] if PROCESS == "AR" else [(1, 0, 0), (0, 1, 0), (0, 0, 1)], Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1, Closed=False):
     global DRAWLIST
     FillColor = list(FillColor)
     Color = list(Color)
@@ -79,21 +88,30 @@ def DrawPolygon(Points=[(100, 0), (100, 100), (0, 100)], Color=[255, 255, 255, 2
         FillColor.append(255)
     if len(Color) <= 3:
         Color.append(255)
-    Points = [(X, Y) for X, Y in Points if X != None and Y != None]
+    if PROCESS == "AR":
+        Points = [(X, Y) for X, Y in Points if X != None and Y != None]
+    else:
+        Points = [(X, Y, Z) for X, Y, Z in Points if X != None and Y != None and Z != None]
     if len(Points) <= 1:
         return
     if Closed:
         if Points[0] != Points[-1]:
             Points.append(Points[0])
-    DRAWLIST.append(("Polygon", Points, Color, FillColor, Thickness))
+    if PROCESS == "AR":
+        DRAWLIST.append(("Polygon", Points, Color, FillColor, Thickness))
+    else:
+        return ["DrawPolygon", Points, Color, FillColor, Thickness, Closed]
 
 
-def DrawCircle(X=0, Y=0, R=100, Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1):
+def DrawCircle(Center=[0, 0] if PROCESS == "AR" else [0, 0, 0], R=100, Color=[255, 255, 255, 255], FillColor=[0, 0, 0, 0], Thickness=1):
     global DRAWLIST
     Color = list(Color)
     if len(Color) <= 3:
         Color.append(255)
-    DRAWLIST.append(("Circle", [X, Y], R, Color, FillColor, Thickness))
+    if PROCESS == "AR":
+        DRAWLIST.append(("Circle", Center, R, Color, FillColor, Thickness))
+    else:
+        return ["DrawCircle", Center, R, Color, FillColor, Thickness]
 
 
 def Render():
@@ -183,10 +201,9 @@ def Run(Data):
     global HeadY
     global HeadZ
 
-    Data = {}
-    Data["api"] = TruckSimAPI.update()
+    APIDATA = TruckSimAPI.update()
 
-    if Data["api"]["pause"] == True or ScreenCapture.IsForegroundWindow(Name="Truck Simulator", Blacklist=["Discord"]) == False:
+    if APIDATA["pause"] == True or ScreenCapture.IsForegroundWindow(Name="Truck Simulator", Blacklist=["Discord"]) == False:
         time.sleep(0.1)
         Render()
         return
@@ -196,26 +213,26 @@ def Run(Data):
         Resize()
 
 
-    TruckX = Data["api"]["truckPlacement"]["coordinateX"]
-    TruckY = Data["api"]["truckPlacement"]["coordinateY"]
-    TruckZ = Data["api"]["truckPlacement"]["coordinateZ"]
-    TruckRotationX = Data["api"]["truckPlacement"]["rotationX"]
-    TruckRotationY = Data["api"]["truckPlacement"]["rotationY"]
-    TruckRotationZ = Data["api"]["truckPlacement"]["rotationZ"]
+    TruckX = APIDATA["truckPlacement"]["coordinateX"]
+    TruckY = APIDATA["truckPlacement"]["coordinateY"]
+    TruckZ = APIDATA["truckPlacement"]["coordinateZ"]
+    TruckRotationX = APIDATA["truckPlacement"]["rotationX"]
+    TruckRotationY = APIDATA["truckPlacement"]["rotationY"]
+    TruckRotationZ = APIDATA["truckPlacement"]["rotationZ"]
 
-    CabinOffsetX = Data["api"]["headPlacement"]["cabinOffsetX"] + Data["api"]["configVector"]["cabinPositionX"]
-    CabinOffsetY = Data["api"]["headPlacement"]["cabinOffsetY"] + Data["api"]["configVector"]["cabinPositionY"]
-    CabinOffsetZ = Data["api"]["headPlacement"]["cabinOffsetZ"] + Data["api"]["configVector"]["cabinPositionZ"]
-    CabinOffsetRotationX = Data["api"]["headPlacement"]["cabinOffsetrotationX"]
-    CabinOffsetRotationY = Data["api"]["headPlacement"]["cabinOffsetrotationY"]
-    CabinOffsetRotationZ = Data["api"]["headPlacement"]["cabinOffsetrotationZ"]
+    CabinOffsetX = APIDATA["headPlacement"]["cabinOffsetX"] + APIDATA["configVector"]["cabinPositionX"]
+    CabinOffsetY = APIDATA["headPlacement"]["cabinOffsetY"] + APIDATA["configVector"]["cabinPositionY"]
+    CabinOffsetZ = APIDATA["headPlacement"]["cabinOffsetZ"] + APIDATA["configVector"]["cabinPositionZ"]
+    CabinOffsetRotationX = APIDATA["headPlacement"]["cabinOffsetrotationX"]
+    CabinOffsetRotationY = APIDATA["headPlacement"]["cabinOffsetrotationY"]
+    CabinOffsetRotationZ = APIDATA["headPlacement"]["cabinOffsetrotationZ"]
 
-    HeadOffsetX = Data["api"]["headPlacement"]["headOffsetX"] + Data["api"]["configVector"]["headPositionX"] + CabinOffsetX
-    HeadOffsetY = Data["api"]["headPlacement"]["headOffsetY"] + Data["api"]["configVector"]["headPositionY"] + CabinOffsetY
-    HeadOffsetZ = Data["api"]["headPlacement"]["headOffsetZ"] + Data["api"]["configVector"]["headPositionZ"] + CabinOffsetZ
-    HeadOffsetRotationX = Data["api"]["headPlacement"]["headOffsetrotationX"]
-    HeadOffsetRotationY = Data["api"]["headPlacement"]["headOffsetrotationY"]
-    HeadOffsetRotationZ = Data["api"]["headPlacement"]["headOffsetrotationZ"]
+    HeadOffsetX = APIDATA["headPlacement"]["headOffsetX"] + APIDATA["configVector"]["headPositionX"] + CabinOffsetX
+    HeadOffsetY = APIDATA["headPlacement"]["headOffsetY"] + APIDATA["configVector"]["headPositionY"] + CabinOffsetY
+    HeadOffsetZ = APIDATA["headPlacement"]["headOffsetZ"] + APIDATA["configVector"]["headPositionZ"] + CabinOffsetZ
+    HeadOffsetRotationX = APIDATA["headPlacement"]["headOffsetrotationX"]
+    HeadOffsetRotationY = APIDATA["headPlacement"]["headOffsetrotationY"]
+    HeadOffsetRotationZ = APIDATA["headPlacement"]["headOffsetrotationZ"]
 
     TruckRotationDegreesX = TruckRotationX * 360
     TruckRotationRadiansX = -math.radians(TruckRotationDegreesX)
@@ -236,12 +253,12 @@ def Run(Data):
     HeadZ = PointX * math.sin(TruckRotationRadiansX) + PointZ * math.cos(TruckRotationRadiansX) + TruckZ
 
 
-    TruckWheelPointsX = [Point for Point in Data["api"]["configVector"]["truckWheelPositionX"] if Point != 0]
-    TruckWheelPointsY = [Point for Point in Data["api"]["configVector"]["truckWheelPositionY"] if Point != 0]
-    TruckWheelPointsZ = [Point for Point in Data["api"]["configVector"]["truckWheelPositionZ"] if Point != 0]
+    TruckWheelPointsX = [Point for Point in APIDATA["configVector"]["truckWheelPositionX"] if Point != 0]
+    TruckWheelPointsY = [Point for Point in APIDATA["configVector"]["truckWheelPositionY"] if Point != 0]
+    TruckWheelPointsZ = [Point for Point in APIDATA["configVector"]["truckWheelPositionZ"] if Point != 0]
 
-    WheelAngles = [Angle for Angle in Data["api"]["truckFloat"]["truck_wheelSteering"] if Angle != 0]
-    while int(Data["api"]["configUI"]["truckWheelCount"]) > len(WheelAngles):
+    WheelAngles = [Angle for Angle in APIDATA["truckFloat"]["truck_wheelSteering"] if Angle != 0]
+    while int(APIDATA["configUI"]["truckWheelCount"]) > len(WheelAngles):
         WheelAngles.append(0)
 
     for i in range(len(TruckWheelPointsX)):
@@ -249,23 +266,37 @@ def Run(Data):
         PointY = TruckY + TruckWheelPointsY[i]
         PointZ = TruckZ + TruckWheelPointsZ[i] * math.cos(TruckRotationRadiansX) + TruckWheelPointsX[i] * math.sin(TruckRotationRadiansX)
         X, Y, D = ConvertToScreenCoordinate(X=PointX, Y=PointY, Z=PointZ)
-        DrawCircle(X=X, Y=Y, R=10, Color=(255, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2)
+        DrawCircle(Center=(X, Y), R=10, Color=(255, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2)
 
 
-    X1, Y1, D1 = ConvertToScreenCoordinate(X=10448.742, Y=35.324, Z=-10132.315)
+    #X1, Y1, D1 = ConvertToScreenCoordinate(X=10448.742, Y=35.324, Z=-10132.315)
+    #X2, Y2, D2 = ConvertToScreenCoordinate(X=10453.237, Y=36.324, Z=-10130.404)
+    #X3, Y3, D3 = ConvertToScreenCoordinate(X=10453.237, Y=34.324, Z=-10130.404)
+    #Alpha = CalculateAlpha(Distances=(D1, D2, D3))
 
-    X2, Y2, D2 = ConvertToScreenCoordinate(X=10453.237, Y=36.324, Z=-10130.404)
+    #DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=(255, 255, 255), Thickness=2)
+    #DrawLine(X1=0, Y1=0, X2=100, Y2=100, Color=(255, 255, 255), Thickness=2)
+    #DrawPolygon(Points=[(125, 0), (125, 125), (0, 125)], Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2, Closed=False)
+    #DrawCircle(X=0, Y=0, R=100, Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2)
+    #DrawPolygon(Points=[(X1, Y1), (X2, Y2), (X3, Y3)], Color=(255, 255, 255, Alpha), FillColor=(127, 127, 127, Alpha / 2), Thickness=2, Closed=True)
 
-    X3, Y3, D3 = ConvertToScreenCoordinate(X=10453.237, Y=34.324, Z=-10130.404)
 
-    Alpha = CalculateAlpha(Distances=(D1, D2, D3))
-
-
-    DrawRectangle(X1=0, Y1=0, X2=100, Y2=100, Color=(255, 255, 255), Thickness=2)
-    DrawLine(X1=0, Y1=0, X2=100, Y2=100, Color=(255, 255, 255), Thickness=2)
-    DrawPolygon(Points=[(125, 0), (125, 125), (0, 125)], Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2, Closed=False)
-    DrawCircle(X=0, Y=0, R=100, Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2)
-
-    DrawPolygon(Points=[(X1, Y1), (X2, Y2), (X3, Y3)], Color=(255, 255, 255, Alpha), FillColor=(127, 127, 127, Alpha / 2), Thickness=2, Closed=True)
+    for Plugin in Data.items():
+        if "AR" in Plugin[1]:
+            for Item in Plugin[1]["AR"]:
+                if Item[0] == "DrawRectangle":
+                    X1, Y1, D1 = ConvertToScreenCoordinate(X=Item[1], Y=Item[2], Z=Item[3])
+                    X2, Y2, D2 = ConvertToScreenCoordinate(X=Item[4], Y=Item[5], Z=Item[6])
+                    DrawRectangle(Start=(X1, Y1), End=(X2, Y2), Color=Item[7], FillColor=Item[8], Thickness=Item[9])
+                elif Item[0] == "DrawLine":
+                    X1, Y1, D1 = ConvertToScreenCoordinate(X=Item[1], Y=Item[2], Z=Item[3])
+                    X2, Y2, D2 = ConvertToScreenCoordinate(X=Item[4], Y=Item[5], Z=Item[6])
+                    DrawLine(Start=(X1, Y1), End=(X2, Y2), Color=Item[7], Thickness=Item[8])
+                elif Item[0] == "DrawPolygon":
+                    Points = [ConvertToScreenCoordinate(X=Point[0], Y=Point[1], Z=Point[2])[0:2] for Point in Item[1]]
+                    DrawPolygon(Points=Points, Color=Item[2], FillColor=Item[3], Thickness=Item[4])
+                elif Item[0] == "DrawCircle":
+                    X, Y, D = ConvertToScreenCoordinate(X=Item[1], Y=Item[2], Z=Item[3])
+                    DrawCircle(Center=(X, Y), R=Item[4], Color=Item[5], FillColor=Item[6], Thickness=Item[7])
 
     Render()

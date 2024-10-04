@@ -46,11 +46,9 @@ def InstallCUDA():
         with open(LOCK_FILE_PATH, "w") as f:
             f.write(str(Process.pid))
             f.close()
-        while True:
+        while psutil.pid_exists(Process.pid):
             time.sleep(0.1)
             Output = Process.stdout.readline()
-            if Output == b'' and Process.poll() is not None:
-                break
             Output = str(Output.decode().strip()).replace("Progress ", "").split(" of ")
             if len(Output) == 2:
                 TotalSize = Output[1]
@@ -86,11 +84,9 @@ def UninstallCUDA():
         with open(LOCK_FILE_PATH, "w") as f:
             f.write(str(Process.pid))
             f.close()
-        while True:
+        while psutil.pid_exists(Process.pid):
             time.sleep(0.1)
             Output = Process.stdout.readline()
-            if Output == b'' and Process.poll() is not None:
-                break
             Output = str(Output.decode().strip()).replace("Progress ", "").split(" of ")
             if len(Output) == 2:
                 TotalSize = Output[1]

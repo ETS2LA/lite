@@ -3,62 +3,37 @@ from modules.SDKController.main import SCSController
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
 import src.variables as variables
-import src.settings as settings
 import numpy as np
-import traceback
 import time
 import math
 import cv2
-import mss
-import os
 
 if variables.OS == "nt":
     import win32gui, win32con
     from ctypes import windll, byref, sizeof, c_int
 
 
-#from torchvision import transforms
-#import torch
-
-
 def Initialize():
-    global LastScreenCaptureCheck
     global SDKController
     global TruckSimAPI
 
-    LastScreenCaptureCheck = 0
+    global LastScreenCaptureCheck
+    global LastScale
+    global Images
+    global RESOLUTION
+    global FRAME
+
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
 
     ScreenCapture.Initialize()
-    ShowImage.Initialize(Name="AdaptiveCruiseControl", TitleBarColor=(0, 0, 0))
+    ShowImage.Initialize(Name="VisionMap", TitleBarColor=(0, 0, 0))
 
-    #global model
-    #global device
-    #device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    #print("Using device:", device)
-    #for file in os.listdir(f"{variables.PATH}"):
-    #    if file.endswith(".pt"):
-    #        model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
-    #        model.eval()
-    #        break
-
-
-def GetTextSize(text="NONE", text_width=100, max_text_height=100):
-    fontscale = 1
-    textsize, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontscale, 1)
-    width_current_text, height_current_text = textsize
-    max_count_current_text = 3
-    while width_current_text != text_width or height_current_text > max_text_height:
-        fontscale *= min(text_width / textsize[0], max_text_height / textsize[1])
-        textsize, _ = cv2.getTextSize(text, cv2.FONT_HERSHEY_SIMPLEX, fontscale, 1)
-        max_count_current_text -= 1
-        if max_count_current_text <= 0:
-            break
-    thickness = round(fontscale * 2)
-    if thickness <= 0:
-        thickness = 1
-    return text, fontscale, thickness, textsize[0], textsize[1]
+    LastScreenCaptureCheck = 0
+    LastScale = None
+    Images = []
+    RESOLUTION = 700
+    FRAME = np.zeros((RESOLUTION, RESOLUTION, 3), np.uint8)
 
 
 def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
@@ -106,8 +81,8 @@ def Run(data):
     CurrentTime = time.time()
 
     global LastScreenCaptureCheck
-    global SDKController
-    global TruckSimAPI
+    global LastScale
+    global FRAME
 
     global HeadRotationDegreesX
     global HeadRotationDegreesY
@@ -118,17 +93,18 @@ def Run(data):
 
     APIDATA = TruckSimAPI.update()
 
-    if LastScreenCaptureCheck + 0.5 < CurrentTime:
-        WindowX1, WindowY1, WindowX2, WindowY2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
-        if ScreenCapture.MonitorX1 != WindowX1 or ScreenCapture.MonitorY1 != WindowY1 or ScreenCapture.MonitorX2!= WindowX2 or ScreenCapture.MonitorY2 != WindowY2:
-            ScreenIndex = ScreenCapture.GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
+    if LastScreenCaptureCheck + 0.5 < time.time():
+        X1, Y1, X2, Y2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+        ScreenX, ScreenY, _, _ = ScreenCapture.GetScreenDimensions(ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2))
+        if ScreenCapture.MonitorX1 != X1 - ScreenX or ScreenCapture.MonitorY1 != Y1 - ScreenY or ScreenCapture.MonitorX2 != X2 - ScreenX or ScreenCapture.MonitorY2 != Y2 - ScreenY:
+            ScreenIndex = ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2)
             if ScreenCapture.Display != ScreenIndex - 1:
                 if ScreenCapture.CaptureLibrary == "WindowsCapture":
                     ScreenCapture.StopWindowsCapture = True
                     while ScreenCapture.StopWindowsCapture == True:
                         time.sleep(0.01)
                 ScreenCapture.Initialize()
-            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, WindowX1, WindowY1, WindowX2, WindowY2)
+            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, X1 - ScreenX, Y1 - ScreenY, X2 - ScreenX, Y2 - ScreenY)
         LastScreenCaptureCheck = CurrentTime
 
     Frame = ScreenCapture.Capture(ImageType="cropped")
@@ -141,21 +117,21 @@ def Run(data):
     TruckZ = APIDATA["truckPlacement"]["coordinateZ"]
     TruckRotationX = APIDATA["truckPlacement"]["rotationX"]
     TruckRotationY = APIDATA["truckPlacement"]["rotationY"]
-    TruckRotationZ = 0
+    TruckRotationZ = APIDATA["truckPlacement"]["rotationZ"]
 
     CabinOffsetX = APIDATA["headPlacement"]["cabinOffsetX"] + APIDATA["configVector"]["cabinPositionX"]
     CabinOffsetY = APIDATA["headPlacement"]["cabinOffsetY"] + APIDATA["configVector"]["cabinPositionY"]
     CabinOffsetZ = APIDATA["headPlacement"]["cabinOffsetZ"] + APIDATA["configVector"]["cabinPositionZ"]
     CabinOffsetRotationX = APIDATA["headPlacement"]["cabinOffsetrotationX"]
     CabinOffsetRotationY = APIDATA["headPlacement"]["cabinOffsetrotationY"]
-    CabinOffsetRotationZ = 0
+    CabinOffsetRotationZ = APIDATA["headPlacement"]["cabinOffsetrotationZ"]
 
     HeadOffsetX = APIDATA["headPlacement"]["headOffsetX"] + APIDATA["configVector"]["headPositionX"] + CabinOffsetX
     HeadOffsetY = APIDATA["headPlacement"]["headOffsetY"] + APIDATA["configVector"]["headPositionY"] + CabinOffsetY
     HeadOffsetZ = APIDATA["headPlacement"]["headOffsetZ"] + APIDATA["configVector"]["headPositionZ"] + CabinOffsetZ
     HeadOffsetRotationX = APIDATA["headPlacement"]["headOffsetrotationX"]
     HeadOffsetRotationY = APIDATA["headPlacement"]["headOffsetrotationY"]
-    HeadOffsetRotationZ = 0
+    HeadOffsetRotationZ = APIDATA["headPlacement"]["headOffsetrotationZ"]
 
     TruckRotationDegreesX = TruckRotationX * 360
     TruckRotationRadiansX = -math.radians(TruckRotationDegreesX)
@@ -195,8 +171,8 @@ def Run(data):
     Points = []
 
 
-    OffsetX = 70
-    OffsetZ = 15
+    OffsetX = 50
+    OffsetZ = 14
 
     PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
     PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
@@ -210,8 +186,8 @@ def Run(data):
         Points.append((PointX, PointZ))
 
 
-    OffsetX = 70
-    OffsetZ = -15
+    OffsetX = 50
+    OffsetZ = -14
 
     PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
     PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
@@ -225,7 +201,7 @@ def Run(data):
         Points.append((PointX, PointZ))
 
 
-    OffsetX = 15
+    OffsetX = 13
     OffsetZ = 4
 
     PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
@@ -240,7 +216,7 @@ def Run(data):
         Points.append((PointX, PointZ))
 
 
-    OffsetX = 15
+    OffsetX = 13
     OffsetZ = -4
 
     PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
@@ -254,11 +230,6 @@ def Run(data):
         BottomRight = X, Y
         Points.append((PointX, PointZ))
 
-    if AllCoordinatesValid and False:
-        cv2.circle(Frame, (round(TopLeft[0]), round(TopLeft[1])), 5, (0, 0, 255), -1)
-        cv2.circle(Frame, (round(TopRight[0]), round(TopRight[1])), 5, (0, 0, 255), -1)
-        cv2.circle(Frame, (round(BottomLeft[0]), round(BottomLeft[1])), 5, (0, 0, 255), -1)
-        cv2.circle(Frame, (round(BottomRight[0]), round(BottomRight[1])), 5, (0, 0, 255), -1)
 
     if AllCoordinatesValid:
         CroppedWidth = round(max(TopRight[0] - TopLeft[0], BottomRight[0] - BottomLeft[0]))
@@ -268,44 +239,57 @@ def Run(data):
         Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
         Frame = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
 
+        Images.append((Frame, Points, False))
 
-    # frame = cv2.resize(frame, (100, 100))
-    # image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    # image = np.array(image, dtype=np.float32) / 255.0
-    # transform = transforms.Compose([
-    #     transforms.ToTensor(),
-    # ])
-    # image = transform(image).unsqueeze(0)
-    # with torch.no_grad():
-    #     prediction = model(image.to(device))
+    MinX = float('inf')
+    MaxX = float('-inf')
+    MinZ = float('inf')
+    MaxZ = float('-inf')
 
-    # prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
-
-    # frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
-    # prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
-
-    # prediction_overlay[:, :, 2] = 0
-    # prediction_overlay = prediction_overlay.astype(np.uint8) * 255
-
-    # frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
-
-    # non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
-    # if len(non_black_pixels[0]) > 0:
-    #     x_center = int(np.mean(non_black_pixels[1]))
-    # else:
-    #     x_center = width // 2
-    # cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
+    for Image, Points, _ in Images:
+        for PointX, PointZ in Points:
+            MinX = min(MinX, PointX)
+            MaxX = max(MaxX, PointX)
+            MinZ = min(MinZ, PointZ)
+            MaxZ = max(MaxZ, PointZ)
 
 
+    ScaleX = RESOLUTION / (MaxX - MinX)
+    ScaleZ = RESOLUTION / (MaxZ - MinZ)
+    Scale = min(ScaleX, ScaleZ)
+    if Scale != LastScale:
+        for i, (Image, Points, Rendered) in enumerate(Images):
+            Images[i] = (Image, Points, False)
+        FRAME = np.zeros((RESOLUTION, RESOLUTION, 3), np.uint8)
+    LastScale = Scale
 
-    # Steering = (x_center/frame.shape[1] - 0.5) * 0.3 - 0.0125
+    for i, (Image, Points, Rendered) in enumerate(Images):
+        if Rendered == True:
+            continue
+        Images[i] = (Image, Points, True)
+        OnFrameX1 = (Points[0][0] - MinX) * Scale
+        OnFrameY1 = (Points[0][1] - MinZ) * Scale
+        OnFrameX2 = (Points[2][0] - MinX) * Scale
+        OnFrameY2 = (Points[2][1] - MinZ) * Scale
+        onframe_x3 = (Points[3][0] - MinX) * Scale
+        onframe_y3 = (Points[3][1] - MinZ) * Scale
+        onframe_x4 = (Points[1][0] - MinX) * Scale
+        onframe_y4 = (Points[1][1] - MinZ) * Scale
 
-    # SteeringHistory.append((Steering, CurrentTime))
-    # SteeringHistory.sort(key=lambda x: x[1])
-    # while CurrentTime - SteeringHistory[0][1] > 0.2:
-    #     SteeringHistory.pop(0)
-    # Steering = sum(x[0] for x in SteeringHistory) / len(SteeringHistory)
+        SourcePoints = np.float32([[0, 0], [Image.shape[1], 0], [0, Image.shape[0]], [Image.shape[1], Image.shape[0]]])
+        DestinationPoints = np.float32([[OnFrameX1, OnFrameY1], [onframe_x4, onframe_y4], [OnFrameX2, OnFrameY2], [onframe_x3, onframe_y3]])
+        Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
+        warped_image = cv2.warpPerspective(Image, Matrix, (RESOLUTION, RESOLUTION), flags=cv2.INTER_NEAREST)
+        Mask = cv2.inRange(warped_image, np.array([1, 1, 1]), np.array([255, 255, 255]))
+        FRAME[Mask > 0] = warped_image[Mask > 0]
 
-    # SDKController.steering = float(Steering)
+    Frame = FRAME.copy()
+    time.sleep(0.05)
 
-    ShowImage.Show("AdaptiveCruiseControl", Frame)
+    X = TruckX
+    Y = TruckZ
+    OnFrameX = (X - MinX) * Scale
+    OnFrameY = (Y - MinZ) * Scale
+    cv2.circle(Frame, (int(OnFrameX), int(OnFrameY)), 5, (0, 0, 255), -1)
+
+    ShowImage.Show(Name="VisionMap", Frame=Frame)

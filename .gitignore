@@ -1,8 +1,11 @@
 # ignore the pycache everywhere
 **/__pycache__
 
-# ignore vscode settings
+# ignore vscode stuff
 /.vscode
+
+# ignore vs stuff
+.vs
 
 # ignore the app cache
 /cache
@@ -12,3 +15,6 @@
 
 # ignore the settings
 /config/settings.json
+
+# ignore the c++ builds
+/cpp-app/build

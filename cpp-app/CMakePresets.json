@@ -10,7 +10,8 @@
             "cacheVariables": {
                 "CMAKE_C_COMPILER": "cl.exe",
                 "CMAKE_CXX_COMPILER": "cl.exe",
-                "CMAKE_PREFIX_PATH":  "$env{LIBTORCH}"
+                "CMAKE_PREFIX_PATH":  "$env{LIBTORCH}",
+                "OpenCV_DIR": "$env{OpenCV_DIR}"
             },
             "condition": {
                 "type": "equals",

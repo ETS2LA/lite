@@ -1,9 +1,10 @@
 ﻿#include "cpp-app.h"
 
-using namespace std;
+int main() {
+	PyTorchExampleTensor();
+	PyTorchInitialize("Glas42", "NavigationDetectionAI", true);
 
-int main()
-{
-	cout << "Hello World." << endl;
-	return 0;
+	#ifdef BUILD_TYPE_RELEASE
+		system("pause");
+	#endif
 }

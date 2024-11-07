@@ -1,7 +1,7 @@
 ﻿#pragma once
 
-#include "src/variables.h"
 #include "src/pytorch.h"
+#include "src/ui.h"
+#include "src/variables.h"
 
-#include <windows.h>
 #include <iostream>

@@ -1,8 +1,5 @@
 ﻿#include "cpp-app.h"
 
-#include <opencv2/opencv.hpp>
-#include <opencv2/core/utils/logger.hpp>
-
 int main() {
 	if (std::filesystem::exists(PATH + "cache") == false) {
 		std::filesystem::create_directory(PATH + "cache");

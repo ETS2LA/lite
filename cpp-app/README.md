@@ -8,6 +8,7 @@
 - Get [OpenCV](https://opencv.org/releases)
   - Install it
   - Create an environment variable named `OpenCV_DIR` and set its value to the path of the OpenCV folder, which contains folders like `bin`, `x64`, `include`, etc.
+  - Add the absolute path of the `/x64/*/bin` folder (where `*` is for example `vc14`, `vc15`, `vc16`, etc.) in the `OpenCV_DIR` to the system PATH
 - Get [CMake](https://cmake.org/)
   - Install it (select the option to add it to the system PATH)
   - Open a terminal and cd into the `cpp-app` folder

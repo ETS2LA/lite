@@ -10,38 +10,50 @@ const std::string GREEN = "\033[92m";
 const std::string GRAY = "\033[90m";
 const std::string NORMAL = "\033[0m";
 
-std::map<std::string, std::map<std::string, std::string>> MODELS;
+std::map<std::string, std::string> MODELS;
+std::map<std::string, std::map<std::string, std::unique_ptr<std::thread>>> THREADS;
+std::map<std::string, std::map<std::string, std::string>> STRINGS;
+std::map<std::string, std::map<std::string, bool>> BOOLS;
+
+void SetThread(std::string Model, std::string Key, std::function<void()> Function) { THREADS[Model][Key] = std::make_unique<std::thread>(Function); };
+void SetString(std::string Model, std::string Key, std::string Value) { STRINGS[Model][Key] = Value; };
+void SetBool(std::string Model, std::string Key, bool Value) { BOOLS[Model][Key] = Value; };
+
+std::thread* GetThread(std::string Model, std::string Key) { return THREADS[Model][Key].get(); };
+std::string GetString(std::string Model, std::string Key) { return STRINGS[Model][Key]; };
+bool GetBool(std::string Model, std::string Key) { return BOOLS[Model][Key]; };
 
 void PyTorch::Initialize(std::string Owner, std::string Model, bool Threaded) {
     if (torch::cuda::is_available()) {
-        MODELS[Model]["Device"] = "cuda";
+        SetString(Model, "Device", "cuda");
     } else {
-        MODELS[Model]["Device"] = "cpu";
+        SetString(Model, "Device", "cpu");
     }
-    MODELS[Model]["Path"] = PATH + "cache/" + Model;
-    MODELS[Model]["Threaded"] = Threaded;
-    MODELS[Model]["ModelOwner"] = Owner;
+    SetString(Model, "Path", PATH + "cache/" + Model);
+    SetBool(Model, "Threaded", Threaded);
+    SetString(Model, "ModelOwner", Owner);
+    MODELS[Model] = "";
 };
 
-//bool PyTorch::Loaded(std::any Model = "All") {
-//    if (Model == "All") {
-//        for (auto& [key, value] : MODELS) {
-//            if (value["Threaded"] == true) {
-//                if (value["UpdateThread"].joinable() || value["LoadThread"].joinable()) {
-//                    return false;
-//                }
-//            }
-//        }
-//    } else {
-//        if (MODELS[Model]["Threaded"] == true) {
-//            if (MODELS[Model]["UpdateThread"].joinable() || MODELS[Model]["LoadThread"].joinable()) {
-//                return false;
-//            }
-//        }
-//    }
-//    return true;
-//};
-//
+bool PyTorch::Loaded(std::string Model) {
+    if (Model == "All") {
+        for (auto& [Model, _] : THREADS) {
+            if (GetBool(Model, "Threaded") == true) {
+                if (GetThread(Model, "UpdateThread")->joinable() || GetThread(Model, "LoadThread")->joinable()) {
+                    return false;
+                }
+            }
+        }
+    } else {
+        if (GetBool(Model, "Threaded") == true) {
+            if (GetThread(Model, "UpdateThread")->joinable() || GetThread(Model, "LoadThread")->joinable()) {
+                return false;
+            }
+        }
+    }
+    return true;
+};
+
 //void LoadFunction(std::any Model) {
 //    PyTorch::CheckForUpdates(Model);
 //    if (MODELS[Model].count("UpdateThread")) {

@@ -22,7 +22,7 @@ class PyTorch {
     public:
     static void ExampleTensor();
     static void Initialize(std::string Owner = "", std::string Model = "", bool Threaded = true);
-    //static bool Loaded(std::any Model = "All");
+    static bool Loaded(std::string Model = "All");
     //static void Load(std::any Model = "All");
     //static void CheckForUpdates(std::any Model = "All");
     //static std::any GetName(std::any Model = "All");

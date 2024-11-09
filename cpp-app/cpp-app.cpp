@@ -32,6 +32,9 @@ int main() {
 	PyTorch::ExampleTensor();
 	PyTorch::Initialize("Glas42", "NavigationDetectionAI", true);
 
+	PyTorch::Loaded("NavigationDetectionAI");
+
+
 	if (BUILD_TYPE == "Release") {
 		system("pause");
 	}

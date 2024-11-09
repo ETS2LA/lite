@@ -2,6 +2,7 @@
 #include <string>
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include <dwmapi.h>
 
 #define BUTTON_ONE 1
 #define BUTTON_TWO 2
@@ -24,14 +25,36 @@ LRESULT CALLBACK UI::WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lPar
             int wmId = LOWORD(wParam);
             switch (wmId) {
                 case BUTTON_ONE: {
-                    MessageBoxW(hwnd, L"Button One Clicked", L"Button Event", MB_OK);
+                    HWND hwndDesktop = GetDesktopWindow();
 
-                    cv::Mat image = cv::Mat::zeros(400, 500, CV_8UC3);
-                    cv::putText(image, "Hello from OpenCV!", cv::Point(50, 200), cv::FONT_HERSHEY_SIMPLEX, 1, cv::Scalar(255, 255, 255), 2);
+                    HDC hDC = GetDC(hwndDesktop);
+                    HDC hMemDC = CreateCompatibleDC(hDC);
 
-                    cv::imshow("OpenCV Window", image);
+                    int width = GetSystemMetrics(SM_CXSCREEN);
+                    int height = GetSystemMetrics(SM_CYSCREEN);
+
+                    HBITMAP hBitmap = CreateCompatibleBitmap(hDC, width, height);
+                    SelectObject(hMemDC, hBitmap);
+
+                    BitBlt(hMemDC, 0, 0, width, height, hDC, 0, 0, SRCCOPY);
+
+                    BITMAPINFO bi = { sizeof(BITMAPINFOHEADER) };
+                    bi.bmiHeader.biWidth = width;
+                    bi.bmiHeader.biHeight = -height;
+                    bi.bmiHeader.biPlanes = 1;
+                    bi.bmiHeader.biBitCount = 32;
+                    bi.bmiHeader.biCompression = BI_RGB;
+
+                    cv::Mat screen(height, width, CV_8UC4);
+                    GetDIBits(hMemDC, hBitmap, 0, height, screen.data, &bi, DIB_RGB_COLORS);
+
+                    DeleteObject(hBitmap);
+                    DeleteDC(hMemDC);
+                    ReleaseDC(hwndDesktop, hDC);
+
+                    cv::imshow("Screen Capture", screen);
                     cv::waitKey(0);
-                    cv::destroyWindow("OpenCV Window");
+
                     break;
                 }
                 case BUTTON_TWO:
@@ -83,7 +106,7 @@ void UI::CreateMainWindow(HINSTANCE hInstance, int nCmdShow) {
     }
 
     CreateWindowW(
-        L"BUTTON", L"Button One",
+        L"BUTTON", L"Test OpenCV",
         WS_TABSTOP | WS_VISIBLE | WS_CHILD | BS_DEFPUSHBUTTON,
         50, 100, 150, 50,
         hwnd, (HMENU)BUTTON_ONE, hInstance, NULL

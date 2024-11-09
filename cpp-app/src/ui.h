@@ -1,11 +1,16 @@
 #ifndef UI_H
 #define UI_H
 
-#include <iostream>
+#include <windows.h>
+#include <string>
 
 class UI {
-    public: 
+public:
     static void Initialize();
+    static void CreateMainWindow(HINSTANCE hInstance, int nCmdShow);
+
+private:
+    static LRESULT CALLBACK WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 };
 
 #endif

@@ -6,7 +6,6 @@
 
 #define BUTTON_ONE 1
 #define BUTTON_TWO 2
-
 class UI {
 public:
     static void Initialize();
@@ -130,7 +129,14 @@ void UI::CreateMainWindow(HINSTANCE hInstance, int nCmdShow) {
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE, LPSTR, int nCmdShow) {
+
+    AllocConsole();
+    freopen("CONOUT$", "w", stdout);
+
     UI::Initialize();
     UI::CreateMainWindow(hInstance, nCmdShow);
+
+    FreeConsole();
     return 0;
+
 }

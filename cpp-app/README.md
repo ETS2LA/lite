@@ -11,6 +11,10 @@
   - Add the absolute path of the `/x64/*/bin` folder (where `*` is for example `vc14`, `vc15`, `vc16`, etc.) in the `OpenCV_DIR` to the system PATH
 - Get [CMake](https://cmake.org/)
   - Install it (select the option to add it to the system PATH)
+- Build the app in release mode
   - Open a terminal and cd into the `cpp-app` folder
-  - Run ```cmake --preset=x64-release -B build/x64-release && cmake --build build/x64-release``` to build the app
-  - Run ```.\build\x64-release\Debug\cpp-app.exe``` to run the app
+  - Run ```cmake --preset=x64-release -B build/x64-release && cmake --build build/x64-release --config Release``` to build the app in release mode
+  - Run ```.\build\x64-release\Release\cpp-app.exe``` to run the release build
+- Build the app in debug mode
+  - Run ```cmake --preset=x64-debug -B build/x64-debug && cmake --build build/x64-debug``` to build the app in debug mode
+  - Run ```.\build\x64-debug\Debug\cpp-app.exe``` to run the debug build

@@ -2,9 +2,10 @@
 
 ### Build
 
-- Get [LibTorch](https://pytorch.org/)
+- Get [LibTorch](https://pytorch.org/) (CPU, Release and Debug)
   - Unzip it
-  - Create an environment variable named `LIBTORCH` and set its value to the path of the LibTorch folder, which contains folders like `lib`, `bin`, `include`, etc.
+  - Create an environment variable named `LIBTORCH` for the Release version and set its value to the path of the libtorch folder, which contains folders like `lib`, `bin`, `include`, etc.
+  - Create an environment variable named `LIBTORCHDEBUG` for the Debug version and set its value to the path of the libtorch debug folder, which contains folders like `lib`, `bin`, `include`, etc.
 - Get [OpenCV](https://opencv.org/releases)
   - Install it
   - Create an environment variable named `OpenCV_DIR` and set its value to the path of the OpenCV folder, which contains folders like `bin`, `x64`, `include`, etc.

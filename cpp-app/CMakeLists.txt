@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.8)
+﻿cmake_minimum_required(VERSION 3.12)
 
 if (POLICY CMP0141)
     cmake_policy(SET CMP0141 NEW)
@@ -21,8 +21,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/*.h")
 
-add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ${SRC_FILES})
 add_executable(${PROJECT_NAME} WIN32 ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ${SRC_FILES})
+target_link_libraries(${PROJECT_NAME} ${TORCH_LIBRARIES} ${OpenCV_LIBS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
 if (MSVC)

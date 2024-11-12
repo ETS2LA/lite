@@ -5,6 +5,41 @@ void PyTorch::ExampleTensor() {
     std::cout << "Example of a random tensor:\n" << Tensor << std::endl;
 }
 
+cv::Mat PyTorch::TensorToMat(torch::Tensor Tensor, int Width, int Height) {
+    Tensor = Tensor.permute({ 0, 2, 3, 1 });
+    Tensor = Tensor.squeeze(0).detach();
+    Tensor = Tensor.mul(255).clamp(0, 255).to(torch::kU8);
+    Tensor = Tensor.to(torch::kCPU);
+    cv::Mat Image(Height, Width, 0);
+    std::memcpy((void*)Image.data, Tensor.data_ptr(), sizeof(torch::kU8)*Tensor.numel());
+    return Image;
+}
+
+void PyTorch::LoadExampleModel() {
+    std::cout << "Loading the example model...\n > " << PATH + "Model.pt" << std::endl;
+    try {
+        auto Model = torch::jit::load(PATH + "Model.pt", c10::kCPU);
+        auto Input = torch::rand({1, 1, 220, 420});
+        auto Output = Model.forward({Input}).toTensor();
+        std::cout << Output << std::endl;
+
+        cv::Mat Image = PyTorch::TensorToMat(Input, 420, 220);
+
+        OpenCV::ShowImage("Input Tensor", Image, false);
+        OpenCV::SetWindowCaptionColor(L"Input Tensor", 0, 0, 0);
+        OpenCV::SetWindowBorderColor(L"Input Tensor", 200, 0, 0);
+        OpenCV::ShowImage("Input Tensor", Image, true);
+
+    } catch (torch::Error& e) {
+        std::cout << e.what() << std::endl;
+        std::cout << "\nPossible reasons:\n > You built the app in debug mode with the LibTorch release version. Install the LibTorch debug version to use the model with debug app builds.\n > The model file is missing." << std::endl;
+    } catch (cv::Exception& e) {
+        std::cout << e.what() << std::endl;
+    } catch (std::exception& e) {
+        std::cout << e.what() << std::endl;
+    }
+}
+
 const std::string RED = "\033[91m";
 const std::string GREEN = "\033[92m";
 const std::string GRAY = "\033[90m";

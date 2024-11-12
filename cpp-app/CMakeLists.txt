@@ -21,7 +21,8 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}")
 
 file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/*.h")
 
-add_executable(${PROJECT_NAME} WIN32 ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ${SRC_FILES})
+# when using the ui, replace the add_executable under this comment with add_executable(${PROJECT_NAME} WIN32 ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ${SRC_FILES})
+add_executable(${PROJECT_NAME} ${PROJECT_NAME}.cpp ${PROJECT_NAME}.h ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME} ${TORCH_LIBRARIES} ${OpenCV_LIBS})
 set_property(TARGET ${PROJECT_NAME} PROPERTY CXX_STANDARD 17)
 
@@ -31,6 +32,12 @@ if (MSVC)
                        POST_BUILD
                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
                        ${TORCH_DLLS}
+                       $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+    file(GLOB OPENCV_DLLS "${OpenCV_DIR}/x64/*/bin/*.dll")
+    add_custom_command(TARGET ${PROJECT_NAME}
+                       POST_BUILD
+                       COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                       ${OPENCV_DLLS}
                        $<TARGET_FILE_DIR:${PROJECT_NAME}>)
 endif (MSVC)
 

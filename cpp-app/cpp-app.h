@@ -1,10 +1,10 @@
 ﻿#pragma once
 
-#include "src/pytorch.h"
-#include "src/ui.h"
 #include "src/variables.h"
+#include "src/pytorch.h"
+#include "src/opencv.h"
+#include "src/ui.h"
 
-#include <opencv2/opencv.hpp>
 #include <windows.h>
 #include <dwmapi.h>
 #include <iostream>

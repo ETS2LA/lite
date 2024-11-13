@@ -5,6 +5,9 @@ int main() {
 		std::filesystem::create_directory(PATH + "cache");
 	}
 
+
+	CustomUI::Create(L"Custom UI", 100, 100, 700, 500);
+
 	std::cout << "Close the window to continue!" << std::endl;
 
 	cv::Mat Frame = OpenCV::EmptyImage(500, 200, 3, 0, 0, 0);

@@ -1,6 +1,7 @@
 #ifndef PYTORCH_H
 #define PYTORCH_H
 
+#include <opencv2/opencv.hpp>
 #include <torch/script.h>
 #include <torch/torch.h>
 #include <unordered_map>

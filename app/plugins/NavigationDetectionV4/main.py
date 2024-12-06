@@ -73,8 +73,7 @@ def Run(Data):
     global SDKController
     global TruckSimAPI
 
-    data = {}
-    data["api"] = TruckSimAPI.update()
+    APIDATA = TruckSimAPI.update()
     Frame = ScreenCapture.Capture(ImageType="cropped")
 
     if type(Frame) == type(None): return
@@ -103,18 +102,92 @@ def Run(Data):
         Enabled = not Enabled
     LastEnableKeyPressed = EnableKeyPressed
 
-    Angle = -3
-    SourcePoints = np.float32([[0, 0], [FrameWidth - 1, 0], [0, FrameHeight - 1], [FrameWidth - 1, FrameHeight - 1]])
-    DestinationPoints = np.float32([[int(FrameWidth * Angle), 0], [FrameWidth - 1 - int(FrameWidth * Angle), 0], [0, FrameHeight - 1], [FrameWidth - 1, FrameHeight - 1]])
-    Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
-    Frame = cv2.warpPerspective(Frame, Matrix, (FrameWidth, FrameHeight))
 
     LowerRed = np.array([0, 0, 160])
     UpperRed = np.array([110, 110, 255])
     Mask = cv2.inRange(Frame, LowerRed, UpperRed)
     Frame = cv2.bitwise_and(Frame, Frame, mask=Mask)
+    Frame = cv2.cvtColor(Frame, cv2.COLOR_BGR2GRAY)
 
-    Steering = 0
+
+    LaneEdges = []
+
+    for _ in range(5):
+
+        Y = round(FrameHeight * 0.4 - _ * 3)
+
+        LeftEdge = [0, Y]
+        RightEdge = [FrameWidth - 1, Y]
+
+        for i in range(2):
+            DetectedLane = False
+            DetectingLane = False
+            for j in range(int(FrameWidth / 2)):
+                if i == 0:
+                    X = int(FrameWidth / 2) - j
+                else:
+                    X = int(FrameWidth / 2) + j
+
+                if (Frame[Y][X] > 0) if not DetectingLane else (Frame[Y][X] == 0):
+                    DetectedLane = True
+                    DetectingLane = not DetectingLane
+                    if DetectingLane == False:
+                        if i == 0:
+                            LeftEdge = [X, Y]
+                        else:
+                            RightEdge = [X, Y]
+                        break
+            DetectingLane = True
+            if DetectedLane == False:
+                for j in range(int(FrameWidth / 2)):
+                    if i == 0:
+                        X = int(FrameWidth / 2) + j
+                    else:
+                        X = int(FrameWidth / 2) - j
+
+                    if (Frame[Y][X] > 0) if DetectingLane else (Frame[Y][X] == 0):
+                        DetectedLane = True
+                        DetectingLane = not DetectingLane
+                        if DetectingLane == False:
+                            if i == 0:
+                                LeftEdge = [X, Y]
+                            else:
+                                RightEdge = [X, Y]
+                            break
+
+        LaneEdges.append((LeftEdge, RightEdge))
+
+    ValidLanes = [True] * len(LaneEdges)
+
+    for i in range(len(LaneEdges)):
+        AvgLeftX = 0
+        AvgRightX = 0
+        for j in range(len(LaneEdges)):
+            if i != j:
+                AvgLeftX += LaneEdges[j][0][0]
+                AvgRightX += LaneEdges[j][1][0]
+
+        AvgLeftX /= len(LaneEdges) - 1
+        AvgRightX /= len(LaneEdges) - 1
+
+        if abs(LaneEdges[i][0][0] - AvgLeftX) > (abs(AvgRightX - AvgLeftX) / 3) or abs(AvgRightX - LaneEdges[i][1][0]) > (abs(AvgRightX - AvgLeftX) / 4):
+            ValidLanes[i] = False
+
+    Frame = cv2.cvtColor(Frame, cv2.COLOR_GRAY2BGR)
+
+    for i, (LeftEdge, RightEdge) in enumerate(LaneEdges):
+        cv2.line(Frame, LeftEdge, RightEdge, (0, 255, 0) if ValidLanes[i] else (0, 0, 255), 2)
+
+    if len([ValidLane for ValidLane in ValidLanes if ValidLane == True]) > 0:
+        LeftEdge = sum([LeftEdge[0] for i, (LeftEdge, RightEdge) in enumerate(LaneEdges) if ValidLanes[i] == True]) / len([ValidLane for ValidLane in ValidLanes if ValidLane == True]), sum([LeftEdge[1] for i, (LeftEdge, RightEdge) in enumerate(LaneEdges) if ValidLanes[i] == True]) / len([ValidLane for ValidLane in ValidLanes if ValidLane == True])
+        RightEdge = sum([RightEdge[0] for i, (LeftEdge, RightEdge) in enumerate(LaneEdges) if ValidLanes[i] == True]) / len([ValidLane for ValidLane in ValidLanes if ValidLane == True]), sum([RightEdge[1] for i, (LeftEdge, RightEdge) in enumerate(LaneEdges) if ValidLanes[i] == True]) / len([ValidLane for ValidLane in ValidLanes if ValidLane == True])
+    else:
+        LeftEdge = 0, 0
+        RightEdge = FrameWidth - 1, 0
+
+    Steering = ((LeftEdge[0] + RightEdge[0]) / 2 - (FrameWidth - 1) / 2) / (FrameWidth - 1)
+
+    Steering *= 5
 
     SDKController.steering = float(Steering)
 

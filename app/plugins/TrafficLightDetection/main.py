@@ -22,16 +22,27 @@ NORMAL = "\033[0m"
 GREEN = "\033[92m"
 RED = "\033[91m"
 
-lower_red = np.array([200, 0, 0])
-upper_red = np.array([255, 110, 110])
+#lower_red = np.array([200, 0, 0])
+#upper_red = np.array([255, 110, 110])
+#lower_green = np.array([0, 200, 0])
+#upper_green = np.array([150, 255, 230])
+#lower_yellow = np.array([200, 170, 50])
+#upper_yellow = np.array([255, 240, 170])
+lower_red = np.array([0, 0, 200])
+upper_red = np.array([110, 110, 255])
 lower_green = np.array([0, 200, 0])
-upper_green = np.array([150, 255, 230])
-lower_yellow = np.array([200, 170, 50])
-upper_yellow = np.array([255, 240, 170])
+upper_green = np.array([230, 255, 150])
+lower_yellow = np.array([50, 170, 200])
+upper_yellow = np.array([170, 240, 255])
+
 
 def Initialize():
     global SDKController
     global TruckSimAPI
+
+    global LastScreenCaptureCheck
+    global WindowWidth
+    global WindowHeight
 
     global min_rect_size
     global max_rect_size
@@ -71,9 +82,13 @@ def Initialize():
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
 
-    pytorch.Initialize(ModelOwner="Glas42", ModelName="TrafficLightDetectionAI")
-    pytorch.LoadAIModel()
+    pytorch.Initialize(Owner="Glas42", Model="TrafficLightDetectionAI")
+    pytorch.Load(Model="TrafficLightDetectionAI")
+
     ScreenCapture.Initialize()
+    LastScreenCaptureCheck = 0
+    WindowWidth = 0
+    WindowHeight = 0
 
     finalwindow = settings.Get("TrafficLightDetection", "FinalWindow", True)
     grayscalewindow = settings.Get("TrafficLightDetection", "GrayscaleWindow", False)
@@ -221,67 +236,63 @@ def GetTextSize(text="NONE", text_width=100, max_text_height=100):
 
 def ClassifyImage(image):
     try:
-        if pytorch.AIModelUpdateThread.is_alive(): return True
-        if pytorch.AIModelLoadThread.is_alive(): return True
+        if pytorch.MODELS["TrafficLightDetectionAI"]["UpdateThread"].is_alive(): return True
+        if pytorch.MODELS["TrafficLightDetectionAI"]["LoadThread"].is_alive(): return True
     except:
         return True
 
     image = np.array(image, dtype=np.float32)
-    if pytorch.IMG_CHANNELS == 'Grayscale' or pytorch.IMG_CHANNELS == 'Binarize':
+    if pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'Binarize':
         image = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
-    if pytorch.IMG_CHANNELS == 'RG':
+    if pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'RG':
         image = np.stack((image[:, :, 0], image[:, :, 1]), axis=2)
-    elif pytorch.IMG_CHANNELS == 'GB':
+    elif pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'GB':
         image = np.stack((image[:, :, 1], image[:, :, 2]), axis=2)
-    elif pytorch.IMG_CHANNELS == 'RB':
+    elif pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'RB':
         image = np.stack((image[:, :, 0], image[:, :, 2]), axis=2)
-    elif pytorch.IMG_CHANNELS == 'R':
+    elif pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'R':
         image = image[:, :, 0]
         image = np.expand_dims(image, axis=2)
-    elif pytorch.IMG_CHANNELS == 'G':
+    elif pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'G':
         image = image[:, :, 1]
         image = np.expand_dims(image, axis=2)
-    elif pytorch.IMG_CHANNELS == 'B':
+    elif pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'B':
         image = image[:, :, 2]
         image = np.expand_dims(image, axis=2)
-    image = cv2.resize(image, (pytorch.IMG_WIDTH, pytorch.IMG_HEIGHT))
+    image = cv2.resize(image, (pytorch.MODELS["TrafficLightDetectionAI"]["IMG_WIDTH"], pytorch.MODELS["TrafficLightDetectionAI"]["IMG_HEIGHT"]))
     image = image / 255.0
-    if pytorch.IMG_CHANNELS == 'Binarize':
+    if pytorch.MODELS["TrafficLightDetectionAI"]["IMG_CHANNELS"] == 'Binarize':
         image = cv2.threshold(image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
 
-    image = pytorch.transforms.ToTensor()(image).unsqueeze(0).to(pytorch.DEVICE)
+    image = pytorch.transforms.ToTensor()(image).unsqueeze(0).to(pytorch.MODELS["TrafficLightDetectionAI"]["Device"])
     with pytorch.torch.no_grad():
-        output = np.array(pytorch.Model(image)[0].tolist())
+        output = np.array(pytorch.MODELS["TrafficLightDetectionAI"]["Model"](image)[0].tolist())
     obj_class = np.argmax(output)
     return True if obj_class != 3 else False
 
 
-def GetGamePosition():
-    global last_GetGamePosition
-    if variables.OS == "nt":
-        if last_GetGamePosition[0] + 5 < time.time():
-            hwnd = None
-            top_windows = []
-            window = last_GetGamePosition[1], last_GetGamePosition[2], last_GetGamePosition[3], last_GetGamePosition[4]
-            win32gui.EnumWindows(lambda hwnd, top_windows: top_windows.append((hwnd, win32gui.GetWindowText(hwnd))), top_windows)
-            for hwnd, window_text in top_windows:
-                if "Truck Simulator" in window_text and "Discord" not in window_text:
-                    rect = win32gui.GetClientRect(hwnd)
-                    tl = win32gui.ClientToScreen(hwnd, (rect[0], rect[1]))
-                    br = win32gui.ClientToScreen(hwnd, (rect[2], rect[3]))
-                    window = (tl[0], tl[1], br[0] - tl[0], br[1] - tl[1])
-                    break
-            last_GetGamePosition = time.time(), window[0], window[1], window[2], window[3]
-            return window[0], window[1], window[2], window[3]
-        else:
-            return last_GetGamePosition[1], last_GetGamePosition[2], last_GetGamePosition[3], last_GetGamePosition[4]
-    else:
-        return screen_x, screen_y, screen_x + screen_width, screen_y + screen_height
+def ConvertToAngle(x, y):
+
+    window_x, window_y, window_width, window_height = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+
+    if window_x == 0 and window_y == 0:
+        return 0, 0
+
+    real_hfov = (4 / 3) * math.atan((math.tan(math.radians(fov / 2)) * (window_width / window_height)) / 1.333) * (360 / math.pi)
+    real_vfov = math.atan(math.tan(math.radians(real_hfov / 2)) / (window_width / window_height)) * (360 / math.pi)
+
+    angle_x = (x - window_width / 2) * (real_hfov / window_width)
+    angle_y = (window_height / 2 - y) * (real_vfov / window_height)
+
+    return angle_x, angle_y
 
 
-def plugin():
+def Run(Data):
     CurrentTime = time.time()
 
+    global LastScreenCaptureCheck
+    global WindowWidth
+    global WindowHeight
     global godot_data
     global coordinates
     global trafficlights
@@ -300,17 +311,20 @@ def plugin():
     if width <= 0 or height <= 0:
         return
 
-    if LastScreenCaptureCheck + 0.5 < CurrentTime:
-        game_x1, game_y1, game_x2, game_y2 = GetGamePosition()
-        if ScreenCapture.monitor_x1 != game_x1 or ScreenCapture.monitor_y1 != game_y1 or ScreenCapture.monitor_x2 != game_x2 or ScreenCapture.monitor_y2 != game_y2:
-            ScreenIndex = GetScreenIndex((game_x1 + game_x2) / 2, (game_y1 + game_y2) / 2)
-            if ScreenCapture.display != ScreenIndex - 1:
-                if ScreenCapture.cam_library == "WindowsCapture":
+    if LastScreenCaptureCheck + 0.5 < time.time():
+        X1, Y1, X2, Y2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+        ScreenX, ScreenY, _, _ = ScreenCapture.GetScreenDimensions(ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2))
+        if ScreenCapture.MonitorX1 != X1 - ScreenX or ScreenCapture.MonitorY1 != Y1 - ScreenY or ScreenCapture.MonitorX2 != X2 - ScreenX or ScreenCapture.MonitorY2 != Y2 - ScreenY:
+            ScreenIndex = ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2)
+            if ScreenCapture.Display != ScreenIndex - 1:
+                if ScreenCapture.CaptureLibrary == "WindowsCapture":
                     ScreenCapture.StopWindowsCapture = True
                     while ScreenCapture.StopWindowsCapture == True:
                         time.sleep(0.01)
                 ScreenCapture.Initialize()
-            ScreenCapture.monitor_x1, ScreenCapture.monitor_y1, ScreenCapture.monitor_x2, ScreenCapture.monitor_y2 = ValidateCaptureArea(ScreenIndex, game_x1, game_y1, game_x2, game_y2)
+            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, X1 - ScreenX, Y1 - ScreenY, X2 - ScreenX, Y2 - ScreenY)
+        WindowWidth = ScreenCapture.MonitorX2 - ScreenCapture.MonitorX1
+        WindowHeight = ScreenCapture.MonitorY2 - ScreenCapture.MonitorY1
         LastScreenCaptureCheck = CurrentTime
 
     try:
@@ -406,11 +420,11 @@ def plugin():
                 mask_green = cv2.inRange(frame, lower_green, upper_green)
                 filtered_frame_colored = cv2.bitwise_or(cv2.bitwise_and(frame, frame, mask=mask_red), cv2.bitwise_and(frame, frame, mask=mask_green))
                 filtered_frame_bw = cv2.cvtColor(filtered_frame_colored, cv2.COLOR_BGR2GRAY)
-                final_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                final_frame = frame
                 contours, _ = cv2.findContours(filtered_frame_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for contour in contours:
                     x, y, w, h = cv2.boundingRect(contour)
-                    if min_rect_size < w and windowheight * max_rect_size > w and min_rect_size < h and windowheight * max_rect_size > h:
+                    if min_rect_size < w and WindowHeight * max_rect_size > w and min_rect_size < h and WindowHeight * max_rect_size > h:
                         if w / h - 1 < width_height_ratio * 2 and w / h - 1 > -width_height_ratio:
                             red_pixel_count = cv2.countNonZero(mask_red[y:y+h, x:x+w])
                             green_pixel_count = cv2.countNonZero(mask_green[y:y+h, x:x+w])
@@ -456,11 +470,11 @@ def plugin():
                 combined_mask = cv2.bitwise_or(mask_red, cv2.bitwise_or(mask_green, mask_yellow))
                 filtered_frame_colored = cv2.bitwise_and(frame, frame, mask=combined_mask)
                 filtered_frame_bw = cv2.cvtColor(filtered_frame_colored, cv2.COLOR_BGR2GRAY)
-                final_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                final_frame = frame
                 contours, _ = cv2.findContours(filtered_frame_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for contour in contours:
                     x, y, w, h = cv2.boundingRect(contour)
-                    if min_rect_size < w and windowheight * max_rect_size > w and min_rect_size < h and windowheight * max_rect_size > h:
+                    if min_rect_size < w and WindowHeight * max_rect_size > w and min_rect_size < h and WindowHeight * max_rect_size > h:
                         if w / h - 1 < width_height_ratio * 2 and w / h - 1 > -width_height_ratio:
                             red_pixel_count = cv2.countNonZero(mask_red[y:y+h, x:x+w])
                             green_pixel_count = cv2.countNonZero(mask_green[y:y+h, x:x+w])
@@ -508,11 +522,11 @@ def plugin():
             # True: performancemode --- False: advancedmode
             mask_red = cv2.inRange(frame, lower_red, upper_red)
             filtered_frame_bw = mask_red.copy()
-            final_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            final_frame = frame
             contours, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
-                if min_rect_size < w and windowheight * max_rect_size > w and min_rect_size < h and windowheight * max_rect_size > h:
+                if min_rect_size < w and WindowHeight * max_rect_size > w and min_rect_size < h and WindowHeight * max_rect_size > h:
                     if w / h - 1 < width_height_ratio * 2 and w / h - 1 > -width_height_ratio:
                         red_pixel_count = cv2.countNonZero(mask_red[y:y+h, x:x+w])
                         total_pixels = w * h
@@ -549,13 +563,13 @@ def plugin():
                 mask_green = cv2.inRange(frame, lower_green_advanced, upper_green_advanced)
                 filtered_frame_colored = cv2.bitwise_or(cv2.bitwise_and(frame, frame, mask=mask_red), cv2.bitwise_and(frame, frame, mask=mask_green))
                 filtered_frame_bw = cv2.cvtColor(filtered_frame_colored, cv2.COLOR_BGR2GRAY)
-                final_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                final_frame = frame
                 contours, _ = cv2.findContours(filtered_frame_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for contour in contours:
                     x, y, w, h = cv2.boundingRect(contour)
                     istrue = False
                     if rectsizefilter == True:
-                        if min_rect_size < w and windowheight * max_rect_size > w and min_rect_size < h and windowheight * max_rect_size > h:
+                        if min_rect_size < w and WindowHeight * max_rect_size > w and min_rect_size < h and WindowHeight * max_rect_size > h:
                             istrue = True
                     else:
                         istrue = True
@@ -623,13 +637,13 @@ def plugin():
                 combined_mask = cv2.bitwise_or(mask_red, cv2.bitwise_or(mask_green, mask_yellow))
                 filtered_frame_colored = cv2.bitwise_and(frame, frame, mask=combined_mask)
                 filtered_frame_bw = cv2.cvtColor(filtered_frame_colored, cv2.COLOR_BGR2GRAY)
-                final_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+                final_frame = frame
                 contours, _ = cv2.findContours(filtered_frame_bw, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
                 for contour in contours:
                     x, y, w, h = cv2.boundingRect(contour)
                     istrue = False
                     if rectsizefilter == True:
-                        if min_rect_size < w and windowheight * max_rect_size > w and min_rect_size < h and windowheight * max_rect_size > h:
+                        if min_rect_size < w and WindowHeight * max_rect_size > w and min_rect_size < h and WindowHeight * max_rect_size > h:
                             istrue = True
                     else:
                         istrue = True
@@ -700,13 +714,13 @@ def plugin():
             # True: advancedmode, performancemode --- False:     
             mask_red = cv2.inRange(frame, lower_red_advanced, upper_red_advanced)
             filtered_frame_bw = mask_red.copy()
-            final_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            final_frame = frame
             contours, _ = cv2.findContours(mask_red, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
             for contour in contours:
                 x, y, w, h = cv2.boundingRect(contour)
                 istrue = False
                 if rectsizefilter == True:
-                    if min_rect_size < w and windowheight * max_rect_size > w and min_rect_size < h and windowheight * max_rect_size > h:
+                    if min_rect_size < w and WindowHeight * max_rect_size > w and min_rect_size < h and WindowHeight * max_rect_size > h:
                         istrue = True
                 else:
                     istrue = True
@@ -769,7 +783,7 @@ def plugin():
         if last_coordinates:
             for i in range(len(last_coordinates)):
                 last_x, last_y, w, h, state = last_coordinates[i]
-                closest = screen_width
+                closest = WindowWidth
                 nearestpoint = None
                 exists_in_trafficlights = False
                 saved_position = None
@@ -802,24 +816,24 @@ def plugin():
                         y1_classification = round(y1+y-h*4)
                         if y1_classification < 0:
                             y1_classification = 0
-                        elif y1_classification > frameFull.shape[0]:
-                            y1_classification = frameFull.shape[0]
+                        elif y1_classification > frame.shape[0]:
+                            y1_classification = frame.shape[0]
                         y2_classification = round(y1+y+h*4)
                         if y2_classification < 0:
                             y2_classification = 0
-                        elif y2_classification > frameFull.shape[0]:
-                            y2_classification = frameFull.shape[0]
+                        elif y2_classification > frame.shape[0]:
+                            y2_classification = frame.shape[0]
                         x1_classification = round(x1+x-w*2.5)
                         if x1_classification < 0:
                             x1_classification = 0
-                        elif x1_classification > frameFull.shape[1]:
-                            x1_classification = frameFull.shape[1]
+                        elif x1_classification > frame.shape[1]:
+                            x1_classification = frame.shape[1]
                         x2_classification = round(x1+x+w*2.5)
                         if x2_classification < 0:
                             x2_classification = 0
-                        elif x2_classification > frameFull.shape[1]:
-                            x2_classification = frameFull.shape[1]
-                        image_classification = frameFull[y1_classification:y2_classification, x1_classification:x2_classification]
+                        elif x2_classification > frame.shape[1]:
+                            x2_classification = frame.shape[1]
+                        image_classification = frame[y1_classification:y2_classification, x1_classification:x2_classification]
                         approved = ClassifyImage(image_classification)
                         trafficlights.append((nearestpoint, ((None, None, None), (head_x, head_z, angle, head_rotation_degrees_x), (head_x, head_z, angle, head_rotation_degrees_x)), new_id, approved))
 
@@ -956,7 +970,7 @@ def plugin():
         window_handle = ctypes.windll.user32.FindWindowW(None, 'Traffic Light Detection - Final')
         if window_handle == 0 or reset_window == True:
             cv2.namedWindow('Traffic Light Detection - Final', cv2.WINDOW_NORMAL)
-            cv2.resizeWindow('Traffic Light Detection - Final', round(windowwidth*windowscale), round(windowheight*windowscale))
+            cv2.resizeWindow('Traffic Light Detection - Final', round(WindowWidth*windowscale), round(WindowHeight*windowscale))
             cv2.setWindowProperty('Traffic Light Detection - Final', cv2.WND_PROP_TOPMOST, 1)
             if variables.OS == 'nt':
                 hwnd = win32gui.FindWindow(None, 'Traffic Light Detection - Final')
@@ -970,7 +984,7 @@ def plugin():
         window_handle = ctypes.windll.user32.FindWindowW(None, 'Traffic Light Detection - B/W')
         if window_handle == 0 or reset_window == True:
             cv2.namedWindow('Traffic Light Detection - B/W', cv2.WINDOW_NORMAL)
-            cv2.resizeWindow('Traffic Light Detection - B/W', round(windowwidth*windowscale), round(windowheight*windowscale))
+            cv2.resizeWindow('Traffic Light Detection - B/W', round(WindowWidth*windowscale), round(WindowHeight*windowscale))
             cv2.setWindowProperty('Traffic Light Detection - B/W', cv2.WND_PROP_TOPMOST, 1)
             if variables.OS == "nt":
                 hwnd = win32gui.FindWindow(None, 'Traffic Light Detection - B/W')

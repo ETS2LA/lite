@@ -51,6 +51,7 @@ TRANSLATION_CACHE = {}
 CUDA_AVAILABLE = False
 CUDA_INSTALLED = False
 CUDA_COMPATIBLE = False
+CUDA_DETAILS = None
 
 TABS = ["Menu", "Plugins", "Settings"]
 CANVAS_BOTTOM = settings.Get("UI", "Height", 400) - TITLE_BAR_HEIGHT - 1

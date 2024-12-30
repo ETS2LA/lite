@@ -14,10 +14,11 @@ import os
 
 
 def Initialize():
+    global LastScreenCaptureCheck
+    global LastCapture
+
     global SDKController
     global TruckSimAPI
-
-    global LastScreenCaptureCheck
 
     global METADATA
     global DEVICE
@@ -28,13 +29,22 @@ def Initialize():
     global IMG_CHANNELS
     global MODEL_OUTPUTS
 
+    LastScreenCaptureCheck = 0
+    LastCapture = 0
+
+    SDKController = SCSController()
+    TruckSimAPI = SCSTelemetry()
+
+    ScreenCapture.Initialize()
+    ShowImage.Initialize("EndToEnd", (0, 0, 0))
+
     METADATA = {"data": []}
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     MODEL = None
-    for file in os.listdir(variables.PATH):
+    for file in os.listdir(f"{variables.PATH}cache"):
         if file.endswith(".pt"):
-            MODEL = torch.jit.load(f"{variables.PATH}{file}", _extra_files=METADATA, map_location=DEVICE)
+            MODEL = torch.jit.load(f"{variables.PATH}cache/{file}", _extra_files=METADATA, map_location=DEVICE)
             break
     if MODEL == None:
         plugins.AddToQueue({"MANAGEPLUGINS": ["RouteAdvisorClassification", "Stop"]})
@@ -52,24 +62,6 @@ def Initialize():
             IMG_CHANNELS = str(item.split("#")[1])
         if "outputs" in item:
             MODEL_OUTPUTS = int(item.split("#")[1])
-
-    LastScreenCaptureCheck = 0
-
-    SDKController = SCSController()
-    TruckSimAPI = SCSTelemetry()
-
-    ScreenCapture.Initialize()
-    ShowImage.Initialize("RouteAdvisorClassification", (0, 0, 0))
-
-    global model
-    global device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print("Using device:", device)
-    for file in os.listdir(f"{variables.PATH}"):
-        if file.endswith(".pt"):
-            model = torch.jit.load(os.path.join(f"{variables.PATH}", file), device)
-            model.eval()
-            break
 
 
 def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
@@ -117,8 +109,7 @@ def Run(data):
     CurrentTime = time.time()
 
     global LastScreenCaptureCheck
-    global LastScale
-    global FRAME
+    global LastCapture
 
     global HeadRotationDegreesX
     global HeadRotationDegreesY
@@ -129,7 +120,7 @@ def Run(data):
 
     APIDATA = TruckSimAPI.update()
 
-    if LastScreenCaptureCheck + 0.5 < time.time():
+    if LastScreenCaptureCheck + 0.5 < CurrentTime:
         X1, Y1, X2, Y2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
         ScreenX, ScreenY, _, _ = ScreenCapture.GetScreenDimensions(ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2))
         if ScreenCapture.MonitorX1 != X1 - ScreenX or ScreenCapture.MonitorY1 != Y1 - ScreenY or ScreenCapture.MonitorX2 != X2 - ScreenX or ScreenCapture.MonitorY2 != Y2 - ScreenY:
@@ -207,8 +198,8 @@ def Run(data):
     Points = []
 
 
-    OffsetX = 50
-    OffsetZ = 14
+    OffsetX = 150
+    OffsetZ = 50
 
     PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
     PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
@@ -222,8 +213,8 @@ def Run(data):
         Points.append((PointX, PointZ))
 
 
-    OffsetX = 50
-    OffsetZ = -14
+    OffsetX = 150
+    OffsetZ = -50
 
     PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
     PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
@@ -273,64 +264,46 @@ def Run(data):
         SourcePoints = np.float32([TopLeft, TopRight, BottomLeft, BottomRight])
         DestinationPoints = np.float32([[0, 0], [CroppedWidth, 0], [0, CroppedHeight], [CroppedWidth, CroppedHeight]])
         Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
-        frame = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
+        Frame = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
 
 
-    width = Frame.shape[1]
-    height = Frame.shape[0]
-    frame = cv2.resize(frame, (100, 100))
-    image = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    image = np.array(image, dtype=np.float32) / 255.0
-    transform = transforms.Compose([
-        transforms.ToTensor(),
-    ])
-    image = transform(image).unsqueeze(0)
+    if LastCapture + 0.5 < CurrentTime and False:
+        LastCapture = CurrentTime
+        if os.path.exists(f"{variables.PATH}cache/DataCapture") == False:
+            os.makedirs(f"{variables.PATH}cache/DataCapture")
+        Name = str(round(CurrentTime, 2)).replace(".", "-")
+        cv2.imwrite(f"{variables.PATH}cache/DataCapture/{Name}.png", Frame)
+        with open(f"{variables.PATH}cache/DataCapture/{Name}.txt", "w") as f:
+            f.write(str(APIDATA["truckFloat"]["userSteer"]))
+
+
+    Image = np.array(Frame, dtype=np.float32)
+    if IMG_CHANNELS == 'Grayscale' or IMG_CHANNELS == 'Binarize':
+        Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
+    if IMG_CHANNELS == 'RG':
+        Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
+    elif IMG_CHANNELS == 'GB':
+        Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
+    elif IMG_CHANNELS == 'RB':
+        Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
+    elif IMG_CHANNELS == 'R':
+        Image = Image[:, :, 0]
+        Image = np.expand_dims(Image, axis=2)
+    elif IMG_CHANNELS == 'G':
+        Image = Image[:, :, 1]
+        Image = np.expand_dims(Image, axis=2)
+    elif IMG_CHANNELS == 'B':
+        Image = Image[:, :, 2]
+        Image = np.expand_dims(Image, axis=2)
+    Image = cv2.resize(Image, (IMG_WIDTH, IMG_HEIGHT))
+    Image = Image / 255.0
+    if IMG_CHANNELS == 'Binarize':
+        Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
+    Image = transforms.ToTensor()(Image).unsqueeze(0).to(DEVICE)
     with torch.no_grad():
-        prediction = model(image.to(device))   
-    prediction = prediction.squeeze(0).permute(1, 2, 0).cpu().numpy()
-    frame = cv2.cvtColor(frame, cv2.COLOR_BGR2BGRA)
-    prediction_overlay = cv2.cvtColor(prediction, cv2.COLOR_GRAY2BGRA)
-    prediction_overlay[:, :, 2] = 0
-    prediction_overlay = prediction_overlay.astype(np.uint8) * 25   
-    frame = cv2.addWeighted(frame, 1, prediction_overlay, 0.5, 0)
-    non_black_pixels = np.where(prediction_overlay[:, :, 0] != 0)
-    if len(non_black_pixels[0]) > 0:
-        x_center = int(np.mean(non_black_pixels[1]))
-    else:
-        x_center = width // 2
-    cv2.line(frame, (x_center, 0), (x_center, height), (0, 255, 0), 1)
-    Steering = (x_center/frame.shape[1] - 0.5) * 0.3 - 0.012   
-    SDKController.steering = float(Steering)
+        Output = float(np.array(MODEL(Image)[0].tolist()))
+
+    SDKController.steering = Output / -30
 
 
-
-    #Image = np.array(Frame, dtype=np.float32)
-    #if IMG_CHANNELS == 'Grayscale' or IMG_CHANNELS == 'Binarize':
-    #    Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
-    #if IMG_CHANNELS == 'RG':
-    #    Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
-    #elif IMG_CHANNELS == 'GB':
-    #    Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
-    #elif IMG_CHANNELS == 'RB':
-    #    Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
-    #elif IMG_CHANNELS == 'R':
-    #    Image = Image[:, :, 0]
-    #    Image = np.expand_dims(Image, axis=2)
-    #elif IMG_CHANNELS == 'G':
-    #    Image = Image[:, :, 1]
-    #    Image = np.expand_dims(Image, axis=2)
-    #elif IMG_CHANNELS == 'B':
-    #    Image = Image[:, :, 2]
-    #    Image = np.expand_dims(Image, axis=2)
-    #Image = cv2.resize(Image, (IMG_WIDTH, IMG_HEIGHT))
-    #Image = Image / 255.0
-    #if IMG_CHANNELS == 'Binarize':
-    #    Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
-
-    #Image = transforms.ToTensor()(Image).unsqueeze(0).to(DEVICE)
-    #with torch.no_grad():
-    #    Output = float(np.array(MODEL(Image)[0].tolist()))
-
-    #SDKController.steering = Output
-
-    ShowImage.Show("RouteAdvisorClassification", frame)
+    ShowImage.Show("EndToEnd", Frame)

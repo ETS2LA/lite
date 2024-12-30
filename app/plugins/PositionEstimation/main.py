@@ -56,65 +56,65 @@ def Run(Data):
     global A, Alpha, ADragStart, ADragEnd
     global B, Beta, BDragStart, BDragEnd
 
-    APIDATA = TruckSimAPI.update()
+    #APIDATA = TruckSimAPI.update()
 
-    if LastScreenCaptureCheck + 0.5 < CurrentTime:
-        WindowX1, WindowY1, WindowX2, WindowY2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
-        if ScreenCapture.MonitorX1 != WindowX1 or ScreenCapture.MonitorY1 != WindowY1 or ScreenCapture.MonitorX2!= WindowX2 or ScreenCapture.MonitorY2 != WindowY2:
-            ScreenIndex = ScreenCapture.GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
-            if ScreenCapture.Display != ScreenIndex - 1:
-                if ScreenCapture.CaptureLibrary == "WindowsCapture":
-                    ScreenCapture.StopWindowsCapture = True
-                    while ScreenCapture.StopWindowsCapture == True:
-                        time.sleep(0.01)
-                ScreenCapture.Initialize()
-            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, WindowX1, WindowY1, WindowX2, WindowY2)
-        LastScreenCaptureCheck = CurrentTime
+    #if LastScreenCaptureCheck + 0.5 < CurrentTime:
+    #    WindowX1, WindowY1, WindowX2, WindowY2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+    #    if ScreenCapture.MonitorX1 != WindowX1 or ScreenCapture.MonitorY1 != WindowY1 or ScreenCapture.MonitorX2!= WindowX2 or ScreenCapture.MonitorY2 != WindowY2:
+    #        ScreenIndex = ScreenCapture.GetScreenIndex((WindowX1 + WindowX2) / 2, (WindowY1 + WindowY2) / 2)
+    #        if ScreenCapture.Display != ScreenIndex - 1:
+    #            if ScreenCapture.CaptureLibrary == "WindowsCapture":
+    #                ScreenCapture.StopWindowsCapture = True
+    #                while ScreenCapture.StopWindowsCapture == True:
+    #                    time.sleep(0.01)
+    #            ScreenCapture.Initialize()
+    #        ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, WindowX1, WindowY1, WindowX2, WindowY2)
+    #    LastScreenCaptureCheck = CurrentTime
 
-    Frame = ScreenCapture.Capture(ImageType="cropped")
-    if type(Frame) == type(None) or Frame.shape[0] <= 0 or Frame.shape[1] <= 0:
-        return
+    #Frame = ScreenCapture.Capture(ImageType="cropped")
+    #if type(Frame) == type(None) or Frame.shape[0] <= 0 or Frame.shape[1] <= 0:
+    #    return
 
     Frame = EmptyFrame.copy()
 
-    TruckX = APIDATA["truckPlacement"]["coordinateX"]
-    TruckY = APIDATA["truckPlacement"]["coordinateY"]
-    TruckZ = APIDATA["truckPlacement"]["coordinateZ"]
-    TruckRotationX = APIDATA["truckPlacement"]["rotationX"]
-    TruckRotationY = APIDATA["truckPlacement"]["rotationY"]
-    TruckRotationZ = 0
+    #TruckX = APIDATA["truckPlacement"]["coordinateX"]
+    #TruckY = APIDATA["truckPlacement"]["coordinateY"]
+    #TruckZ = APIDATA["truckPlacement"]["coordinateZ"]
+    #TruckRotationX = APIDATA["truckPlacement"]["rotationX"]
+    #TruckRotationY = APIDATA["truckPlacement"]["rotationY"]
+    #TruckRotationZ = 0
 
-    CabinOffsetX = APIDATA["headPlacement"]["cabinOffsetX"] + APIDATA["configVector"]["cabinPositionX"]
-    CabinOffsetY = APIDATA["headPlacement"]["cabinOffsetY"] + APIDATA["configVector"]["cabinPositionY"]
-    CabinOffsetZ = APIDATA["headPlacement"]["cabinOffsetZ"] + APIDATA["configVector"]["cabinPositionZ"]
-    CabinOffsetRotationX = APIDATA["headPlacement"]["cabinOffsetrotationX"]
-    CabinOffsetRotationY = APIDATA["headPlacement"]["cabinOffsetrotationY"]
-    CabinOffsetRotationZ = 0
+    #CabinOffsetX = APIDATA["headPlacement"]["cabinOffsetX"] + APIDATA["configVector"]["cabinPositionX"]
+    #CabinOffsetY = APIDATA["headPlacement"]["cabinOffsetY"] + APIDATA["configVector"]["cabinPositionY"]
+    #CabinOffsetZ = APIDATA["headPlacement"]["cabinOffsetZ"] + APIDATA["configVector"]["cabinPositionZ"]
+    #CabinOffsetRotationX = APIDATA["headPlacement"]["cabinOffsetrotationX"]
+    #CabinOffsetRotationY = APIDATA["headPlacement"]["cabinOffsetrotationY"]
+    #CabinOffsetRotationZ = 0
 
-    HeadOffsetX = APIDATA["headPlacement"]["headOffsetX"] + APIDATA["configVector"]["headPositionX"] + CabinOffsetX
-    HeadOffsetY = APIDATA["headPlacement"]["headOffsetY"] + APIDATA["configVector"]["headPositionY"] + CabinOffsetY
-    HeadOffsetZ = APIDATA["headPlacement"]["headOffsetZ"] + APIDATA["configVector"]["headPositionZ"] + CabinOffsetZ
-    HeadOffsetRotationX = APIDATA["headPlacement"]["headOffsetrotationX"]
-    HeadOffsetRotationY = APIDATA["headPlacement"]["headOffsetrotationY"]
-    HeadOffsetRotationZ = 0
+    #HeadOffsetX = APIDATA["headPlacement"]["headOffsetX"] + APIDATA["configVector"]["headPositionX"] + CabinOffsetX
+    #HeadOffsetY = APIDATA["headPlacement"]["headOffsetY"] + APIDATA["configVector"]["headPositionY"] + CabinOffsetY
+    #HeadOffsetZ = APIDATA["headPlacement"]["headOffsetZ"] + APIDATA["configVector"]["headPositionZ"] + CabinOffsetZ
+    #HeadOffsetRotationX = APIDATA["headPlacement"]["headOffsetrotationX"]
+    #HeadOffsetRotationY = APIDATA["headPlacement"]["headOffsetrotationY"]
+    #HeadOffsetRotationZ = 0
 
-    TruckRotationDegreesX = TruckRotationX * 360
-    TruckRotationRadiansX = -math.radians(TruckRotationDegreesX)
+    #TruckRotationDegreesX = TruckRotationX * 360
+    #TruckRotationRadiansX = -math.radians(TruckRotationDegreesX)
 
-    HeadRotationDegreesX = (TruckRotationX + CabinOffsetRotationX + HeadOffsetRotationX) * 360
-    while HeadRotationDegreesX > 360:
-        HeadRotationDegreesX = HeadRotationDegreesX - 360
+    #HeadRotationDegreesX = (TruckRotationX + CabinOffsetRotationX + HeadOffsetRotationX) * 360
+    #while HeadRotationDegreesX > 360:
+    #    HeadRotationDegreesX = HeadRotationDegreesX - 360
 
-    HeadRotationDegreesY = (TruckRotationY + CabinOffsetRotationY + HeadOffsetRotationY) * 360
+    #HeadRotationDegreesY = (TruckRotationY + CabinOffsetRotationY + HeadOffsetRotationY) * 360
 
-    HeadRotationDegreesZ = (TruckRotationZ + CabinOffsetRotationZ + HeadOffsetRotationZ) * 360
+    #HeadRotationDegreesZ = (TruckRotationZ + CabinOffsetRotationZ + HeadOffsetRotationZ) * 360
 
-    PointX = HeadOffsetX
-    PointY = HeadOffsetY
-    PointZ = HeadOffsetZ
-    HeadX = PointX * math.cos(TruckRotationRadiansX) - PointZ * math.sin(TruckRotationRadiansX) + TruckX
-    HeadY = PointY + TruckY
-    HeadZ = PointX * math.sin(TruckRotationRadiansX) + PointZ * math.cos(TruckRotationRadiansX) + TruckZ
+    #PointX = HeadOffsetX
+    #PointY = HeadOffsetY
+    #PointZ = HeadOffsetZ
+    #HeadX = PointX * math.cos(TruckRotationRadiansX) - PointZ * math.sin(TruckRotationRadiansX) + TruckX
+    #HeadY = PointY + TruckY
+    #HeadZ = PointX * math.sin(TruckRotationRadiansX) + PointZ * math.cos(TruckRotationRadiansX) + TruckZ
 
 
     try:
@@ -159,36 +159,41 @@ def Run(Data):
 
 
     if A[0] != None and A[1] != None and B[0] != None and B[1] != None:
-        cv2.line(Frame, (round(A[0]), round(A[1])), (round(B[0]), round(B[1])), (100, 100, 100), round((Frame.shape[0] + Frame.shape[1]) / 400))
+        cv2.line(Frame, (round(A[0]), round(A[1])), (round(B[0]), round(B[1])), (100, 100, 100), round((Frame.shape[0] + Frame.shape[1]) / 400), cv2.LINE_AA)
 
 
     if ADragStart != (None, None) and ADragEnd != (None, None):
-        cv2.line(Frame, (round(ADragStart[0]), round(ADragStart[1])), (round(ADragEnd[0]), round(ADragEnd[1])), (100, 100, 180), round((Frame.shape[0] + Frame.shape[1]) / 400))
+        cv2.line(Frame, (round(ADragStart[0]), round(ADragStart[1])), (round(ADragEnd[0]), round(ADragEnd[1])), (100, 100, 180), round((Frame.shape[0] + Frame.shape[1]) / 400), cv2.LINE_AA)
 
     if BDragStart != (None, None) and BDragEnd != (None, None):
-        cv2.line(Frame, (round(BDragStart[0]), round(BDragStart[1])), (round(BDragEnd[0]), round(BDragEnd[1])), (100, 180, 100), round((Frame.shape[0] + Frame.shape[1]) / 400))
+        cv2.line(Frame, (round(BDragStart[0]), round(BDragStart[1])), (round(BDragEnd[0]), round(BDragEnd[1])), (100, 180, 100), round((Frame.shape[0] + Frame.shape[1]) / 400), cv2.LINE_AA)
 
 
     if A[0] != None and A[1] != None:
-        cv2.circle(Frame, (round(A[0]), round(A[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (50, 50, 180), -1)
+        cv2.circle(Frame, (round(A[0]), round(A[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (50, 50, 180), -1, cv2.LINE_AA)
 
     if B[0] != None and B[1] != None:
-        cv2.circle(Frame, (round(B[0]), round(B[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (50, 180, 50), -1)
+        cv2.circle(Frame, (round(B[0]), round(B[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (50, 180, 50), -1, cv2.LINE_AA)
 
 
     if A != (None, None) and Alpha != None and B != (None, None) and Beta != None:
-        if Alpha + Beta > 180:
-            print("No C possible!")
-        else:
+        try:
 
-            b = (math.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2) / math.sin(DegToRad(180 - Alpha - Beta))) * math.sin(DegToRad(Beta))
-            Cx = math.sin(DegToRad(180 - Alpha)) * b
-            Cy =  math.cos(DegToRad(180 - Alpha)) * b
+            AngleAB = (90 - math.degrees(math.atan((B[1] - A[1]) / (B[0] - A[0])))) if (B[0] - A[0]) != 0 else 0
+            print(AngleAB)
+            TempAlpha = Alpha + AngleAB
+            TempBeta = Beta + AngleAB
+
+            b = (math.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2) / math.sin(DegToRad(180 - TempAlpha - TempBeta))) * math.sin(DegToRad(TempBeta))
+            Cx = math.sin(DegToRad(180 - TempAlpha)) * b
+            Cy =  math.cos(DegToRad(180 - TempAlpha)) * b
 
             C = A[0] - Cx, A[1] + Cy
 
-            cv2.circle(Frame, (round(C[0]), round(C[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (180, 180, 180), -1)
+            cv2.circle(Frame, (round(C[0]), round(C[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (180, 180, 180), -1, cv2.LINE_AA)
 
+        except:
+            pass
 
     LastMousePresses = LeftClicked, RightClicked
 

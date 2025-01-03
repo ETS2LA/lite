@@ -287,8 +287,9 @@ def Run(data):
         ImageRegion = Image[CropStartZ:CropEndZ, CropStartX:CropEndX]
 
         # Replace non-black pixels from the image onto the canvas
-        Mask = cv2.cvtColor(ImageRegion, cv2.COLOR_BGR2GRAY) > 0
-        Region[Mask] = ImageRegion[Mask]
+        if Region.shape == ImageRegion.shape and ImageRegion.size > 0:
+            Mask = cv2.cvtColor(ImageRegion, cv2.COLOR_BGR2GRAY) > 0
+            Region[Mask] = ImageRegion[Mask]
 
     # Replace FRAME with the updated Canvas
     Frame = Canvas

@@ -47,8 +47,8 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     NewY = RelativeY * CosPitch - NewZ * SinPitch
     FinalZ = NewZ * CosPitch + RelativeY * SinPitch
 
-    CosRoll = math.cos(math.radians(HeadRoll))
-    SinRoll = math.sin(math.radians(HeadRoll))
+    CosRoll = math.cos(math.radians(-HeadRoll))
+    SinRoll = math.sin(math.radians(-HeadRoll))
     FinalX = NewX * CosRoll - NewY * SinRoll
     FinalY = NewY * CosRoll + NewX * SinRoll
 
@@ -134,7 +134,7 @@ def Run(data):
 
     HeadRotationDegreesY = (TruckRotationY + CabinOffsetRotationY + HeadOffsetRotationY) * 360
 
-    HeadRotationDegreesZ = (TruckRotationZ + CabinOffsetRotationZ + HeadOffsetRotationZ) * 360
+    HeadRotationDegreesZ = (TruckRotationZ + CabinOffsetRotationZ + HeadOffsetRotationZ) * 180
 
     PointX = HeadOffsetX
     PointY = HeadOffsetY
@@ -252,46 +252,53 @@ def Run(data):
         except:
             pass
 
-    # Initialize the canvas to overlay images
     Canvas = FRAME.copy()
-    CenterX, CenterZ = 250, 250  # Center of the canvas, corresponding to TruckX, TruckZ
+    CenterX, CenterZ = 250, 250
 
     for i, (Image, Points) in enumerate(Images):
-        # Compute the center of the image in terms of (TruckX, TruckZ)
-        MinX = min(point[0] for point in Points)
-        MinZ = min(point[1] for point in Points)
-        MaxX = max(point[0] for point in Points)
-        MaxZ = max(point[1] for point in Points)
+        MinX = min(Point[0] for Point in Points)
+        MinZ = min(Point[1] for Point in Points)
+        MaxX = max(Point[0] for Point in Points)
+        MaxZ = max(Point[1] for Point in Points)
 
         CenterImageX = (MaxX + MinX) / 2
         CenterImageZ = (MaxZ + MinZ) / 2
 
-        # Calculate the position to place the image on the canvas
         OffsetX = int((CenterImageX - TruckX) * 12 + CenterX - Image.shape[1] / 2)
         OffsetZ = int((CenterImageZ - TruckZ) * 12 + CenterZ - Image.shape[0] / 2)
 
-        # Ensure the region of interest is within bounds
         StartX = max(0, OffsetX)
         StartZ = max(0, OffsetZ)
         EndX = min(Canvas.shape[1], OffsetX + Image.shape[1])
         EndZ = min(Canvas.shape[0], OffsetZ + Image.shape[0])
 
-        # Compute corresponding image cropping
         CropStartX = max(0, -OffsetX)
         CropStartZ = max(0, -OffsetZ)
         CropEndX = Image.shape[1] - max(0, (OffsetX + Image.shape[1]) - Canvas.shape[1])
         CropEndZ = Image.shape[0] - max(0, (OffsetZ + Image.shape[0]) - Canvas.shape[0])
 
-        # Overlay the image region onto the canvas
         Region = Canvas[StartZ:EndZ, StartX:EndX]
         ImageRegion = Image[CropStartZ:CropEndZ, CropStartX:CropEndX]
 
-        # Replace non-black pixels from the image onto the canvas
         if Region.shape == ImageRegion.shape and ImageRegion.size > 0:
             Mask = cv2.cvtColor(ImageRegion, cv2.COLOR_BGR2GRAY) > 0
             Region[Mask] = ImageRegion[Mask]
 
-    # Replace FRAME with the updated Canvas
     Frame = Canvas
+
+    def ConvertToFrameCoordinate(X, Z):
+        Scale = 12
+        CenterX, CenterZ = 180, 180  # Some magic numbers, not correct
+
+        FrameX = int((X) * Scale + CenterX)
+        FrameZ = int((Z) * Scale + CenterZ)
+
+        return FrameX, FrameZ
+
+    for i in range(len(TruckWheelPointsX)):
+        PointX = TruckWheelPointsX[i] * math.cos(TruckRotationRadiansX) - TruckWheelPointsZ[i] * math.sin(TruckRotationRadiansX)
+        PointY = TruckY + TruckWheelPointsY[i]
+        PointZ = TruckWheelPointsZ[i] * math.cos(TruckRotationRadiansX) + TruckWheelPointsX[i] * math.sin(TruckRotationRadiansX)
+        cv2.circle(Frame, [*ConvertToFrameCoordinate(PointX, PointZ)], 5, (0, 0, 255), 2)
 
     ShowImage.Show(Name="VisionMap", Frame=Frame)

@@ -39,12 +39,16 @@ def Initialize():
     ScreenCapture.Initialize()
 
 
-def DegToRad(Angle):
-    return math.radians(Angle / 2 - 180)
+def ArcTan(Value):
+    return math.degrees(math.atan(Value))
 
 
-def RadToDeg(Angle):
-    return math.degrees(Angle) * 2 + 180
+def Cos(Value):
+    return math.cos(math.radians(Value))
+
+
+def Sin(Value):
+    return math.sin(math.radians(Value))
 
 
 def Run(Data):
@@ -146,7 +150,8 @@ def Run(Data):
     elif LastLeftClicked == True and LeftClicked == False:
         ADragEnd = MouseX * (Frame.shape[1] - 1), MouseY * (Frame.shape[0] - 1)
         if ADragEnd[0] != ADragStart[0]:
-            Alpha = 180 - RadToDeg(math.atan((ADragEnd[1] - ADragStart[1]) / (ADragEnd[0] - ADragStart[0])))
+            Alpha = -ArcTan((ADragEnd[0] - ADragStart[0]) / (ADragEnd[1] - ADragStart[1]))
+            print(Alpha)
 
     if LastRightClicked == False and RightClicked == True:
         B = MouseX * (Frame.shape[1] - 1), MouseY * (Frame.shape[0] - 1)
@@ -155,7 +160,8 @@ def Run(Data):
     elif LastRightClicked == True and RightClicked == False:
         BDragEnd = MouseX * (Frame.shape[1] - 1), MouseY * (Frame.shape[0] - 1)
         if BDragEnd[0] != BDragStart[0]:
-            Beta = RadToDeg(math.atan((BDragEnd[1] - BDragStart[1]) / (BDragEnd[0] - BDragStart[0])))
+            Beta = -ArcTan((BDragEnd[0] - BDragStart[0]) / (BDragEnd[1] - BDragStart[1]))
+            print(Beta)
 
 
     if A[0] != None and A[1] != None and B[0] != None and B[1] != None:
@@ -179,16 +185,18 @@ def Run(Data):
     if A != (None, None) and Alpha != None and B != (None, None) and Beta != None:
         try:
 
-            AngleAB = (90 - math.degrees(math.atan((B[1] - A[1]) / (B[0] - A[0])))) if (B[0] - A[0]) != 0 else 0
-            print(AngleAB)
-            TempAlpha = Alpha + AngleAB
+            AngleAB = (90 - ArcTan((B[1] - A[1]) / (B[0] - A[0]))) if (B[0] - A[0]) != 0 else 0
+            DistanceAB = math.sqrt((B[0] - A[0]) ** 2 + (B[1] - A[1]) ** 2)
+
+            TempAlpha = 180 - Alpha - AngleAB
             TempBeta = Beta + AngleAB
 
-            b = (math.sqrt((A[0] - B[0]) ** 2 + (A[1] - B[1]) ** 2) / math.sin(DegToRad(180 - TempAlpha - TempBeta))) * math.sin(DegToRad(TempBeta))
-            Cx = math.sin(DegToRad(180 - TempAlpha)) * b
-            Cy =  math.cos(DegToRad(180 - TempAlpha)) * b
+            b = (DistanceAB / Sin(180 - TempAlpha - TempBeta)) * Sin(TempBeta)
 
-            C = A[0] - Cx, A[1] + Cy
+            Cx = A[0] + Sin(Alpha) * b
+            Cy = A[1] + Cos(Alpha) * -b
+
+            C = Cx, Cy
 
             cv2.circle(Frame, (round(C[0]), round(C[1])), round((Frame.shape[0] + Frame.shape[1]) / 200), (180, 180, 180), -1, cv2.LINE_AA)
 

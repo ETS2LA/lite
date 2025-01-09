@@ -5,6 +5,7 @@ import src.settings as settings
 
 import dearpygui.dearpygui as dpg
 import multiprocessing
+import keyboard
 import ctypes
 import math
 import time
@@ -14,6 +15,15 @@ if variables.OS == "nt":
     import win32gui
 
 PROCESS = multiprocessing.current_process().name
+
+
+global A, Alpha, B, Beta, BRotation, C
+A = None, None
+Alpha = None
+B = None, None
+BRotation = 0
+Beta = None
+C = None, None
 
 
 def Initialize():
@@ -168,8 +178,8 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     NewY = RelativeY * CosPitch - NewZ * SinPitch
     FinalZ = NewZ * CosPitch + RelativeY * SinPitch
 
-    CosRoll = math.cos(math.radians(HeadRoll))
-    SinRoll = math.sin(math.radians(HeadRoll))
+    CosRoll = math.cos(math.radians(-HeadRoll))
+    SinRoll = math.sin(math.radians(-HeadRoll))
     FinalX = NewX * CosRoll - NewY * SinRoll
     FinalY = NewY * CosRoll + NewX * SinRoll
 
@@ -190,6 +200,34 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     return ScreenX, ScreenY, Distance
 
 
+def ConvertToAngle(X, Y):
+    if X == None or Y == None:
+        return 0, 0
+    _, _, WindowWidth, WindowHeight = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
+    WindowDistance = ((WindowPosition[3] - WindowPosition[1]) * (4 / 3) / 2) / math.tan(math.radians(variables.FOV) / 2)
+    AngleX = math.atan2(X - WindowWidth / 2, WindowDistance) * (180 / math.pi)
+    AngleY = math.atan2(Y - WindowHeight / 2, WindowDistance) * (180 / math.pi)
+    HeadRotationX = HeadOffsetRotationX * 360
+    HeadRotationX = HeadRotationX - 360 if HeadRotationX > 180 else HeadRotationX
+    HeadRotationY = HeadOffsetRotationY * 360
+    HeadRotationY = HeadRotationY - 360 if HeadRotationY > 180 else HeadRotationY
+    AngleX = -HeadRotationX + AngleX
+    AngleY = -HeadRotationY + AngleY
+    return AngleX, AngleY
+
+
+def ArcTan(Value):
+    return math.degrees(math.atan(Value))
+
+
+def Cos(Value):
+    return math.cos(math.radians(Value))
+
+
+def Sin(Value):
+    return math.sin(math.radians(Value))
+
+
 def Run(Data):
     global LastWindowPosition
     global WindowPosition
@@ -197,6 +235,8 @@ def Run(Data):
     global HeadRotationDegreesX
     global HeadRotationDegreesY
     global HeadRotationDegreesZ
+    global HeadOffsetRotationX
+    global HeadOffsetRotationY
     global HeadX
     global HeadY
     global HeadZ
@@ -243,7 +283,7 @@ def Run(Data):
 
     HeadRotationDegreesY = (TruckRotationY + CabinOffsetRotationY + HeadOffsetRotationY) * 360
 
-    HeadRotationDegreesZ = (TruckRotationZ + CabinOffsetRotationZ + HeadOffsetRotationZ) * 360
+    HeadRotationDegreesZ = (TruckRotationZ + CabinOffsetRotationZ + HeadOffsetRotationZ) * 180
 
     PointX = HeadOffsetX
     PointY = HeadOffsetY
@@ -279,6 +319,60 @@ def Run(Data):
     #DrawPolygon(Points=[(125, 0), (125, 125), (0, 125)], Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2, Closed=False)
     #DrawCircle(X=0, Y=0, R=100, Color=(255, 255, 255), FillColor=(0, 0, 0, 127), Thickness=2)
     #DrawPolygon(Points=[(X1, Y1), (X2, Y2), (X3, Y3)], Color=(255, 255, 255, Alpha), FillColor=(127, 127, 127, Alpha / 2), Thickness=2, Closed=True)
+
+
+    TargetX = 10361.64
+    TargetY = 44.34
+    TargetZ = -9230.61
+
+    X, Y, D = ConvertToScreenCoordinate(X=TargetX, Y=TargetY, Z=TargetZ)
+    DrawCircle(Center=(X, Y), R=10, Color=(0, 255, 0), FillColor=(0, 127, 0, 127), Thickness=2)
+
+    global A, Alpha, B, Beta, BRotation, C
+
+    A = HeadX, HeadZ
+    ScreenX, ScreenY, _ = ConvertToScreenCoordinate(X=TargetX, Y=TargetY, Z=TargetZ)
+    Alpha = ConvertToAngle(X=ScreenX, Y=ScreenY)[0]
+
+
+    if keyboard.is_pressed("x"):
+        B = HeadX, HeadZ
+        BRotation = TruckRotationDegreesX
+        ScreenX, ScreenY, _ = ConvertToScreenCoordinate(X=TargetX, Y=TargetY, Z=TargetZ)
+        Beta = ConvertToAngle(X=ScreenX, Y=ScreenY)[0]
+
+
+    if A != (None, None) and Alpha != None and B != (None, None) and Beta != None:
+        try:
+
+            AngleAB = 0
+            DistanceAB = math.sqrt((B[0] - A[0]) ** 2 + (B[1] - A[1]) ** 2)
+
+            TempAlpha = 180 - Alpha - AngleAB
+            TempBeta = Beta + AngleAB
+
+            #print(f"AngleAB: {round(AngleAB, 1)}, DistanceAB: {round(DistanceAB, 1)}, TempAlpha: {round(TempAlpha, 1)}, TempBeta: {round(TempBeta, 1)}")
+
+            b = abs((DistanceAB / Sin(180 - TempAlpha - TempBeta)) * Sin(TempBeta))
+
+            OffsetX = Sin(Alpha) * b
+            OffsetZ = Cos(Alpha) * -b
+
+            Cx = A[0] + OffsetX * Cos(TruckRotationDegreesX) + OffsetZ * Sin(TruckRotationDegreesX)
+            Cy = A[1] + OffsetZ * Cos(TruckRotationDegreesX) - OffsetX * Sin(TruckRotationDegreesX)
+
+            C = Cx, Cy
+
+            #print(f"True: X: {round(TargetX, 1)} Z: {round(TargetZ, 1)} Calculated: X: {round(C[0], 1)} Z: {round(C[1], 1)}, Alpha: {round(Alpha, 1)}, Beta: {round(Beta, 1)}, OffsetX: {round(Sin(Alpha) * b, 1)}, OffsetZ: {round(Cos(Alpha) * b, 1)}, b: {round(b, 1)}")
+
+        except:
+            pass
+
+    if C != (None, None):
+        ScreenX, ScreenY, _ = ConvertToScreenCoordinate(X=C[0], Y=TargetY, Z=C[1])
+        DrawCircle(Center=(ScreenX, ScreenY), R=10, Color=(255, 0, 0), FillColor=(127, 0, 0, 127), Thickness=2)
+
+
 
 
     for Plugin in Data.items():

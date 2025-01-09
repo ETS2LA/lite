@@ -191,7 +191,7 @@ def Run(Data):
             TempAlpha = 180 - Alpha - AngleAB
             TempBeta = Beta + AngleAB
 
-            b = (DistanceAB / Sin(180 - TempAlpha - TempBeta)) * Sin(TempBeta)
+            b = abs((DistanceAB / Sin(180 - TempAlpha - TempBeta)) * Sin(TempBeta))
 
             Cx = A[0] + Sin(Alpha) * b
             Cy = A[1] + Cos(Alpha) * -b

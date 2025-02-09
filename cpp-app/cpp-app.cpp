@@ -19,7 +19,7 @@ int main() {
 	PyTorch::LoadExampleModel();
 
 	PyTorch::ExampleTensor();
-	PyTorch::Initialize("Glas42", "NavigationDetectionAI", true);
+	PyTorch::Initialize("OleFranz", "NavigationDetectionAI", true);
 	PyTorch::Loaded("NavigationDetectionAI");
 
 

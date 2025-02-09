@@ -51,7 +51,7 @@ def Initialize():
     IndicatorLeftResponseTimer = 0
     IndicatorRightResponseTimer = 0
 
-    pytorch.Initialize(Owner="Glas42", Model="NavigationDetectionAI")
+    pytorch.Initialize(Owner="OleFranz", Model="NavigationDetectionAI")
     pytorch.Load("NavigationDetectionAI")
 
     SDKController = SCSController()

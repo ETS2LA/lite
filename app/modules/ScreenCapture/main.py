@@ -330,7 +330,7 @@ def GetRouteAdvisorPosition(Side="Automatic"):
         global RouteAdvisorTabCorrect
 
         if "RouteAdvisorClassification" not in pytorch.MODELS:
-            pytorch.Initialize(Owner="Glas42", Model="RouteAdvisorClassification")
+            pytorch.Initialize(Owner="OleFranz", Model="RouteAdvisorClassification")
             pytorch.Load("RouteAdvisorClassification")
         if pytorch.Loaded("RouteAdvisorClassification") == False:
             return RightMapTopLeft, RightMapBottomRight, RightArrowTopLeft, RightArrowBottomRight

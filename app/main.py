@@ -1,3 +1,7 @@
+import os
+import sys
+sys.path.append(os.path.dirname(__file__))
+
 import src.translate as translate
 import src.variables as variables
 import src.settings as settings
@@ -10,8 +14,6 @@ import src.server as server
 import src.ui as ui
 
 import time
-import sys
-import os
 
 
 if __name__ == '__main__':

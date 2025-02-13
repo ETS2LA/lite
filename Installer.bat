@@ -104,24 +104,34 @@ if exist "%PythonSavePath%" (
 )
 
 
+echo Editing Environment...
+
+set "PATH=%PythonExtractPath%;%PythonExtractPath%\Scripts;%GitExtractPath%\bin"
+
+
+echo Installing requirements...
+
+python -m pip install -r config/requirements.txt -q
+
+
 echo Done.
 echo.
 
 
 echo Git Version:
-%GitExtractPath%\bin\git.exe --version
+git --version
 echo.
 
 echo Python Version:
-%PythonExtractPath%\python.exe  --version
+python  --version
 echo.
 
 echo Pip Version:
-%PythonExtractPath%\python.exe -m pip --version
+python -m pip --version
 echo.
 
 echo Pip Packages:
-%PythonExtractPath%\python.exe -m pip list
+python -m pip list
 
 
 echo.

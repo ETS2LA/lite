@@ -1,9 +1,9 @@
+from ctypes import windll, byref, sizeof, c_int
 import src.variables as variables
+import win32con
+import win32gui
 import cv2
 
-if variables.OS == "nt":
-    from ctypes import windll, byref, sizeof, c_int
-    import win32con, win32gui
 
 WINDOWS = {}
 
@@ -28,12 +28,11 @@ def CreateWindow(Name=""):
     if WINDOWS[Name]["Size"][0] != None and WINDOWS[Name]["Size"][1] != None:
         cv2.resizeWindow(Name, WINDOWS[Name]["Size"][0], WINDOWS[Name]["Size"][1])
 
-    if variables.OS == "nt":
-        HWND = win32gui.FindWindow(None, Name)
-        windll.dwmapi.DwmSetWindowAttribute(HWND, 35, byref(c_int((WINDOWS[Name]["TitleBarColor"][0] << 16) | (WINDOWS[Name]["TitleBarColor"][1] << 8) | WINDOWS[Name]["TitleBarColor"][2])), sizeof(c_int))
-        hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
-        win32gui.SendMessage(HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-        win32gui.SendMessage(HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
+    HWND = win32gui.FindWindow(None, Name)
+    windll.dwmapi.DwmSetWindowAttribute(HWND, 35, byref(c_int((WINDOWS[Name]["TitleBarColor"][0] << 16) | (WINDOWS[Name]["TitleBarColor"][1] << 8) | WINDOWS[Name]["TitleBarColor"][2])), sizeof(c_int))
+    hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
+    win32gui.SendMessage(HWND, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
+    win32gui.SendMessage(HWND, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
 
 
 def Show(Name="", Frame=None):

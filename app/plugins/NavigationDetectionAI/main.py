@@ -2,7 +2,6 @@ from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 from modules.SDKController.main import SCSController
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
-import src.variables as variables
 import src.settings as settings
 import src.pytorch as pytorch
 import plugins.AR.main as AR
@@ -11,18 +10,12 @@ import keyboard
 import time
 import cv2
 
-if variables.OS == "nt":
-    import win32gui, win32con
-    from ctypes import windll, byref, sizeof, c_int
 
 def Initialize():
     global Enabled
     global EnableKey
     global EnableKeyPressed
     global LastEnableKeyPressed
-    global LastScreenCaptureCheck
-    global ARData
-    global LastARCheck
     global SteeringHistory
 
     global LastIndicatorLeft
@@ -32,6 +25,8 @@ def Initialize():
     global IndicatorLeftResponseTimer
     global IndicatorRightResponseTimer
 
+    global Identifier
+
     global SDKController
     global TruckSimAPI
 
@@ -39,9 +34,6 @@ def Initialize():
     EnableKey = settings.Get("Steering", "EnableKey", "n")
     EnableKeyPressed = False
     LastEnableKeyPressed = False
-    LastScreenCaptureCheck = 0
-    ARData = []
-    LastARCheck = 0
     SteeringHistory = []
 
     LastIndicatorLeft = False
@@ -51,8 +43,8 @@ def Initialize():
     IndicatorLeftResponseTimer = 0
     IndicatorRightResponseTimer = 0
 
-    pytorch.Initialize(Owner="OleFranz", Model="NavigationDetectionAI")
-    pytorch.Load("NavigationDetectionAI")
+    Identifier = pytorch.Initialize(Owner="OleFranz", Model="NavigationDetectionAI", Folder="model")
+    pytorch.Load(Identifier)
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
@@ -77,20 +69,14 @@ def GetTextSize(text="NONE", text_width=100, max_text_height=100):
         thickness = 1
     return text, fontscale, thickness, textsize[0], textsize[1]
 
-
 def preprocess_image(image):
     image = np.array(image)
-    image = cv2.resize(image, (pytorch.MODELS["NavigationDetectionAI"]["IMG_WIDTH"], pytorch.MODELS["NavigationDetectionAI"]["IMG_HEIGHT"]))
+    image = cv2.resize(image, (pytorch.MODELS[Identifier]["IMG_WIDTH"], pytorch.MODELS[Identifier]["IMG_HEIGHT"]))
     image = np.array(image, dtype=np.float32) / 255.0
     transform = pytorch.transforms.Compose([
         pytorch.transforms.ToTensor(),
     ])
-    return transform(image).unsqueeze(0).to(pytorch.MODELS["NavigationDetectionAI"]["Device"])
-
-
-def UpdateAR(Frame, Data):
-    Data["NavigationDetectionAI"]["AR"] = []
-    Data["NavigationDetectionAI"]["AR"].append(AR.DrawPolygon(Points=[(10448.742, 35.324, -10132.315), (10453.237, 36.324, -10130.404), (10453.237, 34.324, -10130.404)], Color=(255, 255, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2, Closed=True))
+    return transform(image).unsqueeze(0).to(pytorch.MODELS[Identifier]["Device"])
 
 
 def Run(Data):
@@ -100,8 +86,6 @@ def Run(Data):
     global EnableKey
     global EnableKeyPressed
     global LastEnableKeyPressed
-    global LastScreenCaptureCheck
-    global LastARCheck
 
     global LastIndicatorLeft
     global LastIndicatorRight
@@ -116,31 +100,15 @@ def Run(Data):
     APIDATA = TruckSimAPI.update()
     Frame = ScreenCapture.Capture(ImageType="cropped")
 
-    if pytorch.Loaded("NavigationDetectionAI") == False: return
+    ScreenCapture.TrackWindowRouteAdvisor(Name="Truck Simulator", Blacklist=["Discord"])
+
+    if pytorch.Loaded(Identifier) == False: time.sleep(0.1); return
     if type(Frame) == type(None): return
 
     FrameWidth = Frame.shape[1]
     FrameHeight = Frame.shape[0]
     if FrameWidth <= 0 or FrameHeight <= 0:
         return
-
-    if LastScreenCaptureCheck + 0.5 < CurrentTime:
-        MapTopLeft, MapBottomRight, ArrowTopLeft, ArrowBottomRight = ScreenCapture.GetRouteAdvisorPosition()
-        ScreenX, ScreenY, _, _ = ScreenCapture.GetScreenDimensions(ScreenCapture.GetScreenIndex((MapTopLeft[0] + MapBottomRight[0]) / 2, (MapTopLeft[1] + MapBottomRight[1]) / 2))
-        if ScreenCapture.MonitorX1 != MapTopLeft[0] - ScreenX or ScreenCapture.MonitorY1 != MapTopLeft[1] - ScreenY or ScreenCapture.MonitorX2 != MapBottomRight[0] - ScreenX or ScreenCapture.MonitorY2 != MapBottomRight[1] - ScreenY:
-            ScreenIndex = ScreenCapture.GetScreenIndex((MapTopLeft[0] + MapBottomRight[0]) / 2, (MapTopLeft[1] + MapBottomRight[1]) / 2)
-            if ScreenCapture.Display != ScreenIndex - 1:
-                if ScreenCapture.CaptureLibrary == "WindowsCapture":
-                    ScreenCapture.StopWindowsCapture = True
-                    while ScreenCapture.StopWindowsCapture == True:
-                        time.sleep(0.01)
-                ScreenCapture.Initialize()
-            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, MapTopLeft[0] - ScreenX, MapTopLeft[1] - ScreenY, MapBottomRight[0] - ScreenX, MapBottomRight[1] - ScreenY)
-        LastScreenCaptureCheck = CurrentTime
-
-    if LastARCheck + 0.5 < CurrentTime:
-        UpdateAR(Frame, Data)
-        LastARCheck = CurrentTime
 
     EnableKeyPressed = keyboard.is_pressed(EnableKey)
     if EnableKeyPressed == False and LastEnableKeyPressed == True:
@@ -161,12 +129,12 @@ def Run(Data):
         LaneDetected = False
 
     AIFrame = preprocess_image(Mask)
-    Output = [[0] * pytorch.MODELS["NavigationDetectionAI"]["OUTPUTS"]]
+    Output = [[0] * pytorch.MODELS[Identifier]["OUTPUTS"]]
 
     if Enabled == True:
-        if pytorch.MODELS["NavigationDetectionAI"]["ModelLoaded"] == True:
+        if pytorch.MODELS[Identifier]["ModelLoaded"] == True:
             with pytorch.torch.no_grad():
-                Output = pytorch.MODELS["NavigationDetectionAI"]["Model"](AIFrame)
+                Output = pytorch.MODELS[Identifier]["Model"](AIFrame)
                 Output = Output.tolist()
 
     Steering = float(Output[0][0]) / -30
@@ -230,4 +198,3 @@ def Run(Data):
     cv2.line(Frame, (int(FrameWidth/2), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/2 + (CurrentDesired if abs(CurrentDesired) < 1 else (1 if CurrentDesired > 0 else -1)) * (FrameWidth/2 - FrameWidth/divider)), int(FrameHeight - FrameHeight/10)), (0, 100, 255), 2, cv2.LINE_AA)
 
     ShowImage.Show("NavigationDetectionAI", Frame)
-    return Data["NavigationDetectionAI"]

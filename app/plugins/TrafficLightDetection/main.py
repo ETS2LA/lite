@@ -4,14 +4,13 @@ import modules.ScreenCapture.main as ScreenCapture
 from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
-import src.console as console
 import src.pytorch as pytorch
 
-if variables.OS == "nt":
-    from ctypes import windll, byref, sizeof, c_int
-    import win32gui, win32con
+from ctypes import windll, byref, sizeof, c_int
 import numpy as np
 import traceback
+import win32con
+import win32gui
 import ctypes
 import math
 import time
@@ -972,13 +971,12 @@ def Run(Data):
             cv2.namedWindow('Traffic Light Detection - Final', cv2.WINDOW_NORMAL)
             cv2.resizeWindow('Traffic Light Detection - Final', round(WindowWidth*windowscale), round(WindowHeight*windowscale))
             cv2.setWindowProperty('Traffic Light Detection - Final', cv2.WND_PROP_TOPMOST, 1)
-            if variables.OS == 'nt':
-                hwnd = win32gui.FindWindow(None, 'Traffic Light Detection - Final')
-                windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x2F2F2F)), sizeof(c_int))
-                icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-                hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
-                win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-                win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
+            hwnd = win32gui.FindWindow(None, 'Traffic Light Detection - Final')
+            windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x2F2F2F)), sizeof(c_int))
+            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+            hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
+            win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
+            win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
         cv2.imshow('Traffic Light Detection - Final', final_frame)
     if grayscalewindow == True:
         window_handle = ctypes.windll.user32.FindWindowW(None, 'Traffic Light Detection - B/W')
@@ -986,13 +984,12 @@ def Run(Data):
             cv2.namedWindow('Traffic Light Detection - B/W', cv2.WINDOW_NORMAL)
             cv2.resizeWindow('Traffic Light Detection - B/W', round(WindowWidth*windowscale), round(WindowHeight*windowscale))
             cv2.setWindowProperty('Traffic Light Detection - B/W', cv2.WND_PROP_TOPMOST, 1)
-            if variables.OS == "nt":
-                hwnd = win32gui.FindWindow(None, 'Traffic Light Detection - B/W')
-                windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x000000)), sizeof(c_int))
-                icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
-                hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
-                win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
-                win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
+            hwnd = win32gui.FindWindow(None, 'Traffic Light Detection - B/W')
+            windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, byref(c_int(0x000000)), sizeof(c_int))
+            icon_flags = win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE
+            hicon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, icon_flags)
+            win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_SMALL, hicon)
+            win32gui.SendMessage(hwnd, win32con.WM_SETICON, win32con.ICON_BIG, hicon)
         cv2.imshow('Traffic Light Detection - B/W', filtered_frame_bw)
     if anywindowopen == True:
         cv2.waitKey(1)

@@ -2,66 +2,52 @@ from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 from modules.SDKController.main import SCSController
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
-from torchvision import transforms
-import src.variables as variables
+import src.settings as settings
 import src.plugins as plugins
+import src.pytorch as pytorch
 import numpy as np
-import torch
+import keyboard
 import math
 import time
 import cv2
-import os
+
+
+PURPLE = "\033[95m"
+NORMAL = "\033[0m"
 
 
 def Initialize():
-    global LastScreenCaptureCheck
-    global LastCapture
+    global FOV
+    global Enabled
+    global EnableKey
+    global EnableKeyPressed
+    global LastEnableKeyPressed
+    global SteeringHistory
+
+    global Identifier
 
     global SDKController
     global TruckSimAPI
 
-    global METADATA
-    global DEVICE
-    global MODEL
+    FOV = settings.Get("Global", "FOV", None)
+    if FOV == None:
+        print(f"\n{PURPLE}Make sure to set the FOV in the settings for End-To-End! The plugin will disable itself.{NORMAL}\n")
+        return False
 
-    global IMG_WIDTH
-    global IMG_HEIGHT
-    global IMG_CHANNELS
-    global MODEL_OUTPUTS
+    Enabled = True
+    EnableKey = settings.Get("Steering", "EnableKey", "n")
+    EnableKeyPressed = False
+    LastEnableKeyPressed = False
+    SteeringHistory = []
 
-    LastScreenCaptureCheck = 0
-    LastCapture = 0
+    Identifier = pytorch.Initialize(Owner="OleFranz", Model="End-To-End", Folder="model")
+    pytorch.Load(Identifier)
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
 
     ScreenCapture.Initialize()
-    ShowImage.Initialize("EndToEnd", (0, 0, 0))
-
-    METADATA = {"data": []}
-    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    MODEL = None
-    for file in os.listdir(f"{variables.PATH}cache"):
-        if file.endswith(".pt"):
-            MODEL = torch.jit.load(f"{variables.PATH}cache/{file}", _extra_files=METADATA, map_location=DEVICE)
-            break
-    if MODEL == None:
-        plugins.AddToQueue({"MANAGEPLUGINS": ["RouteAdvisorClassification", "Stop"]})
-        return
-
-    METADATA = eval(METADATA["data"])
-
-    for item in METADATA:
-        item = str(item)
-        if "image_width" in item:
-            IMG_WIDTH = int(item.split("#")[1])
-        if "image_height" in item:
-            IMG_HEIGHT = int(item.split("#")[1])
-        if "image_channels" in item:
-            IMG_CHANNELS = str(item.split("#")[1])
-        if "outputs" in item:
-            MODEL_OUTPUTS = int(item.split("#")[1])
+    ShowImage.Initialize(Name="End-To-End", TitleBarColor=(0, 0, 0))
 
 
 def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
@@ -91,7 +77,7 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     if FinalZ >= 0:
         return None, None, None
 
-    FovRad = math.radians(variables.FOV)
+    FovRad = math.radians(FOV)
     
     WindowDistance = ((ScreenCapture.MonitorY2 - ScreenCapture.MonitorY1) * (4 / 3) / 2) / math.tan(FovRad / 2)
 
@@ -108,8 +94,13 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
 def Run(data):
     CurrentTime = time.time()
 
-    global LastScreenCaptureCheck
-    global LastCapture
+    global Enabled
+    global EnableKey
+    global EnableKeyPressed
+    global LastEnableKeyPressed
+
+    global SDKController
+    global TruckSimAPI
 
     global HeadRotationDegreesX
     global HeadRotationDegreesY
@@ -120,19 +111,9 @@ def Run(data):
 
     APIDATA = TruckSimAPI.update()
 
-    if LastScreenCaptureCheck + 0.5 < CurrentTime:
-        X1, Y1, X2, Y2 = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
-        ScreenX, ScreenY, _, _ = ScreenCapture.GetScreenDimensions(ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2))
-        if ScreenCapture.MonitorX1 != X1 - ScreenX or ScreenCapture.MonitorY1 != Y1 - ScreenY or ScreenCapture.MonitorX2 != X2 - ScreenX or ScreenCapture.MonitorY2 != Y2 - ScreenY:
-            ScreenIndex = ScreenCapture.GetScreenIndex((X1 + X2) / 2, (Y1 + Y2) / 2)
-            if ScreenCapture.Display != ScreenIndex - 1:
-                if ScreenCapture.CaptureLibrary == "WindowsCapture":
-                    ScreenCapture.StopWindowsCapture = True
-                    while ScreenCapture.StopWindowsCapture == True:
-                        time.sleep(0.01)
-                ScreenCapture.Initialize()
-            ScreenCapture.MonitorX1, ScreenCapture.MonitorY1, ScreenCapture.MonitorX2, ScreenCapture.MonitorY2 = ScreenCapture.ValidateCaptureArea(ScreenIndex, X1 - ScreenX, Y1 - ScreenY, X2 - ScreenX, Y2 - ScreenY)
-        LastScreenCaptureCheck = CurrentTime
+    if pytorch.Loaded(Identifier) == False: time.sleep(0.1); return
+
+    ScreenCapture.TrackWindow(Name="Truck Simulator", Blacklist=["Discord"])
 
     Frame = ScreenCapture.Capture(ImageType="cropped")
     if type(Frame) == type(None) or Frame.shape[0] <= 0 or Frame.shape[1] <= 0:
@@ -198,112 +179,145 @@ def Run(data):
     Points = []
 
 
-    OffsetX = 150
-    OffsetZ = 50
+    OffsetX = 2
+    OffsetY = 0.1
+    OffsetZ = 1.5
 
-    PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = TruckZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
+    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
+    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
+    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
 
     X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
     if X == None or Y == None:
         AllCoordinatesValid = False
     else:
         TopLeft = X, Y
-        Points.append((PointX, PointZ))
+        Points.append((PointX, PointY, PointZ))
 
 
-    OffsetX = 150
-    OffsetZ = -50
+    OffsetX = 2
+    OffsetY = 0.1
+    OffsetZ = -1.5
 
-    PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = TruckZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
+    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
+    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
+    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
 
     X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
     if X == None or Y == None:
         AllCoordinatesValid = False
     else:
         TopRight = X, Y
-        Points.append((PointX, PointZ))
+        Points.append((PointX, PointY, PointZ))
 
 
-    OffsetX = 15
-    OffsetZ = 4
+    OffsetX = 2
+    OffsetY = -0.5
+    OffsetZ = 1.5
 
-    PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = TruckZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
+    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
+    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
+    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
 
     X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
     if X == None or Y == None:
         AllCoordinatesValid = False
     else:
         BottomLeft = X, Y
-        Points.append((PointX, PointZ))
+        Points.append((PointX, PointY, PointZ))
 
 
-    OffsetX = 15
-    OffsetZ = -4
+    OffsetX = 2
+    OffsetY = -0.5
+    OffsetZ = -1.5
 
-    PointX = TruckX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = TruckY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = TruckZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
+    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
+    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
+    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
 
     X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
     if X == None or Y == None:
         AllCoordinatesValid = False
     else:
         BottomRight = X, Y
-        Points.append((PointX, PointZ))
+        Points.append((PointX, PointY, PointZ))
 
 
     if AllCoordinatesValid:
-        CroppedWidth = round(max(TopRight[0] - TopLeft[0], BottomRight[0] - BottomLeft[0]))
-        CroppedHeight = round(max(BottomLeft[1] - TopLeft[1], BottomRight[1] - TopRight[1]))
-        SourcePoints = np.float32([TopLeft, TopRight, BottomLeft, BottomRight])
-        DestinationPoints = np.float32([[0, 0], [CroppedWidth, 0], [0, CroppedHeight], [CroppedWidth, CroppedHeight]])
-        Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
-        Frame = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
-
-
-    if LastCapture + 0.5 < CurrentTime and False:
-        LastCapture = CurrentTime
-        if os.path.exists(f"{variables.PATH}cache/DataCapture") == False:
-            os.makedirs(f"{variables.PATH}cache/DataCapture")
-        Name = str(round(CurrentTime, 2)).replace(".", "-")
-        cv2.imwrite(f"{variables.PATH}cache/DataCapture/{Name}.png", Frame)
-        with open(f"{variables.PATH}cache/DataCapture/{Name}.txt", "w") as f:
-            f.write(str(APIDATA["truckFloat"]["userSteer"]))
+        try:
+            CroppedWidth = round(max(TopRight[0] - TopLeft[0], BottomRight[0] - BottomLeft[0]))
+            CroppedHeight = round(max(BottomLeft[1] - TopLeft[1], BottomRight[1] - TopRight[1]))
+            SourcePoints = np.float32([TopLeft, TopRight, BottomLeft, BottomRight])
+            DestinationPoints = np.float32([[0, 0], [CroppedWidth, 0], [0, CroppedHeight], [CroppedWidth, CroppedHeight]])
+            Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
+            Frame = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
+        except:
+            # It sometimes happens that it tries to generate a frames which needs gigabytes of memory which will result in a crash, we can just ignore it.
+            pass
 
 
     Image = np.array(Frame, dtype=np.float32)
-    if IMG_CHANNELS == 'Grayscale' or IMG_CHANNELS == 'Binarize':
+    if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
         Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
-    if IMG_CHANNELS == 'RG':
+    if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RG':
         Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
-    elif IMG_CHANNELS == 'GB':
+    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'GB':
         Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
-    elif IMG_CHANNELS == 'RB':
+    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RB':
         Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
-    elif IMG_CHANNELS == 'R':
+    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'R':
         Image = Image[:, :, 0]
         Image = np.expand_dims(Image, axis=2)
-    elif IMG_CHANNELS == 'G':
+    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'G':
         Image = Image[:, :, 1]
         Image = np.expand_dims(Image, axis=2)
-    elif IMG_CHANNELS == 'B':
+    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'B':
         Image = Image[:, :, 2]
         Image = np.expand_dims(Image, axis=2)
-    Image = cv2.resize(Image, (IMG_WIDTH, IMG_HEIGHT))
+    Image = cv2.resize(Image, (pytorch.MODELS[Identifier]["IMG_WIDTH"], pytorch.MODELS[Identifier]["IMG_HEIGHT"]))
     Image = Image / 255.0
-    if IMG_CHANNELS == 'Binarize':
+    if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
         Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
-    Image = transforms.ToTensor()(Image).unsqueeze(0).to(DEVICE)
-    with torch.no_grad():
-        Output = float(np.array(MODEL(Image)[0].tolist()))
-
-    SDKController.steering = Output / -30
+    Image = pytorch.transforms.ToTensor()(Image).unsqueeze(0).to(pytorch.MODELS[Identifier]["Device"])
 
 
-    ShowImage.Show("EndToEnd", Frame)
+    EnableKeyPressed = keyboard.is_pressed(EnableKey)
+    if EnableKeyPressed == False and LastEnableKeyPressed == True:
+        Enabled = not Enabled
+    LastEnableKeyPressed = EnableKeyPressed
+
+    Output = [[0] * pytorch.MODELS[Identifier]["OUTPUTS"]]
+
+    if Enabled == True:
+        if pytorch.MODELS[Identifier]["ModelLoaded"] == True:
+            with pytorch.torch.no_grad():
+                Output = pytorch.MODELS[Identifier]["Model"](Image)
+                Output = Output.tolist()
+
+    Steering = float(Output[0][0]) / -20
+
+    SteeringHistory.append((Steering, CurrentTime))
+    SteeringHistory.sort(key=lambda x: x[1])
+    while CurrentTime - SteeringHistory[0][1] > 0.2:
+        SteeringHistory.pop(0)
+    Steering = sum(x[0] for x in SteeringHistory) / len(SteeringHistory)
+
+    SDKController.steering = Steering
+
+    FrameWidth = Frame.shape[1]
+    FrameHeight = Frame.shape[0]
+
+    if Enabled == True:
+        cv2.rectangle(Frame, (0, 0), (FrameWidth - 1, FrameHeight - 1), (0, 255, 0), 3)
+    else:
+        cv2.rectangle(Frame, (0, 0), (FrameWidth - 1, FrameHeight - 1), (0, 0, 255), 3)
+
+    CurrentDesired = Steering
+    ActualSteering = -APIDATA["truckFloat"]["gameSteer"]
+
+    Divider = 5
+    cv2.line(Frame, (int(FrameWidth/Divider), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/Divider*(Divider-1)), int(FrameHeight - FrameHeight/10)), (100, 100, 100), 6, cv2.LINE_AA)
+    cv2.line(Frame, (int(FrameWidth/2), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/2 + ActualSteering * (FrameWidth/2 - FrameWidth/Divider)), int(FrameHeight - FrameHeight/10)), (0, 255, 100), 6, cv2.LINE_AA)
+    cv2.line(Frame, (int(FrameWidth/2), int(FrameHeight - FrameHeight/10)), (int(FrameWidth/2 + (CurrentDesired if abs(CurrentDesired) < 1 else (1 if CurrentDesired > 0 else -1)) * (FrameWidth/2 - FrameWidth/Divider)), int(FrameHeight - FrameHeight/10)), (0, 100, 255), 2, cv2.LINE_AA)
+
+    ShowImage.Show("End-To-End", Frame)

@@ -8,19 +8,19 @@ import src.pytorch as pytorch
 import src.updater as updater
 import src.server as server
 
+from ctypes import windll, byref, sizeof, c_int
 import numpy as np
 import subprocess
 import webbrowser
 import threading
+import win32con
+import win32gui
 import ctypes
 import mouse
 import math
 import time
 import cv2
 
-if variables.OS == "nt":
-    from ctypes import windll, byref, sizeof, c_int
-    import win32gui, win32con
 
 def Initialize():
     WindowWidth = settings.Get("UI", "Width", 700)
@@ -50,15 +50,14 @@ def Initialize():
     cv2.imshow(variables.NAME, variables.BACKGROUND)
     cv2.waitKey(1)
 
-    if variables.OS == "nt":
-        variables.HWND = win32gui.FindWindow(None, variables.NAME)
-        if variables.TITLE_BAR_HEIGHT == 0:
-            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.BACKGROUND_COLOR[0] << 16) | (variables.BACKGROUND_COLOR[1] << 8) | variables.BACKGROUND_COLOR[2])), sizeof(c_int))
-        else:
-            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.TAB_BAR_COLOR[0] << 16) | (variables.TAB_BAR_COLOR[1] << 8) | variables.TAB_BAR_COLOR[2])), sizeof(c_int))
-        Icon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
-        win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, Icon)
-        win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, Icon)
+    variables.HWND = win32gui.FindWindow(None, variables.NAME)
+    if variables.TITLE_BAR_HEIGHT == 0:
+        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.BACKGROUND_COLOR[0] << 16) | (variables.BACKGROUND_COLOR[1] << 8) | variables.BACKGROUND_COLOR[2])), sizeof(c_int))
+    else:
+        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.TAB_BAR_COLOR[0] << 16) | (variables.TAB_BAR_COLOR[1] << 8) | variables.TAB_BAR_COLOR[2])), sizeof(c_int))
+    Icon = win32gui.LoadImage(None, f"{variables.PATH}app/assets/favicon.ico", win32con.IMAGE_ICON, 0, 0, win32con.LR_LOADFROMFILE | win32con.LR_DEFAULTSIZE)
+    win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_SMALL, Icon)
+    win32gui.SendMessage(variables.HWND, win32con.WM_SETICON, win32con.ICON_BIG, Icon)
 
     Update()
 
@@ -89,11 +88,10 @@ def Close():
     variables.BREAK = True
 
 def SetTitleBarHeight(TitleBarHeight):
-    if variables.OS == "nt":
-        if int(win32gui.IsIconic(variables.HWND)) == 1:
-            cv2.imshow(variables.NAME, variables.CACHED_FRAME)
-            cv2.waitKey(1)
-            return
+    if int(win32gui.IsIconic(variables.HWND)) == 1:
+        cv2.imshow(variables.NAME, variables.CACHED_FRAME)
+        cv2.waitKey(1)
+        return
     try:
         _, _, WindowWidth, WindowHeight = cv2.getWindowImageRect(variables.NAME)
     except:
@@ -104,13 +102,12 @@ def SetTitleBarHeight(TitleBarHeight):
     variables.BACKGROUND[:] = variables.BACKGROUND_COLOR
     if TitleBarHeight > 0:
         cv2.rectangle(variables.BACKGROUND, (0, 0), (WindowWidth - 1, variables.TITLE_BAR_HEIGHT - 1), variables.TAB_BAR_COLOR, -1)
-    if variables.OS == "nt":
-        if TitleBarHeight == 0:
-            from ctypes import windll, byref, sizeof, c_int
-            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.BACKGROUND_COLOR[0] << 16) | (variables.BACKGROUND_COLOR[1] << 8) | variables.BACKGROUND_COLOR[2])), sizeof(c_int))
-        else:
-            from ctypes import windll, byref, sizeof, c_int
-            windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.TAB_BAR_COLOR[0] << 16) | (variables.TAB_BAR_COLOR[1] << 8) | variables.TAB_BAR_COLOR[2])), sizeof(c_int))
+    if TitleBarHeight == 0:
+        from ctypes import windll, byref, sizeof, c_int
+        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.BACKGROUND_COLOR[0] << 16) | (variables.BACKGROUND_COLOR[1] << 8) | variables.BACKGROUND_COLOR[2])), sizeof(c_int))
+    else:
+        from ctypes import windll, byref, sizeof, c_int
+        windll.dwmapi.DwmSetWindowAttribute(variables.HWND, 35, byref(c_int((variables.TAB_BAR_COLOR[0] << 16) | (variables.TAB_BAR_COLOR[1] << 8) | variables.TAB_BAR_COLOR[2])), sizeof(c_int))
     variables.CANVAS_BOTTOM = WindowHeight - 1 - variables.TITLE_BAR_HEIGHT
     variables.CANVAS_RIGHT = WindowWidth - 1
     variables.RENDER_FRAME = True
@@ -118,11 +115,10 @@ def SetTitleBarHeight(TitleBarHeight):
 def Update():
     CurrentTime = time.time()
 
-    if variables.OS == "nt":
-        if int(win32gui.IsIconic(variables.HWND)) == 1:
-            cv2.imshow(variables.NAME, variables.CACHED_FRAME)
-            cv2.waitKey(1)
-            return
+    if int(win32gui.IsIconic(variables.HWND)) == 1:
+        cv2.imshow(variables.NAME, variables.CACHED_FRAME)
+        cv2.waitKey(1)
+        return
 
     try:
         WindowX, WindowY, WindowWidth, WindowHeight = cv2.getWindowImageRect(variables.NAME)

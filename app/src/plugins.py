@@ -16,7 +16,7 @@ def Initialize():
 
 
 def AddToQueue(DATA):
-    if DATA is not None and str(DATA) not in str(variables.QUEUE):
+    if DATA is not None and str(DATA) not in str(variables.QUEUE) and "POPUP" not in str(variables.QUEUE):
         variables.QUEUE.append(DATA)
 
 
@@ -30,7 +30,19 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
         DATA_REFRESH_RATE = 100
         LAST_DATA = {}
         Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
-        Plugin.Initialize()
+        if Plugin.Initialize() == False:
+            variables.BREAK = True
+        with LOCK:
+            DATA = variables.QUEUE
+            DataBytes = pickle.dumps(DATA)
+            if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
+                SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
+                while True:
+                    variables.QUEUE.pop(0)
+                    if len(DataBytes) <= variables.SHARED_MEMORY_SIZE:
+                        break
+            SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
+        variables.QUEUE = []
         while variables.BREAK == False:
             START = time.time()
 

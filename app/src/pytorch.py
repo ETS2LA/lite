@@ -13,11 +13,13 @@ import GPUtil
 import psutil
 import torch
 import time
+import sys
 import os
 
 RED = "\033[91m"
 GREEN = "\033[92m"
-DARK_GREY = "\033[90m"
+GRAY = "\033[90m"
+YELLOW = "\033[93m"
 NORMAL = "\033[0m"
 
 try:
@@ -31,15 +33,30 @@ except:
 
 MODELS = {}
 
-def Initialize(Owner="", Model="", Threaded=True):
-    MODELS[Model] = {}
-    MODELS[Model]["Device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    MODELS[Model]["Path"] = f"{variables.PATH}cache/{Model}"
-    MODELS[Model]["Threaded"] = Threaded
-    MODELS[Model]["ModelOwner"] = str(Owner)
+def Initialize(Owner="", Model="", Folder="", Threaded=True):
+    Identifier = f"{Model}/{Folder}"
+    MODELS[Identifier] = {}
+    MODELS[Identifier]["Device"] = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    MODELS[Identifier]["Path"] = f"{variables.PATH}cache/{Identifier}"
+    MODELS[Identifier]["Threaded"] = Threaded
+    MODELS[Identifier]["ModelOwner"] = str(Owner)
+    return Identifier
+
+
+def IsInitialized(Model, Folder):
+    Identifier = f"{Model}/{Folder}"
+    if Identifier in MODELS:
+        return True
+    return False
+
+
+def Popup(Identifier="", Text="", Progress=0):
+    plugins.AddToQueue({"POPUP": [Text, round(Progress), 0.5]})
 
 
 def InstallCUDA():
+    print("NOT IMPLEMENTED: InstallCUDA")
+    return
     def InstallCUDAFunction():
         Command = ["cmd", "/c", "cd", variables.PATH + "venv/Scripts", "&&", ".\\activate.bat", "&&", "cd", variables.PATH, "&&", "pip", "install", "torch", "torchvision", "torchaudio", "--index-url", "https://download.pytorch.org/whl/cu124", "--progress-bar", "raw", "--force-reinstall"]
         Process = subprocess.Popen(Command, cwd=variables.PATH, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -78,6 +95,8 @@ def InstallCUDA():
 
 
 def UninstallCUDA():
+    print("NOT IMPLEMENTED: UninstallCUDA")
+    return
     def UninstallCUDAFunction():
         Command = ["cmd", "/c", "cd", variables.PATH + "venv/Scripts", "&&", ".\\activate.bat", "&&", "cd", variables.PATH, "&&", "pip", "install", "torch", "torchvision", "torchaudio", "--progress-bar", "raw", "--force-reinstall"]
         Process = subprocess.Popen(Command, cwd=variables.PATH, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -116,6 +135,8 @@ def UninstallCUDA():
 
 
 def CheckCuda():
+    print("NOT IMPLEMENTED: CheckCuda")
+    return
     variables.CUDA_INSTALLED = "Loading..."
     variables.CUDA_AVAILABLE = "Loading..."
     variables.CUDA_COMPATIBLE = "Loading..."
@@ -149,183 +170,237 @@ def CheckCuda():
     threading.Thread(target=CheckCudaThread, daemon=True).start()
 
 
-def Loaded(Model="All"):
-    if Model == "All":
+def Loaded(Identifier="All"):
+    if Identifier == "All":
         for Model in MODELS:
             if MODELS[Model]["Threaded"] == True:
                 if MODELS[Model]["UpdateThread"].is_alive(): return False
                 if MODELS[Model]["LoadThread"].is_alive(): return False
     else:
-        if MODELS[Model]["Threaded"] == True:
-            if MODELS[Model]["UpdateThread"].is_alive(): return False
-            if MODELS[Model]["LoadThread"].is_alive(): return False
+        if MODELS[Identifier]["Threaded"] == True:
+            if MODELS[Identifier]["UpdateThread"].is_alive(): return False
+            if MODELS[Identifier]["LoadThread"].is_alive(): return False
     return True
 
 
-def Load(Model):
+def Load(Identifier):
     try:
-        def LoadFunction(Model):
+        def LoadFunction(Identifier):
             try:
-                CheckForUpdates(Model)
-                if "UpdateThread" in MODELS[Model]:
-                    while MODELS[Model]["UpdateThread"].is_alive():
+                CheckForUpdates(Identifier)
+                if "UpdateThread" in MODELS[Identifier]:
+                    while MODELS[Identifier]["UpdateThread"].is_alive():
                         time.sleep(0.1)
 
-                if GetName(Model) == None:
+                if GetName(Identifier) == None:
                     return
 
-                plugins.AddToQueue({"POPUP": ["Loading the model...", 0, 0.5]})
-                print(DARK_GREY + f"[{Model}] " + GREEN + "Loading the model..." + NORMAL)
+                Popup(Identifier=Identifier, Text="Loading the model...", Progress=0)
+                print(GRAY + f"[{Identifier}] " + GREEN + "Loading the model..." + NORMAL)
 
                 ModelFileBroken = False
 
                 try:
-                    MODELS[Model]["Metadata"] = {"data": []}
-                    MODELS[Model]["Model"] = torch.jit.load(os.path.join(MODELS[Model]["Path"], GetName(Model)), _extra_files=MODELS[Model]["Metadata"], map_location=MODELS[Model]["Device"])
-                    MODELS[Model]["Model"].eval()
-                    MODELS[Model]["Metadata"] = eval(MODELS[Model]["Metadata"]["data"])
-                    for Item in MODELS[Model]["Metadata"]:
+                    MODELS[Identifier]["Metadata"] = {"data": []}
+                    MODELS[Identifier]["Model"] = torch.jit.load(os.path.join(MODELS[Identifier]["Path"], GetName(Identifier)), _extra_files=MODELS[Identifier]["Metadata"], map_location=MODELS[Identifier]["Device"])
+                    MODELS[Identifier]["Model"].eval()
+                    MODELS[Identifier]["Metadata"] = eval(MODELS[Identifier]["Metadata"]["data"])
+                    for Item in MODELS[Identifier]["Metadata"]:
                         Item = str(Item)
                         if "image_width" in Item:
-                            MODELS[Model]["IMG_WIDTH"] = int(Item.split("#")[1])
+                            MODELS[Identifier]["IMG_WIDTH"] = int(Item.split("#")[1])
                         if "image_height" in Item:
-                            MODELS[Model]["IMG_HEIGHT"] = int(Item.split("#")[1])
+                            MODELS[Identifier]["IMG_HEIGHT"] = int(Item.split("#")[1])
                         if "image_channels" in Item:
-                            MODELS[Model]["IMG_CHANNELS"] = str(Item.split("#")[1])
+                            MODELS[Identifier]["IMG_CHANNELS"] = str(Item.split("#")[1])
                         if "outputs" in Item:
-                            MODELS[Model]["OUTPUTS"] = int(Item.split("#")[1])
+                            MODELS[Identifier]["OUTPUTS"] = int(Item.split("#")[1])
                         if "epochs" in Item:
-                            MODELS[Model]["EPOCHS"] = int(Item.split("#")[1])
+                            MODELS[Identifier]["EPOCHS"] = int(Item.split("#")[1])
                         if "batch" in Item:
-                            MODELS[Model]["BATCH_SIZE"] = int(Item.split("#")[1])
+                            MODELS[Identifier]["BATCH_SIZE"] = int(Item.split("#")[1])
                         if "image_count" in Item:
-                            MODELS[Model]["IMAGE_COUNT"] = int(Item.split("#")[1])
+                            MODELS[Identifier]["IMAGE_COUNT"] = int(Item.split("#")[1])
                         if "training_time" in Item:
-                            MODELS[Model]["TRAINING_TIME"] = Item.split("#")[1]
+                            MODELS[Identifier]["TRAINING_TIME"] = Item.split("#")[1]
                         if "training_date" in Item:
-                            MODELS[Model]["TRAINING_DATE"] = Item.split("#")[1]
+                            MODELS[Identifier]["TRAINING_DATE"] = Item.split("#")[1]
                 except:
                     ModelFileBroken = True
 
                 if ModelFileBroken == False:
-                    plugins.AddToQueue({"POPUP": ["Successfully loaded the model!", 0, 0.5]})
-                    print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully loaded the model!" + NORMAL)
-                    MODELS[Model]["ModelLoaded"] = True
+                    Popup(Identifier=Identifier, Text="Successfully loaded the model!", Progress=100)
+                    print(GRAY + f"[{Identifier}] " + GREEN + "Successfully loaded the model!" + NORMAL)
+                    MODELS[Identifier]["ModelLoaded"] = True
                 else:
-                    plugins.AddToQueue({"POPUP": ["Failed to load the model because the model file is broken.", 0, 0.5]})
-                    print(DARK_GREY + f"[{Model}] " + RED + "Failed to load the model because the model file is broken." + NORMAL)
-                    MODELS[Model]["ModelLoaded"] = False
-                    HandleBroken(Model)
+                    Popup(Identifier=Identifier, Text="Failed to load the model because the model file is broken.", Progress=0)
+                    print(GRAY + f"[{Identifier}] " + RED + "Failed to load the model because the model file is broken." + NORMAL)
+                    MODELS[Identifier]["ModelLoaded"] = False
+                    HandleBroken(Identifier)
             except:
                 SendCrashReport("PyTorch - Loading Error.", str(traceback.format_exc()))
-                plugins.AddToQueue({"POPUP": ["Failed to load the model!", 0, 0.5]})
-                print(DARK_GREY + f"[{Model}] " + RED + "Failed to load the model!" + NORMAL)
-                MODELS[Model]["ModelLoaded"] = False
+                Popup(Identifier=Identifier, Text="Failed to load the model!", Progress=0)
+                print(GRAY + f"[{Identifier}] " + RED + "Failed to load the model!" + NORMAL)
+                MODELS[Identifier]["ModelLoaded"] = False
 
         if TorchAvailable:
-            if MODELS[Model]["Threaded"]:
-                MODELS[Model]["LoadThread"] = threading.Thread(target=LoadFunction, args=(Model,), daemon=True)
-                MODELS[Model]["LoadThread"].start()
+            if MODELS[Identifier]["Threaded"]:
+                MODELS[Identifier]["LoadThread"] = threading.Thread(target=LoadFunction, args=(Identifier,), daemon=True)
+                MODELS[Identifier]["LoadThread"].start()
             else:
-                LoadFunction(Model)
+                LoadFunction(Identifier)
 
     except:
         SendCrashReport("PyTorch - Error in function Load.", str(traceback.format_exc()))
-        plugins.AddToQueue({"POPUP": ["Failed to load the model.", 0, 0.5]})
-        print(DARK_GREY + f"[{Model}] " + RED + "Failed to load the model." + NORMAL)
+        Popup(Identifier=Identifier, Text="Failed to load the model.", Progress=0)
+        print(GRAY + f"[{Identifier}] " + RED + "Failed to load the model." + NORMAL)
 
 
-def CheckForUpdates(Model):
+def CheckForUpdates(Identifier):
     try:
-        def CheckForUpdatesFunction(Model):
+        def CheckForUpdatesFunction(Identifier):
             try:
+
+                if "--dev" in sys.argv:
+                    if GetName(Identifier) != None:
+                        print(GRAY + f"[{Identifier}] " + YELLOW + "Development mode enabled, skipping update check..." + NORMAL)
+                        return
+                    else:
+                        print(GRAY + f"[{Identifier}] " + YELLOW + "Development mode enabled, downloading model because it doesn't exist..." + NORMAL)
+
+                Popup(Identifier=Identifier, Text="Checking for model updates...", Progress=0)
+                print(GRAY + f"[{Identifier}] " + GREEN + "Checking for model updates..." + NORMAL)
+
+                if settings.Get("PyTorch", f"{Identifier}-LastUpdateCheck", 0) + 600 > time.time():
+                    if settings.Get("PyTorch", f"{Identifier}-LatestModel", "unset") == GetName(Identifier):
+                        print(GRAY + f"[{Identifier}] " + GREEN + "No model updates available!" + NORMAL)
+                        return
+
                 try:
-                    Response = requests.get("https://huggingface.co/", timeout=3)
-                    Response = Response.status_code
-                except requests.exceptions.RequestException:
-                    Response = None
+                    HuggingFaceResponse = requests.get("https://huggingface.co/", timeout=3)
+                    HuggingFaceResponse = HuggingFaceResponse.status_code
+                    ETS2LAResponse = None
+                except:
+                    try:
+                        ETS2LAResponse = requests.get("https://cdn.ets2la.com/", timeout=3)
+                        ETS2LAResponse = ETS2LAResponse.status_code
+                        HuggingFaceResponse = None
+                        print(GRAY + f"[{Identifier}] " + GREEN + "Using cdn.ets2la.com..." + NORMAL)
+                    except:
+                        HuggingFaceResponse = None
+                        ETS2LAResponse = None
 
-                if Response == 200:
-                    plugins.AddToQueue({"POPUP": ["Checking for model updates...", 0, 0.5]})
-                    print(DARK_GREY + f"[{Model}] " + GREEN + "Checking for model updates..." + NORMAL)
-
-                    if settings.Get("PyTorch", f"{Model}-LastUpdateCheck", 0) + 600 > time.time():
-                        if settings.Get("PyTorch", f"{Model}-LatestModel", "unset") == GetName(Model):
-                            print(DARK_GREY + f"[{Model}] " + GREEN + "No model updates available!" + NORMAL)
-                            return
-
-                    Url = f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/tree/main/model'
+                if HuggingFaceResponse == 200:
+                    Url = f'https://huggingface.co/{MODELS[Identifier]["ModelOwner"]}/{Identifier.split("/")[0]}/tree/main/{"/".join(Identifier.split("/")[1:])}'
                     Response = requests.get(Url)
                     Soup = BeautifulSoup(Response.content, 'html.parser')
 
                     LatestModel = None
                     for Link in Soup.find_all("a", href=True):
                         HREF = Link["href"]
-                        if HREF.startswith(f'/{MODELS[Model]["ModelOwner"]}/{Model}/blob/main/model'):
+                        if HREF.startswith(f'/{MODELS[Identifier]["ModelOwner"]}/{Identifier.split("/")[0]}/blob/main/{"/".join(Identifier.split("/")[1:])}'):
                             LatestModel = HREF.split("/")[-1]
-                            settings.Set("PyTorch", f"{Model}-LatestModel", LatestModel)
+                            settings.Set("PyTorch", f"{Identifier}-LatestModel", LatestModel)
                             break
                     if LatestModel == None:
-                        LatestModel = settings.Get("PyTorch", f"{Model}-LatestModel", "unset")
+                        LatestModel = settings.Get("PyTorch", f"{Identifier}-LatestModel", "unset")
 
-                    CurrentModel = GetName(Model)
+                    CurrentModel = GetName(Identifier)
 
                     if str(LatestModel) != str(CurrentModel):
-                        plugins.AddToQueue({"POPUP": ["Updating the model...", 0, 0.5]})
-                        print(DARK_GREY + f"[{Model}] " + GREEN + "Updating the model..." + NORMAL)
-                        Delete(Model)
-                        Response = requests.get(f'https://huggingface.co/{MODELS[Model]["ModelOwner"]}/{Model}/resolve/main/model/{LatestModel}?download=true', stream=True)
-                        with open(os.path.join(MODELS[Model]["Path"], f"{LatestModel}"), "wb") as ModelFile:
-                            TotalSize = int(Response.headers.get('content-length', 0))
+                        Popup(Identifier=Identifier, Text="Updating the model...", Progress=0)
+                        print(GRAY + f"[{Identifier}] " + GREEN + "Updating the model..." + NORMAL)
+                        Delete(Identifier)
+                        StartTime = time.time()
+                        Response = requests.get(f'https://huggingface.co/{MODELS[Identifier]["ModelOwner"]}/{Identifier.split("/")[0]}/resolve/main/{"/".join(Identifier.split("/")[1:])}/{LatestModel}?download=true', stream=True, timeout=15)
+                        with open(os.path.join(MODELS[Identifier]["Path"], f"{LatestModel}"), "wb") as ModelFile:
+                            TotalSize = int(Response.headers.get('content-length', 1))
                             DownloadedSize = 0
                             ChunkSize = 1024
                             for Data in Response.iter_content(chunk_size=ChunkSize):
                                 DownloadedSize += len(Data)
                                 ModelFile.write(Data)
                                 Progress = (DownloadedSize / TotalSize) * 100
-                                plugins.AddToQueue({"POPUP": [f"Downloading the model: {round(Progress)}%", round(Progress), 0.5]})
-                        plugins.AddToQueue({"POPUP": ["Successfully updated the model!", 0, 0.5]})
-                        print(DARK_GREY + f"[{Model}] " + GREEN + "Successfully updated the model!" + NORMAL)
+                                ETA = time.strftime('%H:%M:%S' if (time.time() - StartTime) / Progress * (100 - Progress) >= 3600 else '%M:%S', time.gmtime((time.time() - StartTime) / Progress * (100 - Progress)))
+                                Popup(Identifier=Identifier, Text=f"Downloading the model: {round(Progress)}% - ETA: {ETA}", Progress=Progress)
+                        Popup(Identifier=Identifier, Text="Successfully updated the model!", Progress=100)
+                        print(GRAY + f"[{Identifier}] " + GREEN + "Successfully updated the model!" + NORMAL)
                     else:
-                        plugins.AddToQueue({"POPUP": ["No model updates available!", 0, 0.5]})
-                        print(DARK_GREY + f"[{Model}] " + GREEN + "No model updates available!" + NORMAL)
-                    settings.Set("PyTorch", f"{Model}-LastUpdateCheck", time.time())
+                        Popup(Identifier=Identifier, Text="No model updates available!", Progress=100)
+                        print(GRAY + f"[{Identifier}] " + GREEN + "No model updates available!" + NORMAL)
+                    settings.Set("PyTorch", f"{Identifier}-LastUpdateCheck", time.time())
+
+                elif ETS2LAResponse == 200:
+                    Url = f'https://cdn.ets2la.com/models/{MODELS[Identifier]["ModelOwner"]}/{Identifier.split("/")[0]}/{"/".join(Identifier.split("/")[1:])}'
+                    Response = requests.get(Url).json()
+
+                    LatestModel = None
+                    if "success" in Response:
+                        LatestModel = Response["success"]
+                        settings.Set("PyTorch", f"{Identifier}-LatestModel", LatestModel)
+                    if LatestModel == None:
+                        LatestModel = settings.Get("PyTorch", f"{Identifier}-LatestModel", "unset")
+
+                    CurrentModel = GetName(Identifier)
+
+                    if str(LatestModel) != str(CurrentModel):
+                        Popup(Identifier=Identifier, Text="Updating the model...", Progress=0)
+                        print(GRAY + f"[{Identifier}] " + GREEN + "Updating the model..." + NORMAL)
+                        Delete(Identifier)
+                        StartTime = time.time()
+                        Response = requests.get(f'https://cdn.ets2la.com/models/{MODELS[Identifier]["ModelOwner"]}/{Identifier.split("/")[0]}/{"/".join(Identifier.split("/")[1:])}/download', stream=True, timeout=15)
+                        with open(os.path.join(MODELS[Identifier]["Path"], f"{LatestModel}"), "wb") as ModelFile:
+                            TotalSize = int(Response.headers.get('content-length', 1))
+                            DownloadedSize = 0
+                            ChunkSize = 1024
+                            for Data in Response.iter_content(chunk_size=ChunkSize):
+                                DownloadedSize += len(Data)
+                                ModelFile.write(Data)
+                                Progress = (DownloadedSize / TotalSize) * 100
+                                ETA = time.strftime('%H:%M:%S' if (time.time() - StartTime) / Progress * (100 - Progress) >= 3600 else '%M:%S', time.gmtime((time.time() - StartTime) / Progress * (100 - Progress)))
+                                Popup(Identifier=Identifier, Text=f"Downloading the model: {round(Progress)}% - ETA: {ETA}", Progress=Progress)
+                        Popup(Identifier=Identifier, Text="Successfully updated the model!", Progress=100)
+                        print(GRAY + f"[{Identifier}] " + GREEN + "Successfully updated the model!" + NORMAL)
+                    else:
+                        Popup(Identifier=Identifier, Text="No model updates available!", Progress=100)
+                        print(GRAY + f"[{Identifier}] " + GREEN + "No model updates available!" + NORMAL)
+                    settings.Set("PyTorch", f"{Identifier}-LastUpdateCheck", time.time())
 
                 else:
 
                     console.RestoreConsole()
-                    plugins.AddToQueue({"POPUP": ["Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for model updates.", 0, 0.5]})
-                    print(DARK_GREY + f"[{Model}] " + RED + "Connection to https://huggingface.co/ is most likely not available in your country. Unable to check for model updates." + NORMAL)
+                    Popup(Identifier=Identifier, Text="Connection to 'https://huggingface.co' and 'https://cdn.ets2la.com' is not available. Unable to check for updates.", Progress=0)
+                    print(GRAY + f"[{Identifier}] " + RED + "Connection to 'https://huggingface.co' and 'https://cdn.ets2la.com' is not available. Unable to check for updates." + NORMAL)
 
             except:
                 SendCrashReport("PyTorch - Error in function CheckForUpdatesFunction.", str(traceback.format_exc()))
-                plugins.AddToQueue({"POPUP": ["Failed to check for model updates or update the model.", 0, 0.5]})
-                print(DARK_GREY + f"[{Model}] " + RED + "Failed to check for model updates or update the model." + NORMAL)
+                Popup(Identifier=Identifier, Text="Failed to check for model updates or update the model.", Progress=0)
+                print(GRAY + f"[{Identifier}] " + RED + "Failed to check for model updates or update the model." + NORMAL)
 
-        if MODELS[Model]["Threaded"]:
-            MODELS[Model]["UpdateThread"] = threading.Thread(target=CheckForUpdatesFunction, args=(Model,), daemon=True)
-            MODELS[Model]["UpdateThread"].start()
+        if MODELS[Identifier]["Threaded"]:
+            MODELS[Identifier]["UpdateThread"] = threading.Thread(target=CheckForUpdatesFunction, args=(Identifier,), daemon=True)
+            MODELS[Identifier]["UpdateThread"].start()
         else:
-            CheckForUpdatesFunction(Model)
+            CheckForUpdatesFunction(Identifier)
 
     except:
         SendCrashReport("PyTorch - Error in function CheckForUpdates.", str(traceback.format_exc()))
-        plugins.AddToQueue({"POPUP": ["Failed to check for model updates or update the model.", 0, 0.5]})
-        print(DARK_GREY + f"[{Model}] " + RED + "Failed to check for model updates or update the model." + NORMAL)
+        Popup(Identifier=Identifier, Text="Failed to check for model updates or update the model.", Progress=0)
+        print(GRAY + f"[{Identifier}] " + RED + "Failed to check for model updates or update the model." + NORMAL)
 
 
-def FolderExists(Model):
+def FolderExists(Identifier):
     try:
-        if os.path.exists(MODELS[Model]["Path"]) == False:
-            os.makedirs(MODELS[Model]["Path"])
+        if os.path.exists(MODELS[Identifier]["Path"]) == False:
+            os.makedirs(MODELS[Identifier]["Path"])
     except:
         SendCrashReport("PyTorch - Error in function FolderExists.", str(traceback.format_exc()))
 
 
-def GetName(Model):
+def GetName(Identifier):
     try:
-        FolderExists(Model)
-        for File in os.listdir(MODELS[Model]["Path"]):
+        FolderExists(Identifier)
+        for File in os.listdir(MODELS[Identifier]["Path"]):
             if File.endswith(".pt"):
                 return File
         return None
@@ -334,30 +409,36 @@ def GetName(Model):
         return None
 
 
-def Delete(Model):
+def Delete(Identifier):
     try:
-        FolderExists(Model)
-        for File in os.listdir(MODELS[Model]["Path"]):
+        if "--dev" in sys.argv and os.listdir(MODELS[Identifier]["Path"]) != []:
+            print(GRAY + f"[{Identifier}] " + YELLOW + "Development mode enabled, skipping model deletion..." + NORMAL)
+            return
+        FolderExists(Identifier)
+        for File in os.listdir(MODELS[Identifier]["Path"]):
             if File.endswith(".pt"):
-                os.remove(os.path.join(MODELS[Model]["Path"], File))
+                os.remove(os.path.join(MODELS[Identifier]["Path"], File))
     except PermissionError:
         global TorchAvailable
         TorchAvailable = False
-        print(DARK_GREY + f"[{Model}] " + RED + "PyTorch - PermissionError in function Delete:\n" + NORMAL + str(traceback.format_exc()))
+        print(GRAY + f"[{Identifier}] " + RED + "PyTorch - PermissionError in function Delete:\n" + NORMAL + str(traceback.format_exc()))
         console.RestoreConsole()
     except:
         SendCrashReport("PyTorch - Error in function Delete.", str(traceback.format_exc()))
 
 
-def HandleBroken(Model):
+def HandleBroken(Identifier):
     try:
-        Delete(Model)
-        CheckForUpdates(Model)
-        if "UpdateThread" in MODELS[Model]:
-            while MODELS[Model]["UpdateThread"].is_alive():
+        if "--dev" in sys.argv:
+            print(GRAY + f"[{Identifier}] " + RED + "Can't handle broken models in development mode, all pytorch loader actions paused..." + NORMAL)
+            while True: time.sleep(1)
+        Delete(Identifier)
+        CheckForUpdates(Identifier)
+        if "UpdateThread" in MODELS[Identifier]:
+            while MODELS[Identifier]["UpdateThread"].is_alive():
                 time.sleep(0.1)
         time.sleep(0.5)
         if TorchAvailable == True:
-            Load(Model)
+            Load(Identifier)
     except:
         SendCrashReport("PyTorch - Error in function HandleBroken.", str(traceback.format_exc()))

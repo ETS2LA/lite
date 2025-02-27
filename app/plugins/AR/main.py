@@ -1,18 +1,16 @@
 from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 import modules.ScreenCapture.main as ScreenCapture
 import src.variables as variables
-import src.settings as settings
 
 import dearpygui.dearpygui as dpg
 import multiprocessing
 import keyboard
+import win32con
+import win32gui
 import ctypes
 import math
 import time
 
-if variables.OS == "nt":
-    import win32con
-    import win32gui
 
 PROCESS = multiprocessing.current_process().name
 

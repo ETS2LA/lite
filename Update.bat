@@ -15,11 +15,13 @@ if not exist "%cd%\python" (
     goto :end
 )
 
-echo INFORMATION: Updating not implemented yet.
+echo Updating App...
 
-echo Installing requirements...
-pip install -r config/requirements.txt -q
-echo Done.
+%cd%\python\python.exe -c "import subprocess; import time; time.sleep(0.5); subprocess.Popen(['python', 'app/update.py'])"
+
+timeout /t 15 /nobreak
+
+%cd%\python\python.exe -m pip install -r config/requirements.txt -q
 
 echo.
 echo App Updated

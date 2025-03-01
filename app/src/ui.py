@@ -6,19 +6,12 @@ import src.pytorch as pytorch
 import src.updater as updater
 import src.server as server
 
-from ctypes import windll, byref, sizeof, c_int
 import SimpleWindow
 import numpy as np
 import subprocess
 import webbrowser
 import threading
-import win32con
-import win32gui
 import ImageUI
-import ctypes
-import mouse
-import math
-import time
 import cv2
 
 
@@ -49,7 +42,7 @@ def Initialize():
                             Size=(WindowWidth, WindowHeight),
                             Position=(WindowX, WindowY),
                             TitleBarColor=(47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231),
-                            Resizable=True,
+                            Resizable=False,
                             TopMost=False,
                             Undestroyable=False,
                             Icon=f"{variables.Path}app/assets/favicon.ico")
@@ -243,9 +236,16 @@ def Update():
 
             ImageUI.Label(Text=f"Details:\n{variables.CUDADetails}",
                           X1=Left + 10,
-                          Y1=Top + 200,
+                          Y1=Top + 160,
                           X2=Right - 10,
-                          Y2=Top + 325)
+                          Y2=Top + 280)
+
+            ImageUI.Label(Text="WARNING:\nThis app is using embedded Python which causes problems with CUDA!\nBecause of this, CUDA probably won't work or even install!",
+                          X1=Left + 10,
+                          Y1=Top + 280,
+                          X2=Right - 10,
+                          Y2=Top + 320,
+                          TextColor=(0, 0, 255))
 
             if variables.CUDAInstalled == False and variables.CUDACompatible == True:
                 ImageUI.Button(Text="Install CUDA libraries (3GB)",

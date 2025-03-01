@@ -261,8 +261,6 @@ def CheckCUDA():
                 variables.CUDAAvailable = torch.cuda.is_available()
                 variables.CUDACompatible = ("nvidia" in str([GPU.lower() for GPU in GPUS]))
                 variables.CUDADetails = "\n".join(PyTorchModules) + "\n" + "\n".join([str(GPU.name).upper() for GPU in GPUtil.getGPUs()] if len(GPUS) > 0 else ["No GPUs found."])
-                if variables.CUDAInstalled == False and variables.CUDACompatible == True:
-                    variables.Page = "CUDA"
             except:
                 SendCrashReport("PyTorch - Error in function CheckCUDAThread.", str(traceback.format_exc()))
         threading.Thread(target=CheckCUDAThread, daemon=True).start()

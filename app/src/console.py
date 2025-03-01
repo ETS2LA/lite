@@ -32,12 +32,12 @@ def RestoreConsole():
         ProcessName = multiprocessing.current_process().name
         if ProcessName != "MainProcess":
             while True:
-                variables.QUEUE = []
+                variables.Queue = []
                 plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
                 plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
-                DATA = variables.QUEUE
+                DATA = variables.Queue
                 DataBytes = plugins.pickle.dumps(DATA)
-                plugins.SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
+                plugins.SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
                 time.sleep(0.1)
 
 

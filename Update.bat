@@ -17,11 +17,11 @@ if not exist "%cd%\python" (
 
 echo Updating App...
 
-%cd%\python\python.exe -c "import time; time.sleep(3)"
+python -c "import time; time.sleep(3)"
 
-%cd%\python\python.exe app/update.py
+python app/update.py
 
-%cd%\python\python.exe -m pip install -r config/requirements.txt
+python -m pip install -r config/requirements.txt
 
 echo.
 echo App Updated

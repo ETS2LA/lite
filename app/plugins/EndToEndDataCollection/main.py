@@ -53,9 +53,9 @@ def Initialize():
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     MODEL = None
-    for File in os.listdir(f"{variables.PATH}cache/Use/"):
+    for File in os.listdir(f"{variables.Path}cache/Use/"):
         if File.endswith(".pt"):
-            MODEL = torch.jit.load(f"{variables.PATH}cache/Use/{File}", _extra_files=METADATA, map_location=DEVICE)
+            MODEL = torch.jit.load(f"{variables.Path}cache/Use/{File}", _extra_files=METADATA, map_location=DEVICE)
             break
     if MODEL == None:
         plugins.AddToQueue({"MANAGEPLUGINS": ["RouteAdvisorClassification", "Stop"]})
@@ -289,7 +289,7 @@ def Run(data):
             LastCapture = time.time()
             Steering = APIDATA["truckFloat"]["userSteer"]
             Name = str(round(time.time(), 2)).replace(".", "_")
-            Folder = f"{variables.PATH}cache/DataCollection/"
+            Folder = f"{variables.Path}cache/DataCollection/"
             if not os.path.exists(Folder):
                 os.makedirs(Folder)
             with open(Folder + Name + ".txt", "w") as File:

@@ -28,9 +28,9 @@ def Initialize():
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     MODEL = None
-    for file in os.listdir(variables.PATH):
+    for file in os.listdir(variables.Path):
         if file.endswith(".pt"):
-            MODEL = torch.jit.load(f"{variables.PATH}{file}", _extra_files=METADATA, map_location=DEVICE)
+            MODEL = torch.jit.load(f"{variables.Path}{file}", _extra_files=METADATA, map_location=DEVICE)
             break
     if MODEL == None:
         plugins.AddToQueue({"MANAGEPLUGINS": ["RouteAdvisorClassification", "Stop"]})

@@ -17,8 +17,8 @@ def EnsureFile(File:str):
 
 def Get(Category:str, Name:str, Value:any=None):
     try:
-        EnsureFile(f"{variables.PATH}config/settings.json")
-        with open(f"{variables.PATH}config/settings.json", "r") as f:
+        EnsureFile(f"{variables.Path}config/settings.json")
+        with open(f"{variables.Path}config/settings.json", "r") as f:
             Settings = json.load(f)
 
         if Settings[Category][Name] == None:
@@ -35,8 +35,8 @@ def Get(Category:str, Name:str, Value:any=None):
 
 def Set(Category:str, Name:str, Data:any):
     try:
-        EnsureFile(f"{variables.PATH}config/settings.json")
-        with open(f"{variables.PATH}config/settings.json", "r") as f:
+        EnsureFile(f"{variables.Path}config/settings.json")
+        with open(f"{variables.Path}config/settings.json", "r") as f:
             Settings = json.load(f)
 
         if not Category in Settings:
@@ -46,7 +46,7 @@ def Set(Category:str, Name:str, Data:any):
         if Category in Settings:
             Settings[Category][Name] = Data
 
-        with open(f"{variables.PATH}config/settings.json", "w") as f:
+        with open(f"{variables.Path}config/settings.json", "w") as f:
             f.truncate(0)
             json.dump(Settings, f, indent=6)
     except:

@@ -11,18 +11,18 @@ import time
 def Initialize():
     global MAIN_SHARED_MEMORY
     global MAIN_LOCK
-    MAIN_SHARED_MEMORY = shared_memory.SharedMemory(create=True, size=variables.SHARED_MEMORY_SIZE)
+    MAIN_SHARED_MEMORY = shared_memory.SharedMemory(create=True, size=variables.SharedMemorySize)
     MAIN_LOCK = multiprocessing.Lock()
 
 
 def AddToQueue(DATA):
-    if DATA is not None and str(DATA) not in str(variables.QUEUE) and "POPUP" not in str(variables.QUEUE):
-        variables.QUEUE.append(DATA)
+    if DATA is not None and str(DATA) not in str(variables.Queue) and "POPUP" not in str(variables.Queue):
+        variables.Queue.append(DATA)
 
 
 def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED_MEMORY_NAME, LOCK, DEVMODE):
     try:
-        variables.DEVMODE = DEVMODE
+        variables.DevelopmentMode = DEVMODE
         global SHARED_MEMORY
         MAIN_SHARED_MEMORY = shared_memory.SharedMemory(name=MAIN_SHARED_MEMORY_NAME)
         SHARED_MEMORY = shared_memory.SharedMemory(name=SHARED_MEMORY_NAME)
@@ -31,19 +31,19 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
         LAST_DATA = {}
         Plugin = __import__(f"plugins.{PluginName}.main", fromlist=[""])
         if Plugin.Initialize() == False:
-            variables.BREAK = True
+            variables.Break = True
         with LOCK:
-            DATA = variables.QUEUE
+            DATA = variables.Queue
             DataBytes = pickle.dumps(DATA)
-            if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
-                SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
+            if len(DataBytes) > variables.SharedMemorySize:
+                SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SharedMemorySize} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
                 while True:
-                    variables.QUEUE.pop(0)
-                    if len(DataBytes) <= variables.SHARED_MEMORY_SIZE:
+                    variables.Queue.pop(0)
+                    if len(DataBytes) <= variables.SharedMemorySize:
                         break
-            SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
-        variables.QUEUE = []
-        while variables.BREAK == False:
+            SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
+        variables.Queue = []
+        while variables.Break == False:
             START = time.time()
 
             if LAST_MEMORY_UPDATE + 1/DATA_REFRESH_RATE < time.time():
@@ -54,7 +54,7 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
 
             if UPDATE_MEMORY:
                 with MAIN_LOCK:
-                    DataBytes = bytes(MAIN_SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE]).rstrip(b'\x00')
+                    DataBytes = bytes(MAIN_SHARED_MEMORY.buf[:variables.SharedMemorySize]).rstrip(b'\x00')
                     if DataBytes:
                         DATA = pickle.loads(DataBytes)
                     else:
@@ -70,17 +70,17 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
 
             if UPDATE_MEMORY:
                 with LOCK:
-                    DATA = variables.QUEUE
+                    DATA = variables.Queue
                     DataBytes = pickle.dumps(DATA)
-                    if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
-                        SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
+                    if len(DataBytes) > variables.SharedMemorySize:
+                        SendCrashReport(f"{PluginName} exceeded the shared memory size limit of {variables.SharedMemorySize} bytes.", f"Data: {DATA}\nSize: {len(DataBytes)}")
                         while True:
-                            variables.QUEUE.pop(0)
-                            if len(DataBytes) <= variables.SHARED_MEMORY_SIZE:
+                            variables.Queue.pop(0)
+                            if len(DataBytes) <= variables.SharedMemorySize:
                                 break
-                    SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
+                    SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
 
-                variables.QUEUE = []
+                variables.Queue = []
 
             TIME_TO_SLEEP = 1/1000 - (time.time() - START)
             if TIME_TO_SLEEP > 0:
@@ -93,54 +93,54 @@ def PluginProcessFunction(PluginName, MAIN_SHARED_MEMORY_NAME, MAIN_LOCK, SHARED
 def ManagePlugins(Plugin=None, Action=None):
     if Action == None:
         return
-    variables.DATA = {}
+    variables.Data = {}
     if Plugin != None and Plugin != "All":
-        if Plugin not in variables.AVAILABLE_PLUGINS:
+        if Plugin not in variables.AvailablePlugins:
             return
         Plugins = [Plugin]
         if Action != "Stop":
-            variables.POPUP = [f"{Action}ing {Plugin}...", 0, 0.5]
+            variables.Popup = [f"{Action}ing {Plugin}...", 0, 0.5]
     else:
-        Plugins = [Plugin for Plugin in variables.AVAILABLE_PLUGINS if settings.Get("EnabledPlugins", Plugin, False)]
+        Plugins = [Plugin for Plugin in variables.AvailablePlugins if settings.Get("Plugins", Plugin, False)]
 
     for Plugin in Plugins:
         if Action == "Stop" or Action == "Restart":
-            if Plugin in variables.PLUGIN_PROCESSES:
-                variables.PLUGIN_PROCESSES[Plugin].terminate()
-                del variables.PLUGIN_PROCESSES[Plugin]
-                variables.SHARED_MEMORYS[Plugin].close()
-                del variables.SHARED_MEMORYS[Plugin]
+            if Plugin in variables.PluginProcesses:
+                variables.PluginProcesses[Plugin].terminate()
+                del variables.PluginProcesses[Plugin]
+                variables.SharedMemories[Plugin].close()
+                del variables.SharedMemories[Plugin]
 
         if Action == "Start" or Action == "Restart":
-            SHARED_MEMORY = shared_memory.SharedMemory(create=True, size=variables.SHARED_MEMORY_SIZE)
+            SHARED_MEMORY = shared_memory.SharedMemory(create=True, size=variables.SharedMemorySize)
             LOCK = multiprocessing.Lock()
-            variables.PLUGIN_PROCESSES[Plugin] = multiprocessing.Process(
+            variables.PluginProcesses[Plugin] = multiprocessing.Process(
                 target=PluginProcessFunction,
-                args=(Plugin, MAIN_SHARED_MEMORY.name, MAIN_LOCK, SHARED_MEMORY.name, LOCK, variables.DEVMODE),
+                args=(Plugin, MAIN_SHARED_MEMORY.name, MAIN_LOCK, SHARED_MEMORY.name, LOCK, variables.DevelopmentMode),
                 name=Plugin,
                 daemon=True
             )
-            variables.PLUGIN_PROCESSES[Plugin].start()
-            variables.SHARED_MEMORYS[Plugin] = SHARED_MEMORY
-            variables.LOCKS[Plugin] = LOCK
+            variables.PluginProcesses[Plugin].start()
+            variables.SharedMemories[Plugin] = SHARED_MEMORY
+            variables.Locks[Plugin] = LOCK
 
 
 def ManageSharedMemory():
-    for Plugin in variables.AVAILABLE_PLUGINS:
-        if Plugin in variables.SHARED_MEMORYS:
-            with variables.LOCKS[Plugin]:
-                DataBytes = bytes(variables.SHARED_MEMORYS[Plugin].buf[:variables.SHARED_MEMORY_SIZE]).rstrip(b'\x00')
+    for Plugin in variables.AvailablePlugins:
+        if Plugin in variables.SharedMemories:
+            with variables.Locks[Plugin]:
+                DataBytes = bytes(variables.SharedMemories[Plugin].buf[:variables.SharedMemorySize]).rstrip(b'\x00')
                 if DataBytes:
                     for Data in pickle.loads(DataBytes):
                         if "DATA" in Data:
-                            variables.DATA[Data["DATA"][0]] = Data["DATA"][1]
+                            variables.Data[Data["DATA"][0]] = Data["DATA"][1]
                         elif "POPUP" in Data:
-                            variables.POPUP = Data["POPUP"]
+                            variables.Popup = Data["POPUP"]
                         elif "MANAGEPLUGINS" in Data:
                             ManagePlugins(Plugin=Data["MANAGEPLUGINS"][0], Action=Data["MANAGEPLUGINS"][1])
     with MAIN_LOCK:
-        Data = variables.DATA
+        Data = variables.Data
         DataBytes = pickle.dumps(Data)
-        if len(DataBytes) > variables.SHARED_MEMORY_SIZE:
-            SendCrashReport(f"Main exceeded the shared memory size limit of {variables.SHARED_MEMORY_SIZE} bytes.", f"Data: {Data}\nSize: {len(DataBytes)}")
-        MAIN_SHARED_MEMORY.buf[:variables.SHARED_MEMORY_SIZE][:len(DataBytes)] = DataBytes
+        if len(DataBytes) > variables.SharedMemorySize:
+            SendCrashReport(f"Main exceeded the shared memory size limit of {variables.SharedMemorySize} bytes.", f"Data: {Data}\nSize: {len(DataBytes)}")
+        MAIN_SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes

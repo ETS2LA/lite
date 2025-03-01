@@ -2,7 +2,6 @@ import os
 import sys
 sys.path.append(os.path.dirname(__file__))
 
-import src.translate as translate
 import src.variables as variables
 import src.settings as settings
 import src.console as console
@@ -17,19 +16,18 @@ import time
 
 
 if __name__ == '__main__':
-    os.system("cls" if variables.OS == "nt" else "clear")
+    os.system("cls")
     print("\nETS2LA-Lite\n-----------\n")
 
     if "--dev" in sys.argv:
-        variables.DEVMODE = True
+        variables.DevelopmentMode = True
 
-    if os.path.exists(f"{variables.PATH}cache") == False:
-        os.makedirs(f"{variables.PATH}cache")
+    if os.path.exists(f"{variables.Path}cache") == False:
+        os.makedirs(f"{variables.Path}cache")
 
     if settings.Get("Console", "HideConsole", False):
         console.HideConsole()
 
-    translate.Initialize()
     plugins.Initialize()
     plugins.ManagePlugins(Plugin="All", Action="Start")
     pytorch.CheckCuda()
@@ -38,16 +36,16 @@ if __name__ == '__main__':
     helpers.RunEvery(60, lambda: server.Ping())
     helpers.RunEvery(60, lambda: server.GetUserCount())
 
-    if variables.DEVMODE:
+    if variables.DevelopmentMode:
         import hashlib
         Scripts = []
-        Scripts.append(("Main", f"{variables.PATH}app/main.py"))
-        for Object in os.listdir(f"{variables.PATH}app/plugins"):
-            Scripts.append((Object, f"{variables.PATH}app/plugins/{Object}/main.py"))
-        for Object in os.listdir(f"{variables.PATH}app/modules"):
-            Scripts.append((Object, f"{variables.PATH}app/modules/{Object}/main.py"))
-        for Object in os.listdir(f"{variables.PATH}app/src"):
-            Scripts.append((Object, f"{variables.PATH}app/src/{Object}"))
+        Scripts.append(("Main", f"{variables.Path}app/main.py"))
+        for Object in os.listdir(f"{variables.Path}app/plugins"):
+            Scripts.append((Object, f"{variables.Path}app/plugins/{Object}/main.py"))
+        for Object in os.listdir(f"{variables.Path}app/modules"):
+            Scripts.append((Object, f"{variables.Path}app/modules/{Object}/main.py"))
+        for Object in os.listdir(f"{variables.Path}app/src"):
+            Scripts.append((Object, f"{variables.Path}app/src/{Object}"))
         LastScripts = {}
         for i, (Script, Path) in enumerate(Scripts):
             try:
@@ -56,22 +54,22 @@ if __name__ == '__main__':
             except:
                 pass
 
-    while variables.BREAK == False:
+    while variables.Break == False:
         Start = time.time()
 
         plugins.ManageSharedMemory()
 
-        if variables.DEVMODE:
+        if variables.DevelopmentMode:
             for i, (Script, Path) in enumerate(Scripts):
                 try:
                     Hash = hashlib.md5(open(Path, "rb").read()).hexdigest()
                     if Hash != LastScripts[i]:
                         if "plugins" in os.path.dirname(Path):
-                            os.system("cls" if variables.OS == "nt" else "clear")
+                            os.system("cls")
                             print("\nETS2LA-Lite\n-----------\n")
                             plugins.ManagePlugins(Plugin=Script, Action="Restart")
                         elif "modules" in os.path.dirname(Path):
-                            os.system("cls" if variables.OS == "nt" else "clear")
+                            os.system("cls")
                             print("\nETS2LA-Lite\n-----------\n")
                             plugins.ManagePlugins(Plugin="All", Action="Restart")
                         else:

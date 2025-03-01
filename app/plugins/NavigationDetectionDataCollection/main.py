@@ -96,10 +96,10 @@ def Run(data):
                 return
 
             Name = f"{round(CurrentTime, 2)}-{CurrentSide}".replace(".", "-")
-            if os.path.exists(f"{variables.PATH}cache/NavigationDetectionDataCollection") == False:
-                os.makedirs(f"{variables.PATH}cache/NavigationDetectionDataCollection")
+            if os.path.exists(f"{variables.Path}cache/NavigationDetectionDataCollection") == False:
+                os.makedirs(f"{variables.Path}cache/NavigationDetectionDataCollection")
             if Enabled:
-                cv2.imwrite(f"{variables.PATH}cache/NavigationDetectionDataCollection/{Name}.png", Frame)
+                cv2.imwrite(f"{variables.Path}cache/NavigationDetectionDataCollection/{Name}.png", Frame)
 
             if Side == CurrentSide:
                 cv2.rectangle(Frame, (0, 0), (Frame.shape[1] -1, Frame.shape[0] - 1), (0, 255, 0) if Enabled else (0, 0, 255), round(Frame.shape[0] * 0.01))
@@ -130,7 +130,7 @@ def Run(data):
                 cv2.putText(Frame, text, (5, 25 + (i * 30)), cv2.FONT_HERSHEY_SIMPLEX, fontscale, (255, 255, 255), thickness, cv2.LINE_AA)
 
             if Enabled:
-                with open(f"{variables.PATH}cache/NavigationDetectionDataCollection/{Name}.txt", "w") as f:
+                with open(f"{variables.Path}cache/NavigationDetectionDataCollection/{Name}.txt", "w") as f:
                     f.write(Label)
 
             ShowImage.Show(f"{CurrentSide} - NavigationDetectionDataCollection", Frame)

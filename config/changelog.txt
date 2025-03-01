@@ -1,2 +1,3 @@
 0.10: Added a new AR plugin, a demo can be found when going right from the service spawn in Berlin (Germany). Backend changes and fixes.
 0.11: Author Name Changes
+0.12: UI Update

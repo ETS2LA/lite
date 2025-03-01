@@ -3,13 +3,24 @@ import src.settings as settings
 import src.plugins as plugins
 import src.ui as ui
 
+import subprocess
 import requests
+import ImageUI
 import time
-import os
 
 def CheckForUpdates():
-    if variables.DEVMODE:
-        variables.POPUP = ["Ignoring update check because of development mode.", 0, 0.65]
+    if variables.DevelopmentMode:
+        Right = variables.WindowWidth - 1
+        Bottom = variables.WindowHeight - 1
+        ImageUI.Popup("Ignoring update check because of development mode.",
+                      StartX1=Right * 0.25,
+                      StartY1=Bottom,
+                      StartX2=Right * 0.75,
+                      StartY2=Bottom + 20,
+                      EndX1=Right * 0.1,
+                      EndY1=Bottom - 50,
+                      EndX2=Right * 0.9,
+                      EndY2=Bottom - 10)
         return
     if settings.Get("Updater", "LastRemoteCheck", 0) + 600 < time.time():
         try:
@@ -25,25 +36,39 @@ def CheckForUpdates():
     else:
         RemoteVersion = settings.Get("Updater", "RemoteVersion")
         Changelog = settings.Get("Updater", "Changelog")
-    variables.REMOTE_VERSION = RemoteVersion
-    variables.CHANGELOG = Changelog
-    if RemoteVersion != variables.VERSION:
-        variables.PAGE = "Update"
-        ui.SetTitleBarHeight(0)
+    variables.RemoteVersion = RemoteVersion
+    variables.Changelog = Changelog
+    if RemoteVersion != variables.Version:
+        variables.Page = "Update"
     else:
-        variables.POPUP = ["No updates available.", 0, 0.5]
+        Right = variables.WindowWidth - 1
+        Bottom = variables.WindowHeight - 1
+        ImageUI.Popup("No updates available.",
+                      StartX1=Right * 0.4,
+                      StartY1=Bottom,
+                      StartX2=Right * 0.6,
+                      StartY2=Bottom + 20,
+                      EndX1=Right * 0.25,
+                      EndY1=Bottom - 50,
+                      EndX2=Right * 0.75,
+                      EndY2=Bottom - 10)
+
 
 def Update():
-    if variables.DEVMODE:
-        variables.POPUP = ["Ignoring update request because of development mode.", 0, 0.65]
-        ui.SetTitleBarHeight(50)
-        variables.PAGE = "Menu"
+    if variables.DevelopmentMode:
+        Right = variables.WindowWidth - 1
+        Bottom = variables.WindowHeight - 1
+        ImageUI.Popup("Ignoring update request because of development mode.",
+                      StartX1=Right * 0.25,
+                      StartY1=Bottom,
+                      StartX2=Right * 0.75,
+                      StartY2=Bottom + 20,
+                      EndX1=Right * 0.1,
+                      EndY1=Bottom - 50,
+                      EndX2=Right * 0.9,
+                      EndY2=Bottom - 10)
+        variables.Page = "Menu"
         return
     plugins.ManagePlugins(Plugin="All", Action="Stop")
-    try:
-        os.chdir(variables.PATH)
-        os.system("git stash >nul 2>&1")
-        os.system("git pull >nul 2>&1")
-    except:
-        pass
-    ui.Restart()
+    ui.Close()
+    subprocess.Popen(f"{variables.Path}Update.bat", cwd=variables.Path, creationflags=subprocess.CREATE_NEW_CONSOLE)

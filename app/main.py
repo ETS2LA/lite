@@ -30,7 +30,7 @@ if __name__ == '__main__':
 
     plugins.Initialize()
     plugins.ManagePlugins(Plugin="All", Action="Start")
-    pytorch.CheckCuda()
+    pytorch.CheckCUDA()
     ui.Initialize()
     updater.CheckForUpdates()
     helpers.RunEvery(60, lambda: server.Ping())

@@ -24,6 +24,8 @@ import cv2
 
 AvailableLanguages = list(ImageUI.Translations.GetAvailableLanguages().keys())
 EnabledPlugins = {Plugin: settings.Get("Plugins", Plugin, False) for Plugin in variables.AvailablePlugins}
+HideConsoleSwitch = settings.Get("Console", "HideConsole", False)
+SendCrashReportsSwitch = settings.Get("CrashReports", "SendCrashReports") == True
 ShowContextMenu = False
 
 
@@ -54,8 +56,20 @@ def Initialize():
 
     SimpleWindow.Show(variables.Name, variables.Background)
 
-    ImageUI.Translations.SetTranslator(SourceLanguage="English", DestinationLanguage=variables.Language)
+    ImageUI.CachePath = f"{variables.Path}cache"
+    ImageUI.SetTranslator(SourceLanguage="English", DestinationLanguage=variables.Language)
+    ImageUI.SetTheme(variables.Theme)
     Update()
+
+
+def SetTheme(Theme):
+    settings.Set("UI", "Theme", Theme)
+    variables.Theme = Theme
+    variables.Background = np.zeros((variables.WindowHeight, variables.WindowWidth, 3), np.uint8)
+    variables.Background[:] = (28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)
+    cv2.rectangle(variables.Background, (0, 0), (variables.WindowWidth - 1, 49), (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231), -1)
+    ImageUI.SetTheme(Theme)
+    SimpleWindow.SetTitleBarColor(variables.Name, (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231))
 
 
 def Resize(WindowWidth, WindowHeight):
@@ -142,8 +156,8 @@ def Update():
                        X2=Top + (i + 1)  / len(Tabs) * Right - 5,
                        Y2=Top + 44,
                        OnPress=lambda Tab = Tab: {setattr(variables, "Page", Tab), settings.Set("UI", "Page", Tab)},
-                       Color=variables.TabButtonSelectedColor if Tab == variables.Page else variables.TabButtonColor,
-                       HoverColor=variables.TabButtonSelectedHoverColor if Tab == variables.Page else variables.TabButtonHoverColor)
+                       Color=((28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)) if Tab == variables.Page else ((47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231)),
+                       HoverColor=((28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)) if Tab == variables.Page else ((41, 41, 41) if variables.Theme == "Dark" else (244, 244, 244)))
 
     if variables.Page == "Update":
         ImageUI.Label(Text=f"Update Available:\n{variables.Version} -> {variables.RemoteVersion}",
@@ -199,127 +213,102 @@ def Update():
                        Y2=Bottom - 10,
                        OnPress=lambda: {setattr(variables, "Page", "Menu"), setattr(server, "AllowCrashReports", False), settings.Set("CrashReports", "SendCrashReports", False)})
 
-    #if variables.PAGE == "CUDA":
-    #    if variables.CUDA_INSTALLED != "Loading..." and variables.CUDA_AVAILABLE != "Loading..." and variables.CUDA_COMPATIBLE != "Loading..." and variables.CUDA_DETAILS != "Loading...":
-    #        if variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == False:
-    #            Message = "CUDA is not installed, not available and not compatible."
-    #        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == False:
-    #            Message = "CUDA is installed but not available and not compatible."
-    #        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == True:
-    #            Message = "CUDA is installed but not available, probably\nbecause your NVIDIA GPU is not compatible."
-    #        elif variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == True:
-    #            Message = "CUDA is not installed and not available, but it is compatible."
-    #        elif variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == True and variables.CUDA_COMPATIBLE == True:
-    #            Message = "CUDA is not installed but available and compatible,\nprobably because Python is using a CUDA installation\noutside of the app environment."
-    #        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == True and variables.CUDA_COMPATIBLE == True:
-    #            Message = "CUDA is installed, available and compatible."
-    #        else:
-    #            Message = f"INSTALLED: {variables.CUDA_INSTALLED} AVAILABLE: {variables.CUDA_AVAILABLE} COMPATIBLE: {variables.CUDA_COMPATIBLE}"
-    #        variables.ITEMS.append({
-    #            "Type": "Label",
-    #            "Text": "When CUDA is installed and available, the app will run AI models\non your NVIDIA GPU which will result in a significant speed increase.",
-    #            "X1": 10,
-    #            "Y1": 10,
-    #            "X2": variables.CANVAS_RIGHT - 10,
-    #            "Y2": 60})
-#
-    #        variables.ITEMS.append({
-    #            "Type": "Label",
-    #            "Text": f"{Message}",
-    #            "X1": 10,
-    #            "Y1": 80,
-    #            "X2": variables.CANVAS_RIGHT - 10,
-    #            "Y2": 130})
-#
-    #        variables.ITEMS.append({
-    #            "Type": "Label",
-    #            "Text": f"Details:\n{variables.CUDA_DETAILS}",
-    #            "X1": 10,
-    #            "Y1": 150,
-    #            "X2": variables.CANVAS_RIGHT - 10,
-    #            "Y2": 275})
-#
-    #        if variables.CUDA_INSTALLED == False and variables.CUDA_COMPATIBLE == True:
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Install CUDA libraries (3GB)",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas"), pytorch.InstallCUDA()},
-    #                "X1": variables.CANVAS_RIGHT / 2 + 5,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT - 10,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-#
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Keep running on CPU",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas")},
-    #                "X1": 10,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT / 2 - 5,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-    #        elif variables.CUDA_INSTALLED == False and variables.CUDA_AVAILABLE == False and variables.CUDA_COMPATIBLE == False:
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Install CUDA libraries anyway (3GB)",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas"), pytorch.InstallCUDA()},
-    #                "X1": variables.CANVAS_RIGHT / 2 + 5,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT - 10,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-#
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Keep running on CPU",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas")},
-    #                "X1": 10,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT / 2 - 5,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-    #        elif variables.CUDA_INSTALLED == True and variables.CUDA_AVAILABLE == True and variables.CUDA_COMPATIBLE == True:
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Uninstall CUDA libraries",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas"), pytorch.UninstallCUDA()},
-    #                "X1": variables.CANVAS_RIGHT / 2 + 5,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT - 10,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-#
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Keep running on GPU with CUDA",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas")},
-    #                "X1": 10,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT / 2 - 5,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-    #        else:
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Uninstall CUDA libraries",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas"), pytorch.UninstallCUDA()},
-    #                "X1": variables.CANVAS_RIGHT / 2 + 5,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT - 10,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-#
-    #            variables.ITEMS.append({
-    #                "Type": "Button",
-    #                "Text": "Keep running on CPU with CUDA",
-    #                "Function": lambda: {setattr(variables, "PAGE", "Canvas")},
-    #                "X1": 10,
-    #                "Y1": variables.CANVAS_BOTTOM - 60,
-    #                "X2": variables.CANVAS_RIGHT / 2 - 5,
-    #                "Y2": variables.CANVAS_BOTTOM - 10})
-    #    else:
-    #        variables.RENDER_FRAME = True
-    #        variables.ITEMS.append({
-    #            "Type": "Label",
-    #            "Text": f"Checking your CUDA compatibility, please wait...",
-    #            "X1": 10,
-    #            "Y1": 10,
-    #            "X2": variables.CANVAS_RIGHT - 10,
-    #            "Y2": variables.CANVAS_BOTTOM - 10})
+    if variables.Page == "CUDA":
+        if variables.CUDAInstalled != "Loading..." and variables.CUDAAvailable != "Loading..." and variables.CUDACompatible != "Loading..." and variables.CUDADetails != "Loading...":
+            if variables.CUDAInstalled == False and variables.CUDAAvailable == False and variables.CUDACompatible == False:
+                Message = "CUDA is not installed, not available and not compatible."
+            elif variables.CUDAInstalled == True and variables.CUDAAvailable == False and variables.CUDACompatible == False:
+                Message = "CUDA is installed but not available and not compatible."
+            elif variables.CUDAInstalled == True and variables.CUDAAvailable == False and variables.CUDACompatible == True:
+                Message = "CUDA is installed but not available, probably\nbecause your NVIDIA GPU is not compatible."
+            elif variables.CUDAInstalled == False and variables.CUDAAvailable == False and variables.CUDACompatible == True:
+                Message = "CUDA is not installed and not available, but it is compatible."
+            elif variables.CUDAInstalled == False and variables.CUDAAvailable == True and variables.CUDACompatible == True:
+                Message = "CUDA is not installed but available and compatible,\nprobably because Python is using a CUDA installation\noutside of the app environment."
+            elif variables.CUDAInstalled == True and variables.CUDAAvailable == True and variables.CUDACompatible == True:
+                Message = "CUDA is installed, available and compatible."
+            else:
+                Message = f"INSTALLED: {variables.CUDAInstalled} AVAILABLE: {variables.CUDAAvailable} COMPATIBLE: {variables.CUDACompatible}"
+            ImageUI.Label(Text="When CUDA is installed and available, the app will run AI models\non your NVIDIA GPU which will result in a significant speed increase.",
+                          X1=Left + 10,
+                          Y1=Top + 60,
+                          X2=Right - 10,
+                          Y2=Top + 110)
+
+            ImageUI.Label(Text=f"{Message}",
+                          X1=Left + 10,
+                          Y1=Top + 110,
+                          X2=Right - 10,
+                          Y2=Top + 160)
+
+            ImageUI.Label(Text=f"Details:\n{variables.CUDADetails}",
+                          X1=Left + 10,
+                          Y1=Top + 200,
+                          X2=Right - 10,
+                          Y2=Top + 325)
+
+            if variables.CUDAInstalled == False and variables.CUDACompatible == True:
+                ImageUI.Button(Text="Install CUDA libraries (3GB)",
+                               X1=Right / 2 + 5,
+                               Y1=Bottom - 50,
+                               X2=Right - 10,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.InstallCUDA()})
+
+                ImageUI.Button(Text="Keep running on CPU",
+                               X1=10,
+                               Y1=Bottom - 50,
+                               X2=Right / 2 - 5,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu")})
+            elif variables.CUDAInstalled == False and variables.CUDAAvailable == False and variables.CUDACompatible == False:
+                ImageUI.Button(Text="Install CUDA libraries anyway (3GB)",
+                               X1=Right / 2 + 5,
+                               Y1=Bottom - 50,
+                               X2=Right - 10,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.InstallCUDA()})
+
+                ImageUI.Button(Text="Keep running on CPU",
+                               X1=10,
+                               Y1=Bottom - 50,
+                               X2=Right / 2  - 5,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu")})
+            elif variables.CUDAInstalled == True and variables.CUDAAvailable == True and variables.CUDACompatible == True:
+                ImageUI.Button(Text="Uninstall CUDA libraries",
+                               X1=Right / 2 + 5,
+                               Y1=Bottom - 50,
+                               X2=Right - 10,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.UninstallCUDA()})
+
+                ImageUI.Button(Text="Keep running on GPU with CUDA",
+                               X1=10,
+                               Y1=Bottom - 50,
+                               X2=Right / 2 - 5,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu")})
+            else:
+                ImageUI.Button(Text="Uninstall CUDA libraries",
+                               X1=Right / 2 + 5,
+                               Y1=Bottom - 50,
+                               X2=Right - 10,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.UninstallCUDA()})
+
+                ImageUI.Button(Text="Keep running on CPU with CUDA",
+                               X1=10,
+                               Y1=Bottom - 50,
+                               X2=Right / 2 - 5,
+                               Y2=Bottom - 10,
+                               OnPress=lambda: {setattr(variables, "Page", "Menu")})
+        else:
+            ImageUI.Label(Text=f"Checking your CUDA compatibility, please wait...",
+                          X1=10,
+                          Y1= 10,
+                          X2=Right - 10,
+                          Y2=Bottom - 10)
 
     if variables.Page == "Menu":
         ImageUI.Label(Text=f"ETS2LA-Lite v{variables.Version}",
@@ -384,7 +373,7 @@ def Update():
                          Y1=Top + 60,
                          X2=Right -10,
                          Y2=Top + 95,
-                         OnChange=lambda Item: {settings.Set("UI", "Theme", Item), Restart() if variables.Theme != Item else None})
+                         OnChange=SetTheme)
 
         ImageUI.Button(Text="Check CUDA (GPU) Support",
                        X1=Left + 10,
@@ -398,6 +387,7 @@ def Update():
                        Y1=Top + 150,
                        X2=Right,
                        Y2=Top + 175,
+                       State=HideConsoleSwitch,
                        OnChange=lambda State: {settings.Set("Console", "HideConsole", State), console.HideConsole() if State else console.RestoreConsole()})
 
         ImageUI.Switch(Text="Send Anonymous Crash Reports",
@@ -405,6 +395,7 @@ def Update():
                        Y1=Top + 180,
                        X2=Right,
                        Y2=Top + 205,
+                       State=SendCrashReportsSwitch,
                        OnChange=lambda State: {settings.Set("CrashReports", "SendCrashReports", State), setattr(server, "AllowCrashReports", State), threading.Thread(target=server.GetUserCount, daemon=True).start()})
 
     Frame = variables.Background.copy()

@@ -6,6 +6,7 @@ import src.pytorch as pytorch
 import src.updater as updater
 import src.server as server
 
+import multiprocessing
 import SimpleWindow
 import numpy as np
 import subprocess
@@ -49,7 +50,7 @@ def Initialize():
 
     SimpleWindow.Show(variables.Name, variables.Background)
 
-    ImageUI.CachePath = f"{variables.Path}cache"
+    ImageUI.Settings.CachePath = f"{variables.Path}cache"
     ImageUI.SetTranslator(SourceLanguage="English", DestinationLanguage=variables.Language)
     ImageUI.SetTheme(variables.Theme)
     Update()
@@ -63,6 +64,24 @@ def SetTheme(Theme):
     cv2.rectangle(variables.Background, (0, 0), (variables.WindowWidth - 1, 49), (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231), -1)
     ImageUI.SetTheme(Theme)
     SimpleWindow.SetTitleBarColor(variables.Name, (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231))
+
+
+def Popup(Text, Progress = 0):
+    if multiprocessing.current_process().name != "MainProcess":
+        plugins.AddToQueue({"Popup": [Text, Progress]})
+        return
+    Right = variables.WindowWidth - 1
+    Bottom = variables.WindowHeight - 1
+    ImageUI.Popup(Text,
+                  StartX1=Right * 0.3,
+                  StartY1=Bottom,
+                  StartX2=Right * 0.7,
+                  StartY2=Bottom + 20,
+                  EndX1=Right * 0.2,
+                  EndY1=Bottom - 50,
+                  EndX2=Right * 0.8,
+                  EndY2=Bottom - 10,
+                  Progress=Progress)
 
 
 def Resize(WindowWidth, WindowHeight):

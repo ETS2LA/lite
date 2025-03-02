@@ -5,6 +5,7 @@ import src.plugins as plugins
 import multiprocessing
 import traceback
 import requests
+import ImageUI
 import json
 import time
 
@@ -66,11 +67,11 @@ def SendCrashReport(Type:str, Message:str, Additional=None):
     if ProcessName != "MainProcess":
         while True:
             variables.Queue = []
-            plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-            plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+            plugins.AddToQueue({"Popup": [f"{ProcessName} Crashed!", 0]})
+            plugins.ManagePlugins(Plugin=ProcessName, Action="Stop")
             DATA = variables.Queue
             DataBytes = plugins.pickle.dumps(DATA)
-            plugins.SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
+            plugins.SharedMemory.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
             time.sleep(0.1)
 
 

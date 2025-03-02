@@ -58,7 +58,7 @@ def Initialize():
             MODEL = torch.jit.load(f"{variables.Path}cache/Use/{File}", _extra_files=METADATA, map_location=DEVICE)
             break
     if MODEL == None:
-        plugins.AddToQueue({"MANAGEPLUGINS": ["RouteAdvisorClassification", "Stop"]})
+        plugins.AddToQueue({"ManagePlugins": ["RouteAdvisorClassification", "Stop"]})
         return
 
     METADATA = eval(METADATA["data"])

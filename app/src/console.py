@@ -1,5 +1,6 @@
 import src.variables as variables
 import src.plugins as plugins
+from src.ui import Popup
 import multiprocessing
 import win32console
 import win32con
@@ -33,8 +34,8 @@ def RestoreConsole():
         if ProcessName != "MainProcess":
             while True:
                 variables.Queue = []
-                plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-                plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+                Popup(Text=f"{ProcessName} Crashed!", Progress=0)
+                plugins.ManagePlugins(Plugin=ProcessName, Action="Stop")
                 DATA = variables.Queue
                 DataBytes = plugins.pickle.dumps(DATA)
                 plugins.SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
@@ -61,8 +62,8 @@ def HideConsole():
         if ProcessName != "MainProcess":
             while True:
                 variables.Queue = []
-                plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-                plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+                Popup(Text=f"{ProcessName} Crashed!", Progress=0)
+                plugins.ManagePlugins(Plugin=ProcessName, Action="Stop")
                 DATA = variables.Queue
                 DataBytes = plugins.pickle.dumps(DATA)
                 plugins.SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes
@@ -88,8 +89,8 @@ def CloseConsole():
         if ProcessName != "MainProcess":
             while True:
                 variables.Queue = []
-                plugins.AddToQueue({"POPUP": [f"{ProcessName} Crashed!", 0, 0.5]})
-                plugins.AddToQueue({"MANAGEPLUGINS": [str(ProcessName), "Stop"]})
+                Popup(Text=f"{ProcessName} Crashed!", Progress=0)
+                plugins.ManagePlugins(Plugin=ProcessName, Action="Stop")
                 DATA = variables.Queue
                 DataBytes = plugins.pickle.dumps(DATA)
                 plugins.SHARED_MEMORY.buf[:variables.SharedMemorySize][:len(DataBytes)] = DataBytes

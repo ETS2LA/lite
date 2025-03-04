@@ -24,6 +24,9 @@ CUDAInstalled = False
 CUDACompatible = False
 CUDADetails = None
 
+ETS2Path = ""
+ATSPath = ""
+
 Popup = [None, 0, 0.5]
 Data = {}
 FOV = 80

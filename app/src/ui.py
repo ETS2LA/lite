@@ -5,6 +5,7 @@ import src.plugins as plugins
 import src.pytorch as pytorch
 import src.updater as updater
 import src.server as server
+import src.setup as setup
 
 import multiprocessing
 import SimpleWindow
@@ -401,6 +402,13 @@ def Update():
                        Y2=Top + 140,
                        OnPress=lambda: setattr(variables, "Page", "CUDA"))
 
+        ImageUI.Button(Text="Game Paths",
+                       X1=Right / 2 + 5,
+                       Y1=Top + 105,
+                       X2=Right - 10,
+                       Y2=Top + 140,
+                       OnPress=lambda: setattr(variables, "Page", "GamePathInput"))
+
         ImageUI.Switch(Text="Hide Console",
                        X1=Left + 10,
                        Y1=Top + 150,
@@ -416,6 +424,52 @@ def Update():
                        Y2=Top + 205,
                        State=SendCrashReportsSwitch,
                        OnChange=lambda State: {settings.Set("CrashReports", "SendCrashReports", State), setattr(server, "AllowCrashReports", State), threading.Thread(target=server.GetUserCount, daemon=True).start()})
+
+    if variables.Page == "GamePathInput":
+        ImageUI.Label(Text="Set the paths to the games here.\nNormally they are found automatically.",
+                      X1=Left,
+                      Y1=Top + 50,
+                      X2=Right,
+                      Y2=Top + 110)
+
+        ImageUI.Label(Text="Euro Truck Simulator 2 Path:",
+                      X1=Right * 0.1,
+                      Y1=Bottom / 2 - 70,
+                      X2=Right * 0.9,
+                      Y2=Bottom / 2 - 45,
+                      Align="Left",
+                      AlignPadding=0)
+
+        ImageUI.Input(X1=Right * 0.1,
+                      Y1=Bottom / 2 - 45,
+                      X2=Right * 0.9,
+                      Y2=Bottom / 2 - 10,
+                      DefaultInput=variables.ETS2Path,
+                      Placeholder="Path to the 'Euro Truck Simulator 2' folder. Leave empty if not installed!",
+                      OnChange=lambda Input: {settings.Set("Setup", "ETS2Path", Input)})
+
+        ImageUI.Label(Text="American Truck Simulator Path:",
+                      X1=Right * 0.1,
+                      Y1=Bottom / 2 + 10,
+                      X2=Right * 0.9,
+                      Y2=Bottom / 2 + 35,
+                      Align="Left",
+                      AlignPadding=0)
+
+        ImageUI.Input(X1=Right * 0.1,
+                      Y1=Bottom / 2 + 35,
+                      X2=Right * 0.9,
+                      Y2=Bottom / 2 + 70,
+                      DefaultInput=variables.ATSPath,
+                      Placeholder="Path to the 'American Truck Simulator' folder. Leave empty if not installed!",
+                      OnChange=lambda Input: {settings.Set("Setup", "ATSPath", Input)})
+
+        ImageUI.Button(Text="Ok",
+                       X1=Left + 10,
+                       Y1=Bottom - 50,
+                       X2=Right - 10,
+                       Y2=Bottom - 10,
+                       OnPress=lambda: {setup.CopyDLLs(), setattr(variables, "Page", "Menu")})
 
     Frame = variables.Background.copy()
     variables.Frame = ImageUI.Update(WindowHWND=SimpleWindow.GetHandle(variables.Name), Frame=Frame)

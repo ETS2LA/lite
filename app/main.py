@@ -9,6 +9,7 @@ import src.helpers as helpers
 import src.plugins as plugins
 import src.updater as updater
 import src.server as server
+import src.setup as setup
 import src.ui as ui
 
 import time
@@ -33,6 +34,7 @@ if __name__ == '__main__':
     updater.CheckForUpdates()
     helpers.RunEvery(60, lambda: server.Ping())
     helpers.RunEvery(60, lambda: server.GetUserCount())
+    if setup.CheckDLLs() == False: setup.CopyDLLs()
 
     if variables.DevelopmentMode:
         import hashlib

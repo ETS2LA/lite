@@ -164,9 +164,9 @@ def Update():
     Tabs = ["Menu", "Plugins", "Settings"]
     for i, Tab in enumerate(Tabs):
         ImageUI.Button(Text=Tab,
-                       X1=Top + i / len(Tabs) * Right + 5,
-                       Y1=Left + 5,
-                       X2=Top + (i + 1)  / len(Tabs) * Right - 5,
+                       X1=Left + i / len(Tabs) * Right + 5,
+                       Y1=Top + 5,
+                       X2=Left + (i + 1)  / len(Tabs) * Right - 5,
                        Y2=Top + 44,
                        OnPress=lambda Tab = Tab: {setattr(variables, "Page", Tab), settings.Set("UI", "Page", Tab)},
                        Color=((28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)) if Tab == variables.Page else ((47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231)),
@@ -174,16 +174,16 @@ def Update():
 
     if variables.Page == "Update":
         ImageUI.Label(Text=f"Update Available:\n{variables.Version} -> {variables.RemoteVersion}",
-                      X1=Top,
-                      Y1=Left + 60,
+                      X1=Left,
+                      Y1=Top + 50,
                       X2=Right,
                       Y2=Top + 100)
 
         ImageUI.Label(Text=f"Changelog:\n\n{variables.Changelog}",
                       X1=Left,
-                      Y1=Top + 110,
+                      Y1=Top + 100,
                       X2=Right,
-                      Y2=Bottom - 60)
+                      Y2=Bottom - 50)
 
         ImageUI.Button(Text="Update",
                        X1=Left + 10,
@@ -371,7 +371,7 @@ def Update():
             ImageUI.Switch(Text=Plugin,
                            X1=Left + 10,
                            Y1=Top + 55 + 30 * i,
-                           X2=Top + Right,
+                           X2=Right - 10,
                            Y2=Top + 85 + 30 * i,
                            State=EnabledPlugins[Plugin],
                            OnChange=lambda State, Plugin=Plugin: {settings.Set("Plugins", Plugin, State), plugins.ManagePlugins(Plugin=Plugin, Action="Start" if State else "Stop")})

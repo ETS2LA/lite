@@ -9,6 +9,8 @@ echo ETS2LA-Lite Installer
 echo ---------------------
 echo.
 
+cd /d %~dp0
+
 
 if exist "%cd%\python" (
     echo ETS2LA-Lite is already installed, press enter to reinstall!

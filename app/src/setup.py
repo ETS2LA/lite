@@ -75,27 +75,46 @@ def CheckDLLs():
 
 def CopyDLLs():
     GamePaths = GetGamePaths()
+    AnyCopied = False
     for GamePath in GamePaths:
         try:
             if os.path.exists(f"{GamePath}bin/win_x64/plugins") == False:
                 os.makedirs(f"{GamePath}bin/win_x64/plugins")
+                AnyCopied = True
         except:
             pass
 
         try:
             if os.path.exists(f"{GamePath}bin/win_x64/plugins") and os.path.exists(f"{GamePath}bin/win_x64/plugins/ets2_la_plugin.dll") == False:
                 shutil.copy2(f"{variables.Path}app/assets/DLLs/ets2_la_plugin.dll", f"{GamePath}bin/win_x64/plugins/ets2_la_plugin.dll")
+                AnyCopied = True
         except:
             pass
 
         try:
             if os.path.exists(f"{GamePath}bin/win_x64/plugins") and os.path.exists(f"{GamePath}bin/win_x64/plugins/scs_sdk_controller.dll") == False:
                 shutil.copy2(f"{variables.Path}app/assets/DLLs/scs_sdk_controller.dll", f"{GamePath}bin/win_x64/plugins/scs_sdk_controller.dll")
+                AnyCopied = True
         except:
             pass
 
         try:
             if os.path.exists(f"{GamePath}bin/win_x64/plugins") and os.path.exists(f"{GamePath}bin/win_x64/plugins/scs-telemetry.dll") == False:
                 shutil.copy2(f"{variables.Path}app/assets/DLLs/scs-telemetry.dll", f"{GamePath}bin/win_x64/plugins/scs-telemetry.dll")
+                AnyCopied = True
         except:
             pass
+
+    if AnyCopied:
+        Right = variables.WindowWidth - 1
+        Bottom = variables.WindowHeight - 1
+        ImageUI.Popup("Copied DDLs into the following game paths:\n" + "\n".join(GamePaths),
+                      StartX1=Right * 0.25,
+                      StartY1=Bottom,
+                      StartX2=Right * 0.75,
+                      StartY2=Bottom + 20 + (5 * len(GamePaths)),
+                      EndX1=Right * 0.1,
+                      EndY1=Bottom - 50 - (15 * len(GamePaths)),
+                      EndX2=Right * 0.9,
+                      EndY2=Bottom - 10,
+                      ShowDuration=15)

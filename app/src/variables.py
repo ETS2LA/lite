@@ -43,9 +43,3 @@ Break = False
 
 ConsoleName = None
 ConsoleHWND = None
-
-
-TabButtonColor = (47, 47, 47) if Theme == "Dark" else (231, 231, 231)
-TabButtonHoverColor = (41, 41, 41) if Theme == "Dark" else (244, 244, 244)
-TabButtonSelectedColor = (28, 28, 28) if Theme == "Dark" else (250, 250, 250)
-TabButtonSelectedHoverColor = (28, 28, 28) if Theme == "Dark" else (250, 250, 250)

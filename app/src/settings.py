@@ -29,6 +29,9 @@ def Free():
 
 def EnsureFile(FileStr:str):
     try:
+        if os.path.exists(FileStr) == False:
+            with open(FileStr,  "w"):
+                File.write("{}")
         with open(FileStr, "r") as File:
             try:
                 json.load(File)

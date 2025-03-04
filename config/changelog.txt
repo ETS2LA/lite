@@ -1,3 +1,4 @@
 0.12: UI Update
 0.13: CUDA fixes, requirements fixes
 0.14: UI and backend fixes
+0.15: Backend fixes

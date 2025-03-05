@@ -76,10 +76,6 @@ def SendCrashReport(Type:str, Message:str, Additional=None):
 
 
 def GetUserCount():
-    if AllowCrashReports == False:
-        variables.UserCount = "Please enable crash reporting to fetch user count."
-        return "Please enable crash reporting to fetch user count."
-
     try:
         Response = requests.get("https://api.ets2la.com/tracking/users", timeout=5).json()
         variables.UserCount = Response["data"]["online"]

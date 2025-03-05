@@ -5,3 +5,4 @@
 0.16: Hopefully fixed settings corrupted issue
 0.17: Removed send crash report requirement to access user count
 0.18: General improvements
+0.19: Fixed requirements.txt

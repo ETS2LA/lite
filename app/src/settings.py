@@ -1,89 +1,69 @@
-import src.variables as variables
+from multiprocessing import Lock, shared_memory
+import pickle
 import json
-import time
 import os
 
 
-def Lock():
+Path = os.path.dirname(os.path.dirname(os.path.dirname(__file__))).replace("\\", "/") + "/"
+SharedMemoryName = "ETS2LA-LITE-SETTINGS"
+SharedMemorySize = 1024 * 1024
+Lock = Lock()
+
+
+try:
+    SharedMemory = shared_memory.SharedMemory(name=SharedMemoryName, create=False)
+except FileNotFoundError:
+    SharedMemory = shared_memory.SharedMemory(name=SharedMemoryName, create=True, size=SharedMemorySize)
+    with open(f"{Path}config/settings.json") as File:
+        Data = pickle.dumps(json.load(File))
+    SharedMemory.buf[:len(Data)] = Data
+    SharedMemory.buf[len(Data):] = b'\x00' * (SharedMemorySize - len(Data))
+
+
+def ReadMemory():
+    Data = bytes(SharedMemory.buf).rstrip(b'\x00')
     try:
-        Count = 0
-        while os.path.exists(f"{variables.Path}config/settings-lock.txt"):
-            time.sleep(0.001)
-            Count += 1
-            if Count > 100:
-                break
-        with open(f"{variables.Path}config/settings-lock.txt", "w") as File:
-            File.write("")
-        File.close()
+        Settings = pickle.loads(Data)
+    except Exception:
+        Settings = {}
+    return Settings
+
+
+def WriteMemory(Settings):
+    Data = pickle.dumps(Settings)
+    if len(Data) > SharedMemorySize:
+        raise ValueError("Settings exceed shared memory capacity")
+    SharedMemory.buf[:len(Data)] = Data
+    SharedMemory.buf[len(Data):] = b'\x00' * (SharedMemorySize - len(Data))
+
+
+def SaveJSON(Settings):
+    try:
+        with open(f"{Path}config/settings.json", "w") as File:
+            json.dump(Settings, File, indent=4)
     except:
         pass
-
-
-def Free():
-    try:
-        if os.path.exists(f"{variables.Path}config/settings-lock.txt"):
-            os.remove(f"{variables.Path}config/settings-lock.txt")
-    except:
-        pass
-
-
-def EnsureFile(FileStr:str):
-    try:
-        if os.path.exists(FileStr) == False:
-            with open(FileStr,  "w"):
-                File.write("{}")
-        with open(FileStr, "r") as File:
-            try:
-                json.load(File)
-            except:
-                with open(FileStr, "w") as FileFile:
-                    FileFile.write("{}")
-    except:
-        with open(File, "w") as File:
-            File.write("{}")
 
 
 def Get(Category:str, Name:str, Value:any=None):
-    try:
-        Lock()
-        EnsureFile(f"{variables.Path}config/settings.json")
-        with open(f"{variables.Path}config/settings.json", "r") as File:
-            Settings = json.load(File)
-        File.close()
-        Free()
-
-        if Settings[Category][Name] == None:
-            return Value
-
-        return Settings[Category][Name]
-    except:
-        Free()
-        if Value != None:
-            Set(Category, Name, Value)
-            return Value
-        else:
-            pass
-
-
-def Set(Category:str, Name:str, Data:any):
-    try:
-        Lock()
-        EnsureFile(f"{variables.Path}config/settings.json")
-        with open(f"{variables.Path}config/settings.json", "r") as File:
-            Settings = json.load(File)
-        File.close()
-
-        if not Category in Settings:
+    with Lock:
+        Settings = ReadMemory()
+        if Category in Settings and Name in Settings[Category]:
+            return Settings[Category][Name]
+        if Category not in Settings:
             Settings[Category] = {}
-            Settings[Category][Name] = Data
+        if Name not in Settings[Category]:
+            Settings[Category][Name] = Value
+        WriteMemory(Settings)
+        SaveJSON(Settings)
+        return Settings[Category][Name]
 
-        if Category in Settings:
-            Settings[Category][Name] = Data
 
-        with open(f"{variables.Path}config/settings.json", "w") as File:
-            File.truncate(0)
-            json.dump(Settings, File, indent=6)
-        File.close()
-        Free()
-    except:
-        Free()
+def Set(Category:str, Name:str, Value:any):
+    with Lock:
+        Settings = ReadMemory()
+        if Category not in Settings:
+            Settings[Category] = {}
+        Settings[Category][Name] = Value
+        WriteMemory(Settings)
+        SaveJSON(Settings)

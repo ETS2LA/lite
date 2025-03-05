@@ -32,8 +32,8 @@ if __name__ == '__main__':
     plugins.ManagePlugins(Plugin="All", Action="Start")
     ui.Initialize()
     updater.CheckForUpdates()
-    helpers.RunEvery(60, lambda: server.Ping())
-    helpers.RunEvery(60, lambda: server.GetUserCount())
+    helpers.RunEvery(120, lambda: server.Ping())
+    helpers.RunEvery(120, lambda: server.GetUserCount())
     if setup.CheckDLLs() == False: setup.CopyDLLs()
 
     if variables.DevelopmentMode:

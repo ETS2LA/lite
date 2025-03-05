@@ -5,9 +5,9 @@ import src.plugins as plugins
 import multiprocessing
 import traceback
 import requests
-import ImageUI
 import json
 import time
+import uuid
 
 
 AllowCrashReports = settings.Get("CrashReports", "SendCrashReports")
@@ -81,10 +81,9 @@ def GetUserCount():
         return "Please enable crash reporting to fetch user count."
 
     try:
-        Url = 'https://crash.tumppi066.fi/usercount'
-        Response = json.loads(requests.get(Url, timeout=1).text)
-        variables.UserCount = Response["usercount"]
-        return Response["usercount"]
+        Response = requests.get("https://api.ets2la.com/tracking/users", timeout=5).json()
+        variables.UserCount = Response["data"]["online"]
+        return Response["data"]["online"]
     except:
         variables.UserCount = "Could not get user count."
         return "Could not get user count."
@@ -92,10 +91,11 @@ def GetUserCount():
 
 def Ping():
     try:
-        LastPing = settings.Get("CrashReports", "LastPing", 0)
+        User = settings.Get("Server", "PingID", str(uuid.uuid4()))
+        LastPing = settings.Get("Server", "LastPing", 0)
         CurrentTime = time.time()
-        if LastPing + 59 < CurrentTime:
-            settings.Set("CrashReports", "LastPing", CurrentTime)
-            requests.get("https://crash.tumppi066.fi/ping", timeout=1)
+        if LastPing + 119 < CurrentTime:
+            settings.Set("Server", "LastPing", CurrentTime)
+            requests.get(f"https://api.ets2la.com/tracking/ping/{User}", timeout=5)
     except:
         pass

@@ -31,7 +31,7 @@ def Initialize():
     global TruckSimAPI
 
     Enabled = True
-    EnableKey = settings.Get("Steering", "EnableKey", "n")
+    EnableKey = settings.Get("Controls", "Steering", "n")
     EnableKeyPressed = False
     LastEnableKeyPressed = False
     SteeringHistory = []

@@ -27,7 +27,7 @@ def Initialize():
     global SDKController
     global TruckSimAPI
 
-    EnableKey = settings.Get("Steering", "EnableKey", "n")
+    EnableKey = settings.Get("Controls", "Steering", "n")
     EnableKeyPressed = False
     LastEnableKeyPressed = False
     LastScreenCaptureCheck = 0

@@ -1,5 +1,6 @@
 from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 import modules.ScreenCapture.main as ScreenCapture
+from modules.Camera.main import SCSCamera
 import src.variables as variables
 
 import dearpygui.dearpygui as dpg
@@ -29,10 +30,14 @@ def Initialize():
     global LastWindowPosition
     global DRAWLIST
     global FRAME
+    global FOV
     TruckSimAPI = SCSTelemetry()
     LastWindowPosition = None, None, None, None
     DRAWLIST = []
     FRAME = None
+    Camera = SCSCamera()
+
+    FOV = Camera.update().fov
     InitializeWindow()
 
 
@@ -184,8 +189,8 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     if FinalZ >= 0:
         return None, None, None
 
-    FovRad = math.radians(variables.FOV)
-    
+    FovRad = math.radians(FOV)
+
     WindowDistance = ((WindowPosition[3] - WindowPosition[1]) * (4 / 3) / 2) / math.tan(FovRad / 2)
 
     ScreenX = (FinalX / FinalZ) * WindowDistance + (WindowPosition[2] - WindowPosition[0]) / 2
@@ -202,7 +207,7 @@ def ConvertToAngle(X, Y):
     if X == None or Y == None:
         return 0, 0
     _, _, WindowWidth, WindowHeight = ScreenCapture.GetWindowPosition(Name="Truck Simulator", Blacklist=["Discord"])
-    WindowDistance = ((WindowPosition[3] - WindowPosition[1]) * (4 / 3) / 2) / math.tan(math.radians(variables.FOV) / 2)
+    WindowDistance = ((WindowPosition[3] - WindowPosition[1]) * (4 / 3) / 2) / math.tan(math.radians(FOV) / 2)
     AngleX = math.atan2(X - WindowWidth / 2, WindowDistance) * (180 / math.pi)
     AngleY = math.atan2(Y - WindowHeight / 2, WindowDistance) * (180 / math.pi)
     HeadRotationX = HeadOffsetRotationX * 360

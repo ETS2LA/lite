@@ -8,7 +8,7 @@ bettercam
 dearpygui
 keyboard
 requests
-ImageUI>=0.32
+ImageUI>=0.34
 pywin32
 gputil
 psutil

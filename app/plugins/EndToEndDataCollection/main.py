@@ -2,6 +2,7 @@ from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 from modules.SDKController.main import SCSController
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
+from modules.Camera.main import SCSCamera
 from torchvision import transforms
 import src.variables as variables
 import src.plugins as plugins
@@ -26,7 +27,11 @@ def Initialize():
 
     ScreenCapture.Initialize()
     ShowImage.Initialize("EndToEndDataCollection", (0, 0, 0))
+    Camera = SCSCamera()
 
+
+    global FOV
+    FOV = Camera.update().fov
 
     global MODE
     MODE = ["Use", "Collect"][0]
@@ -102,8 +107,8 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     if FinalZ >= 0:
         return None, None, None
 
-    FovRad = math.radians(variables.FOV)
-    
+    FovRad = math.radians(FOV)
+
     WindowDistance = ((ScreenCapture.MonitorY2 - ScreenCapture.MonitorY1) * (4 / 3) / 2) / math.tan(FovRad / 2)
 
     ScreenX = (FinalX / FinalZ) * WindowDistance + (ScreenCapture.MonitorX2 - ScreenCapture.MonitorX1) / 2

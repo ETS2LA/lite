@@ -2,6 +2,7 @@ from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 from modules.SDKController.main import SCSController
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
+from modules.Camera.main import SCSCamera
 import src.variables as variables
 import numpy as np
 import time
@@ -13,12 +14,14 @@ def Initialize():
     global SDKController
     global TruckSimAPI
     global FRAME
+    global FOV
 
     global LastScreenCaptureCheck
     global Images
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
+    Camera = SCSCamera()
 
     ScreenCapture.Initialize()
     ShowImage.Initialize(Name="VisionMap", TitleBarColor=(0, 0, 0))
@@ -26,6 +29,7 @@ def Initialize():
     LastScreenCaptureCheck = 0
     Images = []
     FRAME = np.zeros((500, 500, 3), np.uint8)
+    FOV = Camera.update().fov
 
 
 def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
@@ -55,8 +59,8 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     if FinalZ >= 0:
         return None, None, None
 
-    FovRad = math.radians(variables.FOV)
-    
+    FovRad = math.radians(FOV)
+
     WindowDistance = ((ScreenCapture.MonitorY2 - ScreenCapture.MonitorY1) * (4 / 3) / 2) / math.tan(FovRad / 2)
 
     ScreenX = (FinalX / FinalZ) * WindowDistance + (ScreenCapture.MonitorX2 - ScreenCapture.MonitorX1) / 2

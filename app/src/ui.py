@@ -13,6 +13,7 @@ import numpy as np
 import subprocess
 import webbrowser
 import threading
+import keyboard
 import ImageUI
 import cv2
 
@@ -21,7 +22,46 @@ AvailableLanguages = list(ImageUI.Translations.GetAvailableLanguages().keys())
 EnabledPlugins = {Plugin: settings.Get("Plugins", Plugin, False) for Plugin in variables.AvailablePlugins}
 HideConsoleSwitch = settings.Get("Console", "HideConsole", False)
 SendCrashReportsSwitch = settings.Get("CrashReports", "SendCrashReports") == True
+EnableDisableKey = settings.Get("Controls", "Steering", "n")
 ShowContextMenu = False
+
+
+def EnableDisableKeyCallback(Input):
+    Valid = True
+    try:
+        keyboard.is_pressed(Input)
+    except:
+        Valid = False
+    if len(Input) != 1:
+        Valid = False
+    Top = 0
+    Left = 0
+    Right = variables.WindowWidth - 1
+    if Valid == False:
+        ImageUI.Popup(Text="Invalid Key!",
+                      StartX1=Left + 10 - Right / 4,
+                      StartY1=Top + 270,
+                      StartX2=Left + 0,
+                      StartY2=Top + 300,
+                      EndX1=Left + 10,
+                      EndY1=Top + 270,
+                      EndX2=Right / 4,
+                      EndY2=Top + 300,
+                      ShowDuration=1.5)
+    else:
+        ImageUI.Popup(Text="Key Updated!",
+                      StartX1=Left + 10 - Right / 4,
+                      StartY1=Top + 270,
+                      StartX2=Left + 0,
+                      StartY2=Top + 300,
+                      EndX1=Left + 10,
+                      EndY1=Top + 270,
+                      EndX2=Right / 4,
+                      EndY2=Top + 300,
+                      ShowDuration=1.5)
+        if settings.Get("Controls", "Steering", "n") != Input:
+            settings.Set("Controls", "Steering", Input)
+            plugins.ManagePlugins(Plugin="All", Action="Restart")
 
 
 def Initialize():
@@ -51,7 +91,9 @@ def Initialize():
 
     SimpleWindow.Show(variables.Name, variables.Background)
 
+    ImageUI.Settings.PopupShowDuration = 3
     ImageUI.Settings.CachePath = f"{variables.Path}cache"
+
     ImageUI.SetTranslator(SourceLanguage="English", DestinationLanguage=variables.Language)
     ImageUI.SetTheme(variables.Theme)
     Update()
@@ -100,6 +142,7 @@ def Restart():
 
 
 def Close():
+    ImageUI.Exit()
     settings.Set("UI", "X", variables.WindowX)
     settings.Set("UI", "Y", variables.WindowY)
     settings.Set("UI", "Width", variables.WindowWidth)
@@ -412,7 +455,7 @@ def Update():
         ImageUI.Switch(Text="Hide Console",
                        X1=Left + 10,
                        Y1=Top + 150,
-                       X2=Right,
+                       X2=Right / 2 - 5,
                        Y2=Top + 175,
                        State=HideConsoleSwitch,
                        OnChange=lambda State: {settings.Set("Console", "HideConsole", State), console.HideConsole() if State else console.RestoreConsole()})
@@ -420,10 +463,26 @@ def Update():
         ImageUI.Switch(Text="Send Anonymous Crash Reports",
                        X1=Left + 10,
                        Y1=Top + 180,
-                       X2=Right,
+                       X2=Right / 2 - 5,
                        Y2=Top + 205,
                        State=SendCrashReportsSwitch,
                        OnChange=lambda State: {settings.Set("CrashReports", "SendCrashReports", State), setattr(server, "AllowCrashReports", State), threading.Thread(target=server.GetUserCount, daemon=True).start()})
+
+        ImageUI.Label(Text=f"Enable/Disable Key:",
+                       X1=Left + 10,
+                       Y1=Top + 210,
+                       X2=Right / 2 - 5,
+                       Y2=Top + 235,
+                       Align="Left",
+                       AlignPadding=0)
+
+        ImageUI.Input(X1=Left + 10,
+                      Y1=Top + 235,
+                      X2=Right / 4,
+                      Y2=Top + 265,
+                      DefaultInput=EnableDisableKey,
+                      Placeholder="Default: n",
+                      OnChange=EnableDisableKeyCallback)
 
     if variables.Page == "GamePathInput":
         ImageUI.Label(Text="Set the paths to the games here.\nNormally they are found automatically.",

@@ -15,7 +15,11 @@ try:
 except FileNotFoundError:
     SharedMemory = shared_memory.SharedMemory(name=SharedMemoryName, create=True, size=SharedMemorySize)
     with open(f"{Path}config/settings.json") as File:
-        Data = pickle.dumps(json.load(File))
+        try:
+            JSONData = json.load(File)
+        except:
+            JSONData = {}
+        Data = pickle.dumps(JSONData)
     SharedMemory.buf[:len(Data)] = Data
     SharedMemory.buf[len(Data):] = b'\x00' * (SharedMemorySize - len(Data))
 

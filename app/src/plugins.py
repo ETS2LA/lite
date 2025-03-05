@@ -5,6 +5,7 @@ import src.settings as settings
 from src.ui import Popup
 import multiprocessing
 import traceback
+import ImageUI
 import pickle
 import time
 
@@ -118,12 +119,29 @@ def ManagePlugins(Plugin=None, Action=None):
     if Plugin != None and Plugin != "All":
         if Plugin not in variables.AvailablePlugins:
             return
+        if Action == "Restart" and Plugin not in variables.SharedMemories:
+            return
         Plugins = [Plugin]
-        if Action != "Stop":
-            Popup(Text=f"{Action}ing {Plugin}...", Progress=0)
-            
+
+        Right = variables.WindowWidth - 1
+        Bottom = variables.WindowHeight - 1
+        ImageUI.Popup(Text=f"{Action}ing {Plugin}..." if Action != "Stop" else f"Stopping {Plugin}...",
+                        StartX1=Right * 0.3,
+                        StartY1=Bottom,
+                        StartX2=Right * 0.7,
+                        StartY2=Bottom + 20,
+                        EndX1=Right * 0.2,
+                        EndY1=Bottom - 50,
+                        EndX2=Right * 0.8,
+                        EndY2=Bottom - 10,
+                        ShowDuration=1.5)
     else:
-        Plugins = [Plugin for Plugin in variables.AvailablePlugins if settings.Get("Plugins", Plugin, False)]
+        Plugins = []
+        for Plugin in variables.AvailablePlugins:
+            if Action == "Restart" and Plugin not in variables.SharedMemories:
+                continue
+            if settings.Get("Plugins", Plugin, False):
+                Plugins.append(Plugin)
 
     for Plugin in Plugins:
         if Action == "Stop" or Action == "Restart":

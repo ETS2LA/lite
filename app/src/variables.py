@@ -29,7 +29,6 @@ ATSPath = ""
 
 Popup = [None, 0, 0.5]
 Data = {}
-FOV = 80
 
 WindowX = settings.Get("UI", "X", 100)
 WindowY = settings.Get("UI", "Y", 100)

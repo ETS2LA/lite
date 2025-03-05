@@ -2,6 +2,7 @@ from modules.TruckSimAPI.main import scsTelemetry as SCSTelemetry
 from modules.SDKController.main import SCSController
 import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
+from modules.Camera.main import SCSCamera
 import src.settings as settings
 import src.plugins as plugins
 import src.pytorch as pytorch
@@ -17,7 +18,6 @@ NORMAL = "\033[0m"
 
 
 def Initialize():
-    global FOV
     global Enabled
     global EnableKey
     global EnableKeyPressed
@@ -28,14 +28,10 @@ def Initialize():
 
     global SDKController
     global TruckSimAPI
-
-    FOV = settings.Get("Global", "FOV", None)
-    if FOV == None:
-        print(f"\n{PURPLE}Make sure to set the FOV in the settings for End-To-End! The plugin will disable itself.{NORMAL}\n")
-        return False
+    global FOV
 
     Enabled = True
-    EnableKey = settings.Get("Steering", "EnableKey", "n")
+    EnableKey = settings.Get("Controls", "Steering", "n")
     EnableKeyPressed = False
     LastEnableKeyPressed = False
     SteeringHistory = []
@@ -45,6 +41,9 @@ def Initialize():
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
+    Camera = SCSCamera()
+
+    FOV = Camera.update().fov
 
     ScreenCapture.Initialize()
     ShowImage.Initialize(Name="End-To-End", TitleBarColor=(0, 0, 0))
@@ -78,7 +77,7 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
         return None, None, None
 
     FovRad = math.radians(FOV)
-    
+
     WindowDistance = ((ScreenCapture.MonitorY2 - ScreenCapture.MonitorY1) * (4 / 3) / 2) / math.tan(FovRad / 2)
 
     ScreenX = (FinalX / FinalZ) * WindowDistance + (ScreenCapture.MonitorX2 - ScreenCapture.MonitorX1) / 2

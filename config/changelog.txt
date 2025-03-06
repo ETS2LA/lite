@@ -6,3 +6,4 @@
 0.17: Removed send crash report requirement to access user count
 0.18: General improvements
 0.19: Fixed requirements.txt
+0.20: Improvements, ImageUI 0.36 support

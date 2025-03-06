@@ -55,6 +55,7 @@ def GetGamePaths():
                       EndY1=Top + 60,
                       EndX2=Right * 0.8,
                       EndY2=Top + 100,
+                      ID="GamePathInvalidReason",
                       ShowDuration=10)
 
         variables.Page = "GamePathInput"
@@ -117,4 +118,5 @@ def CopyDLLs():
                       EndY1=Bottom - 50 - (15 * len(GamePaths)),
                       EndX2=Right * 0.9,
                       EndY2=Bottom - 10,
+                      ID="CopiedDLLs",
                       ShowDuration=10)

@@ -2,7 +2,6 @@ from src.server import SendCrashReport
 import src.variables as variables
 import src.settings as settings
 import src.console as console
-import src.plugins as plugins
 from bs4 import BeautifulSoup
 import src.ui as ui
 import subprocess
@@ -29,8 +28,7 @@ try:
     TorchAvailable = True
 except:
     TorchAvailable = False
-    exc = traceback.format_exc()
-    SendCrashReport("PyTorch - PyTorch import error.", str(exc))
+    SendCrashReport("PyTorch - PyTorch import error.", str(traceback.format_exc()))
 
 MODELS = {}
 
@@ -63,9 +61,9 @@ def InstallCUDA():
             try:
                 Command = ["cmd", "/c", f"{variables.Path}python/python.exe -m pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --index-url https://download.pytorch.org/whl/cu124 --progress-bar raw --force-reinstall"]
                 Process = subprocess.Popen(Command, cwd=variables.Path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                with open(LockFilePath, "w") as f:
-                    f.write(str(Process.pid))
-                    f.close()
+                with open(LockFilePath, "w") as File:
+                    File.write(str(Process.pid))
+                    File.close()
                 while psutil.pid_exists(Process.pid):
                     time.sleep(0.1)
                     Output = Process.stdout.readline()
@@ -74,59 +72,15 @@ def InstallCUDA():
                         TotalSize = Output[1]
                         DownloadedSize = Output[0]
                         try:
-                            Right = variables.WindowWidth - 1
-                            Bottom = variables.WindowHeight - 1
-                            ImageUI.Popup(f"Installing CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%",
-                                          StartX1=Right * 0.4,
-                                          StartY1=Bottom,
-                                          StartX2=Right * 0.6,
-                                          StartY2=Bottom + 20,
-                                          EndX1=Right * 0.25,
-                                          EndY1=Bottom - 50,
-                                          EndX2=Right * 0.75,
-                                          EndY2=Bottom - 10,
-                                          Progress=(int(DownloadedSize) / int(TotalSize)) * 100)
+                            Popup(Text=f"Installing CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", Progress=(int(DownloadedSize) / int(TotalSize)) * 100)
                         except:
-                            Right = variables.WindowWidth - 1
-                            Bottom = variables.WindowHeight - 1
-                            ImageUI.Popup("Installing CUDA...",
-                                          StartX1=Right * 0.4,
-                                          StartY1=Bottom,
-                                          StartX2=Right * 0.6,
-                                          StartY2=Bottom + 20,
-                                          EndX1=Right * 0.25,
-                                          EndY1=Bottom - 50,
-                                          EndX2=Right * 0.75,
-                                          EndY2=Bottom - 10,
-                                          Progress=-1)
+                            Popup(Text="Installing CUDA...", Progress=-1)
                     else:
-                        Right = variables.WindowWidth - 1
-                        Bottom = variables.WindowHeight - 1
-                        ImageUI.Popup("Installing CUDA...",
-                                      StartX1=Right * 0.4,
-                                      StartY1=Bottom,
-                                      StartX2=Right * 0.6,
-                                      StartY2=Bottom + 20,
-                                      EndX1=Right * 0.25,
-                                      EndY1=Bottom - 50,
-                                      EndX2=Right * 0.75,
-                                      EndY2=Bottom - 10,
-                                      Progress=-1)
+                        Popup(Text="Installing CUDA...", Progress=-1)
                 if os.path.exists(LockFilePath):
                     os.remove(LockFilePath)
                 print(GREEN + "CUDA installation completed." + NORMAL)
-                Right = variables.WindowWidth - 1
-                Bottom = variables.WindowHeight - 1
-                ImageUI.Popup("CUDA installation completed.",
-                              StartX1=Right * 0.4,
-                              StartY1=Bottom,
-                              StartX2=Right * 0.6,
-                              StartY2=Bottom + 20,
-                              EndX1=Right * 0.25,
-                              EndY1=Bottom - 50,
-                              EndX2=Right * 0.75,
-                              EndY2=Bottom - 10,
-                              Progress=0)
+                Popup(Text="CUDA installation completed.", Progress=0)
                 ui.Restart()
             except:
                 SendCrashReport("PyTorch - Error in function InstallCUDAThread.", str(traceback.format_exc()))
@@ -134,11 +88,12 @@ def InstallCUDA():
         Popup(Text="Installing CUDA...", Progress=-1)
         LockFilePath = f"{variables.Path}cache/CUDAInstall.txt"
         if os.path.exists(LockFilePath):
-            with open(LockFilePath, "r") as f:
-                PID = int(f.read().strip())
-                f.close()
+            with open(LockFilePath, "r") as File:
+                PID = int(File.read().strip())
+                File.close()
             if str(PID) in str(psutil.pids()):
                 print(RED + "CUDA is already being installed." + NORMAL)
+                Popup(Text="CUDA is already being installed.", Progress=0)
                 return
         threading.Thread(target=InstallCUDAThread, daemon=True).start()
     except:
@@ -151,9 +106,9 @@ def UninstallCUDA():
             try:
                 Command = ["cmd", "/c", f"{variables.Path}python/python.exe -m pip install torch==2.5.1 torchvision==0.20.1 torchaudio==2.5.1 --progress-bar raw --force-reinstall"]
                 Process = subprocess.Popen(Command, cwd=variables.Path, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-                with open(LockFilePath, "w") as f:
-                    f.write(str(Process.pid))
-                    f.close()
+                with open(LockFilePath, "w") as File:
+                    File.write(str(Process.pid))
+                    File.close()
                 while psutil.pid_exists(Process.pid):
                     time.sleep(0.1)
                     Output = Process.stdout.readline()
@@ -162,59 +117,15 @@ def UninstallCUDA():
                         TotalSize = Output[1]
                         DownloadedSize = Output[0]
                         try:
-                            Right = variables.WindowWidth - 1
-                            Bottom = variables.WindowHeight - 1
-                            ImageUI.Popup(f"Uninstalling CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%",
-                                          StartX1=Right * 0.4,
-                                          StartY1=Bottom,
-                                          StartX2=Right * 0.6,
-                                          StartY2=Bottom + 20,
-                                          EndX1=Right * 0.25,
-                                          EndY1=Bottom - 50,
-                                          EndX2=Right * 0.75,
-                                          EndY2=Bottom - 10,
-                                          Progress=(int(DownloadedSize) / int(TotalSize)) * 100)
+                            Popup(Text=f"Uninstalling CUDA: {round((int(DownloadedSize) / int(TotalSize)) * 100)}%", Progress=(int(DownloadedSize) / int(TotalSize)) * 100)
                         except:
-                            Right = variables.WindowWidth - 1
-                            Bottom = variables.WindowHeight - 1
-                            ImageUI.Popup("Uninstalling CUDA...",
-                                          StartX1=Right * 0.4,
-                                          StartY1=Bottom,
-                                          StartX2=Right * 0.6,
-                                          StartY2=Bottom + 20,
-                                          EndX1=Right * 0.25,
-                                          EndY1=Bottom - 50,
-                                          EndX2=Right * 0.75,
-                                          EndY2=Bottom - 10,
-                                          Progress=-1)
+                            Popup(Text="Uninstalling CUDA...", Progress=-1)
                     else:
-                        Right = variables.WindowWidth - 1
-                        Bottom = variables.WindowHeight - 1
-                        ImageUI.Popup("Uninstalling CUDA...",
-                                      StartX1=Right * 0.4,
-                                      StartY1=Bottom,
-                                      StartX2=Right * 0.6,
-                                      StartY2=Bottom + 20,
-                                      EndX1=Right * 0.25,
-                                      EndY1=Bottom - 50,
-                                      EndX2=Right * 0.75,
-                                      EndY2=Bottom - 10,
-                                      Progress=-1)
+                        Popup(Text="Uninstalling CUDA...", Progress=-1)
                 if os.path.exists(LockFilePath):
                     os.remove(LockFilePath)
                 print(GREEN + "CUDA uninstallation completed." + NORMAL)
-                Right = variables.WindowWidth - 1
-                Bottom = variables.WindowHeight - 1
-                ImageUI.Popup("CUDA uninstallation completed.",
-                              StartX1=Right * 0.4,
-                              StartY1=Bottom,
-                              StartX2=Right * 0.6,
-                              StartY2=Bottom + 20,
-                              EndX1=Right * 0.25,
-                              EndY1=Bottom - 50,
-                              EndX2=Right * 0.75,
-                              EndY2=Bottom - 10,
-                              Progress=0)
+                Popup(Text="CUDA uninstallation completed.", Progress=0)
                 ui.Restart()
             except:
                 SendCrashReport("PyTorch - Error in function UninstallCUDAThread.", str(traceback.format_exc()))
@@ -222,11 +133,12 @@ def UninstallCUDA():
         Popup(Text="Uninstalling CUDA...", Progress=-1)
         LockFilePath = f"{variables.Path}cache/CUDAInstall.txt"
         if os.path.exists(LockFilePath):
-            with open(LockFilePath, "r") as f:
-                PID = int(f.read().strip())
-                f.close()
+            with open(LockFilePath, "r") as File:
+                PID = int(File.read().strip())
+                File.close()
             if str(PID) in str(psutil.pids()):
                 print(RED + "CUDA is already being uninstalled." + NORMAL)
+                Popup(Text="CUDA is already being uninstalled.", Progress=0)
                 return
         threading.Thread(target=UninstallCUDAThread, daemon=True).start()
     except:

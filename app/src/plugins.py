@@ -134,6 +134,7 @@ def ManagePlugins(Plugin=None, Action=None):
                         EndY1=Bottom - 50,
                         EndX2=Right * 0.8,
                         EndY2=Bottom - 10,
+                        ID="PluginManagerAction",
                         ShowDuration=1.5)
     else:
         Plugins = []

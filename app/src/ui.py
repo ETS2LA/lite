@@ -47,6 +47,7 @@ def EnableDisableKeyCallback(Input):
                       EndY1=Top + 270,
                       EndX2=Right / 4,
                       EndY2=Top + 300,
+                      ID="EnableDisableKey",
                       ShowDuration=1.5)
     else:
         ImageUI.Popup(Text="Key Updated!",
@@ -58,6 +59,7 @@ def EnableDisableKeyCallback(Input):
                       EndY1=Top + 270,
                       EndX2=Right / 4,
                       EndY2=Top + 300,
+                      ID="EnableDisableKey",
                       ShowDuration=1.5)
         if settings.Get("Controls", "Steering", "n") != Input:
             settings.Set("Controls", "Steering", Input)
@@ -124,10 +126,15 @@ def Popup(Text, Progress = 0):
                   EndY1=Bottom - 50,
                   EndX2=Right * 0.8,
                   EndY2=Bottom - 10,
+                  ID="MainPopup",
                   Progress=Progress)
 
 
-def Resize(WindowWidth, WindowHeight):
+def Resize(WindowX, WindowY, WindowWidth, WindowHeight):
+    variables.WindowX = WindowX
+    variables.WindowY = WindowY
+    variables.WindowWidth = WindowWidth
+    variables.WindowHeight = WindowHeight
     variables.Background = np.zeros((WindowHeight, WindowWidth, 3), np.uint8)
     variables.Background[:] = (28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)
     cv2.rectangle(variables.Background, (0, 0), (WindowWidth - 1, 49), (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231), -1)
@@ -164,8 +171,7 @@ def Update():
     WindowX, WindowY = SimpleWindow.GetPosition(variables.Name)
     WindowWidth, WindowHeight = SimpleWindow.GetSize(variables.Name)
     if (WindowX, WindowY, WindowWidth, WindowHeight) != (variables.WindowX, variables.WindowY, variables.WindowWidth, variables.WindowHeight):
-        variables.WindowX, variables.WindowY, variables.WindowWidth, variables.WindowHeight = WindowX, WindowY, WindowWidth, WindowHeight
-        Resize(WindowWidth, WindowHeight)
+        Resize(WindowX, WindowY, WindowWidth, WindowHeight)
 
     Left = 0
     Top = 0
@@ -185,6 +191,7 @@ def Update():
                        Y1=ImageUI.States.RightClickPosition[1],
                        X2=ImageUI.States.RightClickPosition[0] + 200,
                        Y2=ImageUI.States.RightClickPosition[1] + 30,
+                       ID="ContextMenuRestart",
                        Layer=1,
                        OnPress=lambda: Restart())
 
@@ -193,6 +200,7 @@ def Update():
                        Y1=ImageUI.States.RightClickPosition[1] + 35,
                        X2=ImageUI.States.RightClickPosition[0] + 200,
                        Y2=ImageUI.States.RightClickPosition[1] + 65,
+                       ID="ContextMenuClose",
                        Layer=1,
                        OnPress=lambda: Close())
 
@@ -201,6 +209,7 @@ def Update():
                        Y1=ImageUI.States.RightClickPosition[1] + 70,
                        X2=ImageUI.States.RightClickPosition[0] + 200,
                        Y2=ImageUI.States.RightClickPosition[1] + 100,
+                       ID="ContextMenuUpdate",
                        Layer=1,
                        OnPress=lambda: updater.CheckForUpdates())
 
@@ -211,6 +220,7 @@ def Update():
                        Y1=Top + 5,
                        X2=Left + (i + 1)  / len(Tabs) * Right - 5,
                        Y2=Top + 44,
+                       ID=f"TabButton{Tab}",
                        OnPress=lambda Tab = Tab: {setattr(variables, "Page", Tab), settings.Set("UI", "Page", Tab)},
                        Color=((28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)) if Tab == variables.Page else ((47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231)),
                        HoverColor=((28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)) if Tab == variables.Page else ((41, 41, 41) if variables.Theme == "Dark" else (244, 244, 244)))
@@ -220,19 +230,22 @@ def Update():
                       X1=Left,
                       Y1=Top + 50,
                       X2=Right,
-                      Y2=Top + 100)
+                      Y2=Top + 100,
+                      ID="UpdateAvailable")
 
         ImageUI.Label(Text=f"Changelog:\n\n{variables.Changelog}",
                       X1=Left,
                       Y1=Top + 100,
                       X2=Right,
-                      Y2=Bottom - 50)
+                      Y2=Bottom - 50,
+                      ID="Changelog")
 
         ImageUI.Button(Text="Update",
                        X1=Left + 10,
                        Y1=Bottom - 50,
                        X2=Right / 2 - 5,
                        Y2=Bottom - 10,
+                       ID="UpdateButton",
                        OnPress=lambda: updater.Update())
 
         ImageUI.Button(Text="Don't Update",
@@ -240,6 +253,7 @@ def Update():
                        Y1=Bottom - 50,
                        X2=Right - 10,
                        Y2=Bottom - 10,
+                       ID="Don'tUpdateButton",
                        OnPress=lambda: setattr(variables, "Page", "Menu"))
 
     if variables.Page == "CrashReport":
@@ -247,19 +261,22 @@ def Update():
                       X1=Left,
                       Y1=Top + 60,
                       X2=Right,
-                      Y2=Top + 100)
+                      Y2=Top + 100,
+                      ID="CrashReportTitle")
 
         ImageUI.Label(Text="Do you want the app to send anonymous crash reports to the developers?\nNo personal information is sent and all paths have the username censored.\nWe take all crash reports seriously and will try to fix the issue as soon as possible.\nDo you want to enable the crash reporting?",
                       X1=Left,
                       Y1=Top + 110,
                       X2=Right,
-                      Y2=Bottom - 60)
+                      Y2=Bottom - 60,
+                      ID="CrashReportQuestion")
 
         ImageUI.Button(Text="Yes",
                        X1=Left + 10,
                        Y1=Bottom - 50,
                        X2=Right / 2 - 5,
                        Y2=Bottom - 10,
+                       ID="CrashReportButtonYes",
                        OnPress=lambda: {setattr(variables, "Page", "Menu"), setattr(server, "AllowCrashReports", True), settings.Set("CrashReports", "SendCrashReports", True)})
 
         ImageUI.Button(Text="No",
@@ -267,6 +284,7 @@ def Update():
                        Y1=Bottom - 50,
                        X2=Right - 10,
                        Y2=Bottom - 10,
+                       ID="CrashReportButtonNo",
                        OnPress=lambda: {setattr(variables, "Page", "Menu"), setattr(server, "AllowCrashReports", False), settings.Set("CrashReports", "SendCrashReports", False)})
 
     if variables.Page == "CUDA":
@@ -289,25 +307,29 @@ def Update():
                           X1=Left + 10,
                           Y1=Top + 60,
                           X2=Right - 10,
-                          Y2=Top + 110)
+                          Y2=Top + 110,
+                          ID="CUDATitle")
 
             ImageUI.Label(Text=f"{Message}",
                           X1=Left + 10,
                           Y1=Top + 110,
                           X2=Right - 10,
-                          Y2=Top + 160)
+                          Y2=Top + 160,
+                          ID="CUDAInfo")
 
             ImageUI.Label(Text=f"Details:\n{variables.CUDADetails}",
                           X1=Left + 10,
                           Y1=Top + 160,
                           X2=Right - 10,
-                          Y2=Top + 280)
+                          Y2=Top + 280,
+                          ID="CUDADetails")
 
             ImageUI.Label(Text="WARNING:\nThis app is using embedded Python which causes problems with CUDA!\nBecause of this, CUDA probably won't work or even install!",
                           X1=Left + 10,
                           Y1=Top + 280,
                           X2=Right - 10,
                           Y2=Top + 320,
+                          ID="CUDAWarning",
                           TextColor=(0, 0, 255))
 
             if variables.CUDAInstalled == False and variables.CUDACompatible == True:
@@ -316,13 +338,15 @@ def Update():
                                Y1=Bottom - 50,
                                X2=Right - 10,
                                Y2=Bottom - 10,
+                               ID="InstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.InstallCUDA()})
 
                 ImageUI.Button(Text="Keep running on CPU",
-                               X1=10,
+                               X1=Left + 10,
                                Y1=Bottom - 50,
                                X2=Right / 2 - 5,
                                Y2=Bottom - 10,
+                               ID="Don'tInstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu")})
             elif variables.CUDAInstalled == False and variables.CUDAAvailable == False and variables.CUDACompatible == False:
                 ImageUI.Button(Text="Install CUDA libraries anyway (3GB)",
@@ -330,13 +354,15 @@ def Update():
                                Y1=Bottom - 50,
                                X2=Right - 10,
                                Y2=Bottom - 10,
+                               ID="InstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.InstallCUDA()})
 
                 ImageUI.Button(Text="Keep running on CPU",
-                               X1=10,
+                               X1=Left + 10,
                                Y1=Bottom - 50,
                                X2=Right / 2  - 5,
                                Y2=Bottom - 10,
+                               ID="Don'tInstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu")})
             elif variables.CUDAInstalled == True and variables.CUDAAvailable == True and variables.CUDACompatible == True:
                 ImageUI.Button(Text="Uninstall CUDA libraries",
@@ -344,13 +370,15 @@ def Update():
                                Y1=Bottom - 50,
                                X2=Right - 10,
                                Y2=Bottom - 10,
+                               ID="UninstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.UninstallCUDA()})
 
                 ImageUI.Button(Text="Keep running on GPU with CUDA",
-                               X1=10,
+                               X1=Left + 10,
                                Y1=Bottom - 50,
                                X2=Right / 2 - 5,
                                Y2=Bottom - 10,
+                               ID="Don'tUninstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu")})
             else:
                 ImageUI.Button(Text="Uninstall CUDA libraries",
@@ -358,20 +386,23 @@ def Update():
                                Y1=Bottom - 50,
                                X2=Right - 10,
                                Y2=Bottom - 10,
+                               ID="UninstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu"), pytorch.UninstallCUDA()})
 
                 ImageUI.Button(Text="Keep running on CPU with CUDA",
-                               X1=10,
+                               X1=Left + 10,
                                Y1=Bottom - 50,
                                X2=Right / 2 - 5,
                                Y2=Bottom - 10,
+                               ID="Don'tUninstallCUDAButton",
                                OnPress=lambda: {setattr(variables, "Page", "Menu")})
         else:
             ImageUI.Label(Text=f"Checking your CUDA compatibility, please wait...",
-                          X1=10,
-                          Y1= 10,
+                          X1=Left + 10,
+                          Y1=Top + 10,
                           X2=Right - 10,
-                          Y2=Bottom - 10)
+                          Y2=Bottom - 10,
+                          ID="CheckingCUDA")
 
     if variables.Page == "Menu":
         ImageUI.Label(Text=f"ETS2LA-Lite v{variables.Version}",
@@ -379,6 +410,7 @@ def Update():
                       Y1=Top + 50,
                       X2=Right,
                       Y2=Top + 95,
+                      ID="MenuTitle",
                       FontSize=17)
 
         ImageUI.Label(Text=f"Users online: {variables.UserCount}",
@@ -386,6 +418,7 @@ def Update():
                       Y1=Bottom - 45,
                       X2=Right,
                       Y2=Bottom - 5,
+                      ID="MenuStatus",
                       TextColor=(128, 128, 128))
 
         ImageUI.Button(Text="Open ETS2LA Website",
@@ -393,6 +426,7 @@ def Update():
                        Y1=Bottom / 2 - 70,
                        X2=Right * 0.75,
                        Y2=Bottom / 2 - 30,
+                       ID="MenuWebsite",
                        OnPress=lambda: webbrowser.open("https://ets2la.com"))
 
         ImageUI.Button(Text="Open GitHub Website",
@@ -400,6 +434,7 @@ def Update():
                        Y1=Bottom / 2 - 20,
                        X2=Right * 0.75,
                        Y2=Bottom / 2 + 20,
+                       ID="MenuGitHub",
                        OnPress=lambda: webbrowser.open("https://github.com/ETS2LA"))
 
         ImageUI.Button(Text="Open ETS2LA Discord",
@@ -407,6 +442,7 @@ def Update():
                        Y1=Bottom / 2 + 30,
                        X2=Right * 0.75,
                        Y2=Bottom / 2 + 70,
+                       ID="MenuDiscord",
                        OnPress=lambda: webbrowser.open("https://ets2la.com/discord"))
 
     if variables.Page == "Plugins":
@@ -416,6 +452,7 @@ def Update():
                            Y1=Top + 55 + 30 * i,
                            X2=Right - 10,
                            Y2=Top + 85 + 30 * i,
+                           ID=f"{Plugin}Switch",
                            State=EnabledPlugins[Plugin],
                            OnChange=lambda State, Plugin=Plugin: {settings.Set("Plugins", Plugin, State), plugins.ManagePlugins(Plugin=Plugin, Action="Start" if State else "Stop")})
 
@@ -427,6 +464,7 @@ def Update():
                          Y1=Top + 60,
                          X2=Right / 2 - 5,
                          Y2=Top + 95,
+                         ID="LanguageDropdown",
                          OnChange=lambda Item: {settings.Set("UI", "Language", Item), setattr(variables, "Language", Item), ImageUI.Translations.SetTranslator(SourceLanguage="English", DestinationLanguage=Item)})
 
         ImageUI.Dropdown(Title="Theme",
@@ -436,6 +474,7 @@ def Update():
                          Y1=Top + 60,
                          X2=Right -10,
                          Y2=Top + 95,
+                         ID="ThemeDropdown",
                          OnChange=SetTheme)
 
         ImageUI.Button(Text="Check CUDA (GPU) Support",
@@ -443,6 +482,7 @@ def Update():
                        Y1=Top + 105,
                        X2=Right / 2 - 5,
                        Y2=Top + 140,
+                       ID="CheckCUDAButton",
                        OnPress=lambda: setattr(variables, "Page", "CUDA"))
 
         ImageUI.Button(Text="Game Paths",
@@ -450,6 +490,7 @@ def Update():
                        Y1=Top + 105,
                        X2=Right - 10,
                        Y2=Top + 140,
+                       ID="GamePathsButton",
                        OnPress=lambda: setattr(variables, "Page", "GamePathInput"))
 
         ImageUI.Switch(Text="Hide Console",
@@ -457,6 +498,7 @@ def Update():
                        Y1=Top + 150,
                        X2=Right / 2 - 5,
                        Y2=Top + 175,
+                       ID="HideConsoleSwitch",
                        State=HideConsoleSwitch,
                        OnChange=lambda State: {settings.Set("Console", "HideConsole", State), console.HideConsole() if State else console.RestoreConsole()})
 
@@ -465,6 +507,7 @@ def Update():
                        Y1=Top + 180,
                        X2=Right / 2 - 5,
                        Y2=Top + 205,
+                       ID="SendAnonymousCrashReportsSwitch",
                        State=SendCrashReportsSwitch,
                        OnChange=lambda State: {settings.Set("CrashReports", "SendCrashReports", State), setattr(server, "AllowCrashReports", State), threading.Thread(target=server.GetUserCount, daemon=True).start()})
 
@@ -473,6 +516,7 @@ def Update():
                        Y1=Top + 210,
                        X2=Right / 2 - 5,
                        Y2=Top + 235,
+                       ID="EnableDisableKeyLabel",
                        Align="Left",
                        AlignPadding=0)
 
@@ -480,6 +524,7 @@ def Update():
                       Y1=Top + 235,
                       X2=Right / 4,
                       Y2=Top + 265,
+                      ID="EnableDisableKeyInput",
                       DefaultInput=EnableDisableKey,
                       Placeholder="Default: n",
                       OnChange=EnableDisableKeyCallback)
@@ -489,13 +534,15 @@ def Update():
                       X1=Left,
                       Y1=Top + 50,
                       X2=Right,
-                      Y2=Top + 110)
+                      Y2=Top + 110,
+                      ID="GamePathTitle")
 
         ImageUI.Label(Text="Euro Truck Simulator 2 Path:",
                       X1=Right * 0.1,
                       Y1=Bottom / 2 - 70,
                       X2=Right * 0.9,
                       Y2=Bottom / 2 - 45,
+                      ID="ETS2PathTitle",
                       Align="Left",
                       AlignPadding=0)
 
@@ -503,6 +550,7 @@ def Update():
                       Y1=Bottom / 2 - 45,
                       X2=Right * 0.9,
                       Y2=Bottom / 2 - 10,
+                      ID="ETS2PathInput",
                       DefaultInput=variables.ETS2Path,
                       Placeholder="Path to the 'Euro Truck Simulator 2' folder. Leave empty if not installed!",
                       OnChange=lambda Input: {settings.Set("Setup", "ETS2Path", Input)})
@@ -512,6 +560,7 @@ def Update():
                       Y1=Bottom / 2 + 10,
                       X2=Right * 0.9,
                       Y2=Bottom / 2 + 35,
+                      ID="ATSPathTitle",
                       Align="Left",
                       AlignPadding=0)
 
@@ -519,6 +568,7 @@ def Update():
                       Y1=Bottom / 2 + 35,
                       X2=Right * 0.9,
                       Y2=Bottom / 2 + 70,
+                      ID="ATSPathInput",
                       DefaultInput=variables.ATSPath,
                       Placeholder="Path to the 'American Truck Simulator' folder. Leave empty if not installed!",
                       OnChange=lambda Input: {settings.Set("Setup", "ATSPath", Input)})
@@ -528,6 +578,7 @@ def Update():
                        Y1=Bottom - 50,
                        X2=Right - 10,
                        Y2=Bottom - 10,
+                       ID="GamePathOkButton",
                        OnPress=lambda: {setup.CopyDLLs(), setattr(variables, "Page", "Menu")})
 
     Frame = variables.Background.copy()

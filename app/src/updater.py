@@ -8,6 +8,7 @@ import requests
 import ImageUI
 import time
 
+
 def CheckForUpdates():
     if variables.DevelopmentMode:
         Right = variables.WindowWidth - 1
@@ -20,7 +21,8 @@ def CheckForUpdates():
                       EndX1=Right * 0.1,
                       EndY1=Bottom - 50,
                       EndX2=Right * 0.9,
-                      EndY2=Bottom - 10)
+                      EndY2=Bottom - 10,
+                      ID="IgnoreUpdateCheckPopup")
         return
     if settings.Get("Updater", "LastRemoteCheck", 0) + 600 < time.time():
         try:
@@ -51,7 +53,8 @@ def CheckForUpdates():
                       EndX1=Right * 0.25,
                       EndY1=Bottom - 50,
                       EndX2=Right * 0.75,
-                      EndY2=Bottom - 10)
+                      EndY2=Bottom - 10,
+                      ID="NoUpdatesAvailablePopup")
 
 
 def Update():
@@ -66,7 +69,8 @@ def Update():
                       EndX1=Right * 0.1,
                       EndY1=Bottom - 50,
                       EndX2=Right * 0.9,
-                      EndY2=Bottom - 10)
+                      EndY2=Bottom - 10,
+                      ID="IgnoreUpdateRequestPopup")
         variables.Page = "Menu"
         return
     plugins.ManagePlugins(Plugin="All", Action="Stop")

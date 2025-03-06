@@ -8,10 +8,8 @@ import subprocess
 import threading
 import traceback
 import requests
-import ImageUI
 import GPUtil
 import psutil
-import torch
 import time
 import sys
 import os

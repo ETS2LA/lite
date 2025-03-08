@@ -26,16 +26,17 @@ C = None, None
 
 
 def Initialize():
+    global Camera
     global TruckSimAPI
     global LastWindowPosition
     global DRAWLIST
     global FRAME
     global FOV
+    Camera = SCSCamera()
     TruckSimAPI = SCSTelemetry()
     LastWindowPosition = None, None, None, None
     DRAWLIST = []
     FRAME = None
-    Camera = SCSCamera()
 
     FOV = Camera.update().fov
     InitializeWindow()
@@ -219,6 +220,22 @@ def ConvertToAngle(X, Y):
     return AngleX, AngleY
 
 
+def CalculateRadiusFrontWheel(SteeringAngle, Distance):
+    SteeringAngle = math.radians(SteeringAngle)
+    if SteeringAngle != 0:
+        return Distance / math.sin(SteeringAngle)
+    else:
+        return float("inf")
+
+
+def CalculateRadiusBackWheel(SteeringAngle, Distance):
+    SteeringAngle = math.radians(SteeringAngle)
+    if SteeringAngle != 0:
+        return Distance / math.tan(SteeringAngle)
+    else:
+        return float("inf")
+
+
 def ArcTan(Value):
     return math.degrees(math.atan(Value))
 
@@ -296,6 +313,18 @@ def Run(Data):
     HeadZ = PointX * math.sin(TruckRotationRadiansX) + PointZ * math.cos(TruckRotationRadiansX) + TruckZ
 
 
+    CameraData = Camera.update()
+    if CameraData is not None:
+        FOV = CameraData.fov
+        Angles = CameraData.rotation.euler()
+        HeadX = CameraData.position.x + CameraData.cx * 512
+        HeadY = CameraData.position.y
+        HeadZ = CameraData.position.z + CameraData.cz * 512
+        HeadRotationDegreesX = Angles[1]
+        HeadRotationDegreesY = Angles[0]
+        HeadRotationDegreesZ = Angles[2]
+
+
     TruckWheelPointsX = [Point for Point in APIDATA["configVector"]["truckWheelPositionX"] if Point != 0]
     TruckWheelPointsY = [Point for Point in APIDATA["configVector"]["truckWheelPositionY"] if Point != 0]
     TruckWheelPointsZ = [Point for Point in APIDATA["configVector"]["truckWheelPositionZ"] if Point != 0]
@@ -304,12 +333,57 @@ def Run(Data):
     while int(APIDATA["configUI"]["truckWheelCount"]) > len(WheelAngles):
         WheelAngles.append(0)
 
+    WheelCoordinates = []
     for i in range(len(TruckWheelPointsX)):
         PointX = TruckX + TruckWheelPointsX[i] * math.cos(TruckRotationRadiansX) - TruckWheelPointsZ[i] * math.sin(TruckRotationRadiansX)
         PointY = TruckY + TruckWheelPointsY[i]
         PointZ = TruckZ + TruckWheelPointsZ[i] * math.cos(TruckRotationRadiansX) + TruckWheelPointsX[i] * math.sin(TruckRotationRadiansX)
+        WheelCoordinates.append((PointX, PointY, PointZ))
         X, Y, D = ConvertToScreenCoordinate(X=PointX, Y=PointY, Z=PointZ)
         DrawCircle(Center=(X, Y), R=10, Color=(255, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2)
+
+
+    FrontLeftWheel = WheelCoordinates[0]
+    FrontRightWheel = WheelCoordinates[1]
+    BackLeftWheel = WheelCoordinates[2]
+    BackRightWheel = WheelCoordinates[3]
+
+    FrontLeftSteerAngle = WheelAngles[0] * 360
+    FrontRightSteerAngle = WheelAngles[1] * 360
+
+
+    DistanceLeft = math.sqrt((FrontLeftWheel[0] - BackLeftWheel[0]) ** 2 + (FrontLeftWheel[2] - BackLeftWheel[2]) ** 2)
+    DistanceRight = math.sqrt((FrontRightWheel[0] - BackRightWheel[0]) ** 2 + (FrontRightWheel[2] - BackRightWheel[2]) ** 2)
+
+
+    LeftFrontWheelRadius = CalculateRadiusFrontWheel(FrontLeftSteerAngle, DistanceLeft)
+    LeftBackWheelRadius = CalculateRadiusBackWheel(FrontLeftSteerAngle, DistanceLeft)
+    RightFrontWheelRadius = CalculateRadiusFrontWheel(FrontRightSteerAngle, DistanceRight)
+    RightBackWheelRadius = CalculateRadiusBackWheel(FrontLeftSteerAngle, DistanceRight)
+
+    CenterX = BackLeftWheel[0] - LeftBackWheelRadius * math.cos(TruckRotationRadiansX)
+    CenterZ = BackLeftWheel[2] - LeftBackWheelRadius * math.sin(TruckRotationRadiansX)
+
+    R1 = LeftFrontWheelRadius
+    R2 = RightFrontWheelRadius
+
+    X, Y, D = ConvertToScreenCoordinate(X=CenterX, Y=TruckY, Z=CenterZ)
+    DrawCircle(Center=(X, Y), R=10, Color=(255, 0, 0), FillColor=(127, 127, 127, 127), Thickness=2)
+
+    for i in range(2):
+        if i == 0:
+            R = R1
+        else:
+            R = R2
+        for j in range(90):
+            Angle = j * (360 / 90)
+            Angle = math.radians(Angle)
+            X = CenterX + R * math.cos(Angle)
+            Z = CenterZ + R * math.sin(Angle)
+
+            X, Y, D = ConvertToScreenCoordinate(X=X, Y=TruckY, Z=Z)
+            if D != None and D < 30:
+                DrawCircle(Center=(X, Y), R=10, Color=(0, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2)
 
 
     #X1, Y1, D1 = ConvertToScreenCoordinate(X=10448.742, Y=35.324, Z=-10132.315)

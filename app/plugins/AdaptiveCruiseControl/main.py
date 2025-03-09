@@ -28,6 +28,7 @@ def Initialize():
 
     global SDKController
     global TruckSimAPI
+    global Camera
     global FOV
 
     Enabled = True
@@ -106,6 +107,22 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
     return ScreenX, ScreenY, Distance
 
 
+def CalculateRadiusFrontWheel(SteeringAngle, Distance):
+    SteeringAngle = math.radians(SteeringAngle)
+    if SteeringAngle != 0:
+        return Distance / math.sin(SteeringAngle)
+    else:
+        return float("inf")
+
+
+def CalculateRadiusBackWheel(SteeringAngle, Distance):
+    SteeringAngle = math.radians(SteeringAngle)
+    if SteeringAngle != 0:
+        return Distance / math.tan(SteeringAngle)
+    else:
+        return float("inf")
+
+
 def Run(data):
     CurrentTime = time.time()
 
@@ -175,125 +192,130 @@ def Run(data):
     HeadZ = PointX * math.sin(TruckRotationRadiansX) + PointZ * math.cos(TruckRotationRadiansX) + TruckZ
 
 
+    CameraData = Camera.update()
+    if CameraData is not None:
+        FOV = CameraData.fov
+        Angles = CameraData.rotation.euler()
+        HeadX = CameraData.position.x + CameraData.cx * 512
+        HeadY = CameraData.position.y
+        HeadZ = CameraData.position.z + CameraData.cz * 512
+        HeadRotationDegreesX = Angles[1]
+        HeadRotationDegreesY = Angles[0]
+        HeadRotationDegreesZ = Angles[2]
+
+
     TruckWheelPointsX = [Point for Point in APIDATA["configVector"]["truckWheelPositionX"] if Point != 0]
     TruckWheelPointsY = [Point for Point in APIDATA["configVector"]["truckWheelPositionY"] if Point != 0]
     TruckWheelPointsZ = [Point for Point in APIDATA["configVector"]["truckWheelPositionZ"] if Point != 0]
 
     WheelAngles = [Angle for Angle in APIDATA["truckFloat"]["truck_wheelSteering"] if Angle != 0]
-    while int(APIDATA["configUI"]["truckWheelCount"]) > len(WheelAngles):
-        WheelAngles.append(0)
 
+    WheelCoordinates = []
     for i in range(len(TruckWheelPointsX)):
         PointX = TruckX + TruckWheelPointsX[i] * math.cos(TruckRotationRadiansX) - TruckWheelPointsZ[i] * math.sin(TruckRotationRadiansX)
         PointY = TruckY + TruckWheelPointsY[i]
         PointZ = TruckZ + TruckWheelPointsZ[i] * math.cos(TruckRotationRadiansX) + TruckWheelPointsX[i] * math.sin(TruckRotationRadiansX)
-        X, Y, D = ConvertToScreenCoordinate(X=PointX, Y=PointY, Z=PointZ)
+        WheelCoordinates.append((PointX, PointY, PointZ))
 
 
-    AllCoordinatesValid = True
-    Points = []
+    if len(WheelCoordinates) >= 4 and len(WheelAngles) >= 2:
+        FrontLeftWheel = WheelCoordinates[0]
+        FrontRightWheel = WheelCoordinates[1]
+
+        BackLeftWheels = []
+        BackRightWheels = []
+
+        for i in range(len(WheelCoordinates)):
+            if len(WheelAngles) > i:
+                continue
+
+            if i % 2 == 0:
+                BackLeftWheels.append(WheelCoordinates[i])
+            else:
+                BackRightWheels.append(WheelCoordinates[i])
+
+        BackLeftWheel = (0, 0, 0)
+        BackRightWheel = (0, 0, 0)
+
+        for Wheel in BackLeftWheels:
+            BackLeftWheel = BackLeftWheel[0] + Wheel[0], BackLeftWheel[1] + Wheel[1], BackLeftWheel[2] + Wheel[2]
+
+        for Wheel in BackRightWheels:
+            BackRightWheel = BackRightWheel[0] + Wheel[0], BackRightWheel[1] + Wheel[1], BackRightWheel[2] + Wheel[2]
+
+        BackLeftWheel = BackLeftWheel[0] / len(BackLeftWheels), BackLeftWheel[1] / len(BackLeftWheels), BackLeftWheel[2] / len(BackLeftWheels)
+        BackRightWheel = BackRightWheel[0] / len(BackRightWheels), BackRightWheel[1] / len(BackRightWheels), BackRightWheel[2] / len(BackRightWheels)
+
+        FrontLeftSteerAngle = WheelAngles[0] * 360
+        FrontRightSteerAngle = WheelAngles[1] * 360
+
+        DistanceLeft = math.sqrt((FrontLeftWheel[0] - BackLeftWheel[0]) ** 2 + (FrontLeftWheel[2] - BackLeftWheel[2]) ** 2)
+        DistanceRight = math.sqrt((FrontRightWheel[0] - BackRightWheel[0]) ** 2 + (FrontRightWheel[2] - BackRightWheel[2]) ** 2)
+
+        LeftFrontWheelRadius = CalculateRadiusFrontWheel(FrontLeftSteerAngle, DistanceLeft)
+        LeftBackWheelRadius = CalculateRadiusBackWheel(FrontLeftSteerAngle, DistanceLeft)
+        RightFrontWheelRadius = CalculateRadiusFrontWheel(FrontRightSteerAngle, DistanceRight)
+        RightBackWheelRadius = CalculateRadiusBackWheel(FrontRightSteerAngle, DistanceRight)
+
+        LeftCenterX = BackLeftWheel[0] - LeftBackWheelRadius * math.cos(TruckRotationRadiansX)
+        LeftCenterZ = BackLeftWheel[2] - LeftBackWheelRadius * math.sin(TruckRotationRadiansX)
+        RightCenterX = BackRightWheel[0] - RightBackWheelRadius * math.cos(TruckRotationRadiansX)
+        RightCenterZ = BackRightWheel[2] - RightBackWheelRadius * math.sin(TruckRotationRadiansX)
+
+        LeftPoints = []
+        RightPoints = []
+        for i in range(2):
+            if i == 0:
+                R = LeftFrontWheelRadius - 1
+                CenterX = LeftCenterX
+                CenterZ = LeftCenterZ
+                Offset = math.degrees(math.atan(DistanceLeft / R))
+            else:
+                R = RightFrontWheelRadius + 1
+                CenterX = RightCenterX
+                CenterZ = RightCenterZ
+                Offset = math.degrees(math.atan(DistanceRight / R))
+            for j in range(30):
+                Angle = j * (1 / -R) * 60 - TruckRotationDegreesX - Offset
+                Angle = math.radians(Angle)
+                X = CenterX + R * math.cos(Angle)
+                Z = CenterZ + R * math.sin(Angle)
+
+                X, Y, D = ConvertToScreenCoordinate(X=X, Y=TruckY, Z=Z)
+                if X != None and Y != None:
+                    if i == 0:
+                        LeftPoints.append([X, Y])
+                    else:
+                        RightPoints.append([X, Y])
+
+        AllPoints = LeftPoints + RightPoints[::-1]
+        if len(AllPoints) >= 4:
+            cv2.fillPoly(Frame, np.array([AllPoints], dtype=np.int32), (255, 255, 255))
 
 
-    OffsetX = 2
-    OffsetY = 0.1
-    OffsetZ = 1.5
-
-    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
-
-    X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
-    if X == None or Y == None:
-        AllCoordinatesValid = False
-    else:
-        TopLeft = X, Y
-        Points.append((PointX, PointY, PointZ))
-
-
-    OffsetX = 2
-    OffsetY = 0.1
-    OffsetZ = -1.5
-
-    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
-
-    X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
-    if X == None or Y == None:
-        AllCoordinatesValid = False
-    else:
-        TopRight = X, Y
-        Points.append((PointX, PointY, PointZ))
-
-
-    OffsetX = 2
-    OffsetY = -0.5
-    OffsetZ = 1.5
-
-    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
-
-    X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
-    if X == None or Y == None:
-        AllCoordinatesValid = False
-    else:
-        BottomLeft = X, Y
-        Points.append((PointX, PointY, PointZ))
-
-
-    OffsetX = 2
-    OffsetY = -0.5
-    OffsetZ = -1.5
-
-    PointX = HeadX + OffsetX * math.sin(TruckRotationRadiansX) - OffsetZ * math.cos(TruckRotationRadiansX)
-    PointY = HeadY + OffsetY + math.tan(math.radians(TruckRotationY * 360)) * math.sqrt(OffsetX**2 + OffsetZ**2)
-    PointZ = HeadZ - OffsetX * math.cos(TruckRotationRadiansX) - OffsetZ * math.sin(TruckRotationRadiansX)
-
-    X, Y, D = ConvertToScreenCoordinate(PointX, PointY, PointZ)
-    if X == None or Y == None:
-        AllCoordinatesValid = False
-    else:
-        BottomRight = X, Y
-        Points.append((PointX, PointY, PointZ))
-
-
-    if AllCoordinatesValid:
-        try:
-            CroppedWidth = round(max(TopRight[0] - TopLeft[0], BottomRight[0] - BottomLeft[0]))
-            CroppedHeight = round(max(BottomLeft[1] - TopLeft[1], BottomRight[1] - TopRight[1]))
-            SourcePoints = np.float32([TopLeft, TopRight, BottomLeft, BottomRight])
-            DestinationPoints = np.float32([[0, 0], [CroppedWidth, 0], [0, CroppedHeight], [CroppedWidth, CroppedHeight]])
-            Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
-            Frame = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
-        except:
-            # It sometimes happens that it tries to generate a frames which needs gigabytes of memory which will result in a crash, we can just ignore it.
-            pass
-
-
-    Image = np.array(Frame, dtype=np.float32)
-    if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
-        Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
-    if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RG':
-        Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
-    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'GB':
-        Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
-    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RB':
-        Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
-    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'R':
-        Image = Image[:, :, 0]
-        Image = np.expand_dims(Image, axis=2)
-    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'G':
-        Image = Image[:, :, 1]
-        Image = np.expand_dims(Image, axis=2)
-    elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'B':
-        Image = Image[:, :, 2]
-        Image = np.expand_dims(Image, axis=2)
-    Image = cv2.resize(Image, (pytorch.MODELS[Identifier]["IMG_WIDTH"], pytorch.MODELS[Identifier]["IMG_HEIGHT"]))
-    Image = Image / 255.0
-    if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
-        Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
-    Image = pytorch.transforms.ToTensor()(Image)
+    #Image = np.array(Frame, dtype=np.float32)
+    #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
+    #    Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
+    #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RG':
+    #    Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
+    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'GB':
+    #    Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
+    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RB':
+    #    Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
+    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'R':
+    #    Image = Image[:, :, 0]
+    #    Image = np.expand_dims(Image, axis=2)
+    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'G':
+    #    Image = Image[:, :, 1]
+    #    Image = np.expand_dims(Image, axis=2)
+    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'B':
+    #    Image = Image[:, :, 2]
+    #    Image = np.expand_dims(Image, axis=2)
+    #Image = cv2.resize(Image, (pytorch.MODELS[Identifier]["IMG_WIDTH"], pytorch.MODELS[Identifier]["IMG_HEIGHT"]))
+    #Image = Image / 255.0
+    #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
+    #    Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
+    #Image = pytorch.transforms.ToTensor()(Image)
 
 
     EnableKeyPressed = keyboard.is_pressed(EnableKey)
@@ -301,8 +323,8 @@ def Run(data):
         Enabled = not Enabled
     LastEnableKeyPressed = EnableKeyPressed
 
-    if Enabled == True:
-        if pytorch.MODELS[Identifier]["ModelLoaded"] == True:
-            Frame = GenerateImage(Image)
+    #if Enabled == True:
+    #    if pytorch.MODELS[Identifier]["ModelLoaded"] == True:
+    #        Frame = GenerateImage(Image)
 
     ShowImage.Show("AdaptiveCruiseControl", Frame)

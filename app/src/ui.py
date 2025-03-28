@@ -324,7 +324,7 @@ def Update():
                           Y2=Top + 280,
                           ID="CUDADetails")
 
-            ImageUI.Label(Text="WARNING:\nThis app is using embedded Python which causes problems with CUDA!\nBecause of this, CUDA probably won't work or even install!",
+            ImageUI.Label(Text="WARNING:\nThis app is using embedded Python which causes problems with Torch + CUDA!\nBecause of this, installing CUDA probably won't work or break the app!",
                           X1=Left + 10,
                           Y1=Top + 280,
                           X2=Right - 10,
@@ -483,7 +483,7 @@ def Update():
                        X2=Right / 2 - 5,
                        Y2=Top + 140,
                        ID="CheckCUDAButton",
-                       OnPress=lambda: setattr(variables, "Page", "CUDA"))
+                       OnPress=lambda: {setattr(variables, "Page", "CUDA"), pytorch.CheckCUDA()})
 
         ImageUI.Button(Text="Game Paths",
                        X1=Right / 2 + 5,

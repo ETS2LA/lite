@@ -269,29 +269,42 @@ def Run(data):
                 R = LeftFrontWheelRadius - 1
                 CenterX = LeftCenterX
                 CenterZ = LeftCenterZ
-                Offset = math.degrees(math.atan(DistanceLeft / R))
+                Offset = math.degrees(math.atan((DistanceLeft + 15) / R))
             else:
                 R = RightFrontWheelRadius + 1
                 CenterX = RightCenterX
                 CenterZ = RightCenterZ
-                Offset = math.degrees(math.atan(DistanceRight / R))
-            for j in range(30):
-                Angle = j * (1 / -R) * 60 - TruckRotationDegreesX - Offset
+                Offset = math.degrees(math.atan((DistanceRight + 15) / R))
+            for j in range(15):
+                Angle = j * (1 / -R) * 120 - TruckRotationDegreesX - Offset
                 Angle = math.radians(Angle)
                 X = CenterX + R * math.cos(Angle)
                 Z = CenterZ + R * math.sin(Angle)
-
-                X, Y, D = ConvertToScreenCoordinate(X=X, Y=TruckY, Z=Z)
+                Distance = math.sqrt((X - TruckX) ** 2 + (Z - TruckZ) ** 2)
+                Y = TruckY + math.tan(math.radians(TruckRotationY * 360)) * Distance
+                X, Y, D = ConvertToScreenCoordinate(X=X, Y=Y, Z=Z)
                 if X != None and Y != None:
                     if i == 0:
                         LeftPoints.append([X, Y])
                     else:
                         RightPoints.append([X, Y])
 
-        AllPoints = LeftPoints + RightPoints[::-1]
-        if len(AllPoints) >= 4:
-            cv2.fillPoly(Frame, np.array([AllPoints], dtype=np.int32), (255, 255, 255))
+        TotalImage = np.zeros((50 * min(len(LeftPoints) - 1, len(RightPoints) - 1), 500, 3), np.uint8)
+        for i in range(min(len(LeftPoints) - 1, len(RightPoints) - 1)):
+            BottomLeft = LeftPoints[i]
+            TopLeft = LeftPoints[i + 1]
+            BottomRight = RightPoints[i]
+            TopRight = RightPoints[i + 1]
 
+            CroppedWidth = 500
+            CroppedHeight = 50
+            SourcePoints = np.float32([TopLeft, TopRight, BottomLeft, BottomRight])
+            DestinationPoints = np.float32([[0, 0], [CroppedWidth, 0], [0, CroppedHeight], [CroppedWidth, CroppedHeight]])
+            Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
+            Image = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
+            TotalImage[TotalImage.shape[0] - (i + 1) * 50:TotalImage.shape[0] - i * 50] = Image
+
+    Frame = TotalImage
 
     #Image = np.array(Frame, dtype=np.float32)
     #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':

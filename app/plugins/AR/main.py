@@ -417,8 +417,9 @@ def Run(Data):
                 Angle = math.radians(Angle)
                 X = CenterX + R * math.cos(Angle)
                 Z = CenterZ + R * math.sin(Angle)
-
-                X, Y, D = ConvertToScreenCoordinate(X=X, Y=TruckY, Z=Z)
+                Distance = math.sqrt((X - TruckX) ** 2 + (Z - TruckZ) ** 2)
+                Y = TruckY + math.tan(math.radians(TruckRotationY * 360)) * Distance
+                X, Y, D = ConvertToScreenCoordinate(X=X, Y=Y, Z=Z)
                 Points.append((X, Y))
                 #if D != None and D < 50:
                 #    DrawCircle(Center=(X, Y), R=10, Color=(0, 255, 255), FillColor=(127, 127, 127, 127), Thickness=2)

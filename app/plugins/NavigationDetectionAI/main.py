@@ -25,7 +25,7 @@ def Initialize():
     global IndicatorLeftResponseTimer
     global IndicatorRightResponseTimer
 
-    global Identifier
+    global Model
 
     global SDKController
     global TruckSimAPI
@@ -43,8 +43,8 @@ def Initialize():
     IndicatorLeftResponseTimer = 0
     IndicatorRightResponseTimer = 0
 
-    Identifier = pytorch.Initialize(Owner="OleFranz", Model="NavigationDetectionAI", Folder="model")
-    pytorch.Load(Identifier)
+    Model = pytorch.Model(HuggingFaceOwner="OleFranz", HuggingFaceRepository="NavigationDetectionAI", HuggingFaceModelFolder="model")
+    Model.Load()
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
@@ -71,12 +71,12 @@ def GetTextSize(text="NONE", text_width=100, max_text_height=100):
 
 def preprocess_image(image):
     image = np.array(image)
-    image = cv2.resize(image, (pytorch.MODELS[Identifier]["IMG_WIDTH"], pytorch.MODELS[Identifier]["IMG_HEIGHT"]))
+    image = cv2.resize(image, (Model.ImageWidth, Model.ImageHeight))
     image = np.array(image, dtype=np.float32) / 255.0
     transform = pytorch.transforms.Compose([
         pytorch.transforms.ToTensor(),
     ])
-    return transform(image).unsqueeze(0).to(pytorch.MODELS[Identifier]["Device"])
+    return transform(image).unsqueeze(0).to(Model.Device)
 
 
 def Run(Data):
@@ -102,7 +102,7 @@ def Run(Data):
 
     ScreenCapture.TrackWindowRouteAdvisor(Name="Truck Simulator", Blacklist=["Discord"])
 
-    if pytorch.Loaded(Identifier) == False: time.sleep(0.1); return
+    if Model.Loaded == False: time.sleep(0.1); return
     if type(Frame) == type(None): return
 
     FrameWidth = Frame.shape[1]
@@ -129,12 +129,12 @@ def Run(Data):
         LaneDetected = False
 
     AIFrame = preprocess_image(Mask)
-    Output = [[0] * pytorch.MODELS[Identifier]["OUTPUTS"]]
+    Output = [[0] * Model.Outputs]
 
     if Enabled == True:
-        if pytorch.MODELS[Identifier]["ModelLoaded"] == True:
+        if Model.Loaded == True:
             with pytorch.torch.no_grad():
-                Output = pytorch.MODELS[Identifier]["Model"](AIFrame)
+                Output = Model.Model(AIFrame)
                 Output = Output.tolist()
 
     Steering = float(Output[0][0]) / -30

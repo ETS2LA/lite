@@ -24,7 +24,7 @@ def Initialize():
     global LastEnableKeyPressed
     global SteeringHistory
 
-    global Identifier
+    global Model
 
     global SDKController
     global TruckSimAPI
@@ -37,8 +37,8 @@ def Initialize():
     LastEnableKeyPressed = False
     SteeringHistory = []
 
-    Identifier = pytorch.Initialize(Owner="OleFranz", Model="MLVSS", Folder="models/mapping")
-    pytorch.Load(Identifier)
+    Model = pytorch.Model(HuggingFaceOwner="OleFranz", HuggingFaceRepository="MLVSS", HuggingFaceModelFolder="models/mapping")
+    Model.Load()
 
     SDKController = SCSController()
     TruckSimAPI = SCSTelemetry()
@@ -54,7 +54,7 @@ def Initialize():
 
 def GenerateImage(Image):
     with pytorch.torch.no_grad():
-        Prediction = pytorch.MODELS[Identifier]["Model"](Image.unsqueeze(0).to(pytorch.MODELS[Identifier]["Device"]))
+        Prediction = Model.Model(Image.unsqueeze(0).to(Model.Device))
     Image = Image.permute(1, 2, 0).numpy()
     Image = cv2.cvtColor(Image, cv2.COLOR_BGR2BGRA)
     Prediction = Prediction.squeeze(0).cpu()
@@ -143,7 +143,7 @@ def Run(data):
 
     APIDATA = TruckSimAPI.update()
 
-    if pytorch.Loaded(Identifier) == False: time.sleep(0.1); return
+    if Model.Loaded == False: time.sleep(0.1); return
 
     ScreenCapture.TrackWindow(Name="Truck Simulator", Blacklist=["Discord"])
 
@@ -307,26 +307,26 @@ def Run(data):
     Frame = TotalImage
 
     #Image = np.array(Frame, dtype=np.float32)
-    #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Grayscale' or pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
+    #if Model.ColorChannelsStr == 'Grayscale' or Model.ColorChannelsStr == 'Binarize':
     #    Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
-    #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RG':
+    #if Model.ColorChannelsStr == 'RG':
     #    Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
-    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'GB':
+    #elif Model.ColorChannelsStr == 'GB':
     #    Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
-    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'RB':
+    #elif Model.ColorChannelsStr == 'RB':
     #    Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
-    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'R':
+    #elif Model.ColorChannelsStr == 'R':
     #    Image = Image[:, :, 0]
     #    Image = np.expand_dims(Image, axis=2)
-    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'G':
+    #elif Model.ColorChannelsStr == 'G':
     #    Image = Image[:, :, 1]
     #    Image = np.expand_dims(Image, axis=2)
-    #elif pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'B':
+    #elif Model.ColorChannelsStr == 'B':
     #    Image = Image[:, :, 2]
     #    Image = np.expand_dims(Image, axis=2)
-    #Image = cv2.resize(Image, (pytorch.MODELS[Identifier]["IMG_WIDTH"], pytorch.MODELS[Identifier]["IMG_HEIGHT"]))
+    #Image = cv2.resize(Image, (Model.ImageWidth, Model.ImageHeight))
     #Image = Image / 255.0
-    #if pytorch.MODELS[Identifier]["IMG_CHANNELS"] == 'Binarize':
+    #if Model.ColorChannelsStr == 'Binarize':
     #    Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
     #Image = pytorch.transforms.ToTensor()(Image)
 
@@ -337,7 +337,7 @@ def Run(data):
     LastEnableKeyPressed = EnableKeyPressed
 
     #if Enabled == True:
-    #    if pytorch.MODELS[Identifier]["ModelLoaded"] == True:
+    #    if Model.Loaded == True:
     #        Frame = GenerateImage(Image)
 
     ShowImage.Show("AdaptiveCruiseControl", Frame)

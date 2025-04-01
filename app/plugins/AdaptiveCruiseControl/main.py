@@ -4,7 +4,6 @@ import modules.ScreenCapture.main as ScreenCapture
 import modules.ShowImage.main as ShowImage
 from modules.Camera.main import SCSCamera
 import src.settings as settings
-import src.plugins as plugins
 import src.pytorch as pytorch
 import numpy as np
 import keyboard
@@ -22,7 +21,8 @@ def Initialize():
     global EnableKey
     global EnableKeyPressed
     global LastEnableKeyPressed
-    global SteeringHistory
+
+    global ValueHistory
 
     global Model
 
@@ -32,12 +32,13 @@ def Initialize():
     global FOV
 
     Enabled = True
-    EnableKey = settings.Get("Controls", "Steering", "n")
+    EnableKey = "y" #settings.Get("Controls", "Steering", "n")
     EnableKeyPressed = False
     LastEnableKeyPressed = False
-    SteeringHistory = []
 
-    Model = pytorch.Model(HuggingFaceOwner="OleFranz", HuggingFaceRepository="MLVSS", HuggingFaceModelFolder="models/mapping")
+    ValueHistory = []
+
+    Model = pytorch.Model(HuggingFaceOwner="OleFranz", HuggingFaceRepository="AdaptiveCruiseControl", HuggingFaceModelFolder="model")
     Model.Load()
 
     SDKController = SCSController()
@@ -50,20 +51,6 @@ def Initialize():
 
     ScreenCapture.Initialize()
     ShowImage.Initialize(Name="AdaptiveCruiseControl", TitleBarColor=(0, 0, 0))
-
-
-def GenerateImage(Image):
-    with pytorch.torch.no_grad():
-        Prediction = Model.Model(Image.unsqueeze(0).to(Model.Device))
-    Image = Image.permute(1, 2, 0).numpy()
-    Image = cv2.cvtColor(Image, cv2.COLOR_BGR2BGRA)
-    Prediction = Prediction.squeeze(0).cpu()
-    for PredictionImage in Prediction:
-        PredictionImage = cv2.resize(cv2.cvtColor(PredictionImage.numpy(), cv2.COLOR_GRAY2BGRA), (Image.shape[1], Image.shape[0]))
-        PredictionImage[:, :, 2] = 0
-        Image = cv2.addWeighted(Image, 1, PredictionImage, 0.5, 0)
-    Image = cv2.cvtColor(Image, cv2.COLOR_BGRA2BGR)
-    return Image
 
 
 def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
@@ -209,6 +196,9 @@ def Run(data):
     TruckWheelPointsZ = [Point for Point in APIDATA["configVector"]["truckWheelPositionZ"] if Point != 0]
 
     WheelAngles = [Angle for Angle in APIDATA["truckFloat"]["truck_wheelSteering"] if Angle != 0]
+    if WheelAngles == []:
+        for i in range(2):
+            WheelAngles.append(0.000000001)
 
     WheelCoordinates = []
     for i in range(len(TruckWheelPointsX)):
@@ -269,12 +259,12 @@ def Run(data):
                 R = LeftFrontWheelRadius - 1
                 CenterX = LeftCenterX
                 CenterZ = LeftCenterZ
-                Offset = math.degrees(math.atan((DistanceLeft + 15) / R))
+                Offset = math.degrees(math.atan((DistanceLeft + 5) / R))
             else:
                 R = RightFrontWheelRadius + 1
                 CenterX = RightCenterX
                 CenterZ = RightCenterZ
-                Offset = math.degrees(math.atan((DistanceRight + 15) / R))
+                Offset = math.degrees(math.atan((DistanceRight + 5) / R))
             for j in range(15):
                 Angle = j * (1 / -R) * 120 - TruckRotationDegreesX - Offset
                 Angle = math.radians(Angle)
@@ -289,7 +279,7 @@ def Run(data):
                     else:
                         RightPoints.append([X, Y])
 
-        TotalImage = np.zeros((50 * min(len(LeftPoints) - 1, len(RightPoints) - 1), 500, 3), np.uint8)
+        TotalImage = np.zeros((100 * min(len(LeftPoints) - 1, len(RightPoints) - 1), 500, 3), np.uint8)
         for i in range(min(len(LeftPoints) - 1, len(RightPoints) - 1)):
             BottomLeft = LeftPoints[i]
             TopLeft = LeftPoints[i + 1]
@@ -297,47 +287,43 @@ def Run(data):
             TopRight = RightPoints[i + 1]
 
             CroppedWidth = 500
-            CroppedHeight = 50
+            CroppedHeight = 100
             SourcePoints = np.float32([TopLeft, TopRight, BottomLeft, BottomRight])
             DestinationPoints = np.float32([[0, 0], [CroppedWidth, 0], [0, CroppedHeight], [CroppedWidth, CroppedHeight]])
             Matrix = cv2.getPerspectiveTransform(SourcePoints, DestinationPoints)
             Image = cv2.warpPerspective(Frame, Matrix, (CroppedWidth, CroppedHeight))
-            TotalImage[TotalImage.shape[0] - (i + 1) * 50:TotalImage.shape[0] - i * 50] = Image
+            TotalImage[TotalImage.shape[0] - (i + 1) * 100:TotalImage.shape[0] - i * 100] = Image
 
-    Frame = TotalImage
+        Frame = TotalImage.copy()
 
-    #Image = np.array(Frame, dtype=np.float32)
-    #if Model.ColorChannelsStr == 'Grayscale' or Model.ColorChannelsStr == 'Binarize':
-    #    Image = cv2.cvtColor(Image, cv2.COLOR_RGB2GRAY)
-    #if Model.ColorChannelsStr == 'RG':
-    #    Image = np.stack((Image[:, :, 0], Image[:, :, 1]), axis=2)
-    #elif Model.ColorChannelsStr == 'GB':
-    #    Image = np.stack((Image[:, :, 1], Image[:, :, 2]), axis=2)
-    #elif Model.ColorChannelsStr == 'RB':
-    #    Image = np.stack((Image[:, :, 0], Image[:, :, 2]), axis=2)
-    #elif Model.ColorChannelsStr == 'R':
-    #    Image = Image[:, :, 0]
-    #    Image = np.expand_dims(Image, axis=2)
-    #elif Model.ColorChannelsStr == 'G':
-    #    Image = Image[:, :, 1]
-    #    Image = np.expand_dims(Image, axis=2)
-    #elif Model.ColorChannelsStr == 'B':
-    #    Image = Image[:, :, 2]
-    #    Image = np.expand_dims(Image, axis=2)
-    #Image = cv2.resize(Image, (Model.ImageWidth, Model.ImageHeight))
-    #Image = Image / 255.0
-    #if Model.ColorChannelsStr == 'Binarize':
-    #    Image = cv2.threshold(Image, 0.5, 1.0, cv2.THRESH_BINARY)[1]
-    #Image = pytorch.transforms.ToTensor()(Image)
+        EnableKeyPressed = keyboard.is_pressed(EnableKey)
+        if EnableKeyPressed == False and LastEnableKeyPressed == True:
+            Enabled = not Enabled
+        LastEnableKeyPressed = EnableKeyPressed
 
+        if Enabled == True:
+            Output = Model.Detect(Frame)
 
-    EnableKeyPressed = keyboard.is_pressed(EnableKey)
-    if EnableKeyPressed == False and LastEnableKeyPressed == True:
-        Enabled = not Enabled
-    LastEnableKeyPressed = EnableKeyPressed
+            Value = min(max(0, Output[0][0]), 1)
 
-    #if Enabled == True:
-    #    if Model.Loaded == True:
-    #        Frame = GenerateImage(Image)
+            ValueHistory.append((Value, CurrentTime))
+            ValueHistory.sort(key=lambda x: x[1])
+            while CurrentTime - ValueHistory[0][1] > 0.5:
+                ValueHistory.pop(0)
+            Value = sum(x[0] for x in ValueHistory) / len(ValueHistory)
+
+            cv2.rectangle(Frame, (0, 0), (Frame.shape[1] - 1, Frame.shape[0] - 1), (0, 255, 0), 2)
+            cv2.line(Frame, (0, round(Frame.shape[0] * Value)), (Frame.shape[1] - 1, round(Frame.shape[0] * Value)), (0, 0, 255), 2)
+
+            if Value < 0.5:
+                SDKController.aforward = float(math.sqrt(max(0, 0.5 - Value * 2))) if APIDATA["truckFloat"]["speed"] < APIDATA["truckFloat"]["speedLimit"] + 2 else float(0)
+                SDKController.abackward = float(0)
+            else:
+                SDKController.aforward = float(0)
+                SDKController.abackward = float((Value - 0.5) ** 2)
+        else:
+            cv2.rectangle(Frame, (0, 0), (Frame.shape[1] - 1, Frame.shape[0] - 1), (0, 0, 255), 2)
+            SDKController.aforward = float(0)
+            SDKController.abackward = float(0)
 
     ShowImage.Show("AdaptiveCruiseControl", Frame)

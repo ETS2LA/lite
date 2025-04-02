@@ -301,20 +301,18 @@ def Run(data):
             Enabled = not Enabled
         LastEnableKeyPressed = EnableKeyPressed
 
+        Output = Model.Detect(Frame)
+        Value = min(max(0, Output[0][0]), 1)
+        ValueHistory.append((Value, CurrentTime))
+        ValueHistory.sort(key=lambda x: x[1])
+        while CurrentTime - ValueHistory[0][1] > 0.5:
+            ValueHistory.pop(0)
+        Value = sum(x[0] for x in ValueHistory) / len(ValueHistory)
+
+        cv2.line(Frame, (0, round(Frame.shape[0] * Value)), (Frame.shape[1] - 1, round(Frame.shape[0] * Value)), (0, 0, 255), 2)
+
         if Enabled == True:
-            Output = Model.Detect(Frame)
-
-            Value = min(max(0, Output[0][0]), 1)
-
-            ValueHistory.append((Value, CurrentTime))
-            ValueHistory.sort(key=lambda x: x[1])
-            while CurrentTime - ValueHistory[0][1] > 0.5:
-                ValueHistory.pop(0)
-            Value = sum(x[0] for x in ValueHistory) / len(ValueHistory)
-
             cv2.rectangle(Frame, (0, 0), (Frame.shape[1] - 1, Frame.shape[0] - 1), (0, 255, 0), 2)
-            cv2.line(Frame, (0, round(Frame.shape[0] * Value)), (Frame.shape[1] - 1, round(Frame.shape[0] * Value)), (0, 0, 255), 2)
-
             if Value < 0.5:
                 SDKController.aforward = float(math.sqrt(max(0, 0.5 - Value * 2))) if APIDATA["truckFloat"]["speed"] < APIDATA["truckFloat"]["speedLimit"] + 2 else float(0)
                 SDKController.abackward = float(0)

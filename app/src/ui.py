@@ -82,16 +82,17 @@ def Initialize():
     variables.Background[:] = (28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)
     cv2.rectangle(variables.Background, (0, 0), (WindowWidth - 1, 49), (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231), -1)
 
-    SimpleWindow.Initialize(Name=variables.Name,
-                            Size=(WindowWidth, WindowHeight),
-                            Position=(WindowX, WindowY),
-                            TitleBarColor=(47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231),
-                            Resizable=False,
-                            TopMost=False,
-                            Undestroyable=False,
-                            Icon=f"{variables.Path}app/assets/favicon.ico")
+    global Window
+    Window = SimpleWindow.Window(name=variables.Name,
+                                 size=(WindowWidth, WindowHeight),
+                                 position=(WindowX, WindowY),
+                                 title_bar_color=(47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231),
+                                 resizable=True,
+                                 topmost=False,
+                                 undestroyable=False,
+                                 icon=f"{variables.Path}app/assets/favicon.ico")
 
-    SimpleWindow.Show(variables.Name, variables.Background)
+    Window.show(variables.Background)
 
     ImageUI.Settings.PopupShowDuration = 3
     ImageUI.Settings.CachePath = f"{variables.Path}cache"
@@ -108,7 +109,7 @@ def SetTheme(Theme):
     variables.Background[:] = (28, 28, 28) if variables.Theme == "Dark" else (250, 250, 250)
     cv2.rectangle(variables.Background, (0, 0), (variables.WindowWidth - 1, 49), (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231), -1)
     ImageUI.SetTheme(Theme)
-    SimpleWindow.SetTitleBarColor(variables.Name, (47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231))
+    Window.set_title_bar_color((47, 47, 47) if variables.Theme == "Dark" else (231, 231, 231))
 
 
 def Popup(Text, Progress = 0):
@@ -160,16 +161,16 @@ def Close():
 
 
 def Update():
-    if SimpleWindow.GetMinimized(variables.Name):
-        SimpleWindow.Show(variables.Name, variables.Frame)
+    if Window.get_minimized():
+        Window.show(variables.Background)
         return
 
-    if SimpleWindow.GetOpen(variables.Name) != True:
+    if Window.get_open() != True:
         Close()
         return
 
-    WindowX, WindowY = SimpleWindow.GetPosition(variables.Name)
-    WindowWidth, WindowHeight = SimpleWindow.GetSize(variables.Name)
+    WindowX, WindowY = Window.get_position()
+    WindowWidth, WindowHeight = Window.get_size()
     if (WindowX, WindowY, WindowWidth, WindowHeight) != (variables.WindowX, variables.WindowY, variables.WindowWidth, variables.WindowHeight):
         Resize(WindowX, WindowY, WindowWidth, WindowHeight)
 
@@ -582,5 +583,5 @@ def Update():
                        OnPress=lambda: {setup.CopyDLLs(), setattr(variables, "Page", "Menu")})
 
     Frame = variables.Background.copy()
-    variables.Frame = ImageUI.Update(WindowHWND=SimpleWindow.GetHandle(variables.Name), Frame=Frame)
-    SimpleWindow.Show(variables.Name, Frame=variables.Frame)
+    variables.Frame = ImageUI.Update(WindowHWND=Window.get_handle(), Frame=Frame)
+    Window.show(frame=variables.Frame)

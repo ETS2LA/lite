@@ -266,7 +266,7 @@ def Run(data):
                 CenterZ = RightCenterZ
                 Offset = math.degrees(math.atan((DistanceRight + 5) / R))
             for j in range(15):
-                Angle = j * (1 / -R) * 120 - TruckRotationDegreesX - Offset
+                Angle = j * (1 / -R) * 180 - TruckRotationDegreesX - Offset
                 Angle = math.radians(Angle)
                 X = CenterX + R * math.cos(Angle)
                 Z = CenterZ + R * math.sin(Angle)

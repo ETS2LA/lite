@@ -191,6 +191,8 @@ def ConvertToScreenCoordinate(X: float, Y: float, Z: float):
         return None, None, None
 
     FovRad = math.radians(FOV)
+    if FovRad <= 0:
+        return None, None, None
 
     WindowDistance = ((WindowPosition[3] - WindowPosition[1]) * (4 / 3) / 2) / math.tan(FovRad / 2)
 

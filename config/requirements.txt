@@ -1,7 +1,7 @@
 windows-capture==1.3.6
 beautifulsoup4
 opencv-python
-SimpleWindow
+SimpleWindow<1.0
 torchvision==0.20.1
 torchaudio==2.5.1
 bettercam

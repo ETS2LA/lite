@@ -3,7 +3,7 @@ import mmap
 
 # https://github.com/RenCloud/scs-sdk-plugin/blob/dev/scs-telemetry/inc/scs-telemetry-common.hpp
 
-mmapName = "Local\SCSTelemetry"
+mmapName = "Local/SCSTelemetry"
 mmapSize = 32*1024
 
 stringSize = 64

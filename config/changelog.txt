@@ -1,9 +1,0 @@
-0.12: UI Update
-0.13: CUDA fixes, requirements fixes
-0.14: UI and backend fixes
-0.15: Backend fixes
-0.16: Hopefully fixed settings corrupted issue
-0.17: Removed send crash report requirement to access user count
-0.18: General improvements
-0.19: Fixed requirements.txt
-0.20: Improvements, ImageUI 0.36 support

@@ -1,20 +1,3 @@
-# ignore the pycache everywhere
-**/__pycache__
-
-# ignore vscode/vs stuff
-/cpp-app/.vscode
-/cpp-app/.vs
-/.vscode
-/.vs
-
-# ignore the app cache
-/cache
-
-# ignore python
-/python
-
-# ignore the settings
-/config/settings.json
-
-# ignore the c++ builds
-/cpp-app/build
+.vs
+.vscode
+build

@@ -27,8 +27,7 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_PREFIX_PATH":  "$env{LIBTORCHDEBUG}"
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
@@ -36,8 +35,7 @@
             "displayName": "x64 Release",
             "inherits": "x64-debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_PREFIX_PATH":  "$env{LIBTORCH}"
+                "CMAKE_BUILD_TYPE": "Release"
             }
         },
         {
@@ -49,8 +47,7 @@
                 "strategy": "external"
             },
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Debug",
-                "CMAKE_PREFIX_PATH":  "$env{LIBTORCHDEBUG}"
+                "CMAKE_BUILD_TYPE": "Debug"
             }
         },
         {
@@ -58,8 +55,7 @@
             "displayName": "x86 Release",
             "inherits": "x86-debug",
             "cacheVariables": {
-                "CMAKE_BUILD_TYPE": "Release",
-                "CMAKE_PREFIX_PATH":  "$env{LIBTORCH}"
+                "CMAKE_BUILD_TYPE": "Release"
             }
         }
     ]

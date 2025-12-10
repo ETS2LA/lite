@@ -1,16 +1,21 @@
 # ETS2LA-Lite
 
+### Build
 
-### About
-
-What is this app?
-It's a simplified version of the [ETS2LA](https://github.com/ETS2LA/Euro-Truck-Simulator-2-Lane-Assist) app.
-It only includes NavigationDetectionAI combined with the SDK-Controller, screen capture and steering settings.
-The app has only been tested on Windows, but we're open to contributions to support other platforms.
-
-
-### How to Install the app
-
-1. Download Python 3.11.x from [here](https://www.python.org/downloads/windows/) and install it
-2. Clone or [download](https://github.com/ETS2LA/lite/archive/refs/heads/main.zip) this repository
-3. Run the Start.bat script, it will automatically create a virtual environment and install the required packages
+- Get [LibTorch](https://pytorch.org/) (CPU, Release and Debug)
+  - Unzip it
+  - Create an environment variable named `LIBTORCH` for the Release version and set its value to the path of the libtorch folder, which contains folders like `lib`, `bin`, `include`, etc.
+  - Create an environment variable named `LIBTORCHDEBUG` for the Debug version and set its value to the path of the libtorch debug folder, which contains folders like `lib`, `bin`, `include`, etc.
+- Get [OpenCV](https://opencv.org/releases)
+  - Install it
+  - Create an environment variable named `OpenCV_DIR` and set its value to the path of the OpenCV folder, which contains folders like `bin`, `x64`, `include`, etc.
+  - Add the absolute path of the `/x64/*/bin` folder (where `*` is for example `vc14`, `vc15`, `vc16`, etc.) in the `OpenCV_DIR` to the system PATH
+- Get [CMake](https://cmake.org/)
+  - Install it (select the option to add it to the system PATH)
+- Build the app in release mode
+  - Open a terminal and cd into the `cpp-app` folder
+  - Run ```cmake --preset=x64-release -B build/x64-release && cmake --build build/x64-release --config Release``` to build the app in release mode
+  - Run ```.\build\x64-release\Release\cpp-app.exe``` to run the release build
+- Build the app in debug mode
+  - Run ```cmake --preset=x64-debug -B build/x64-debug && cmake --build build/x64-debug``` to build the app in debug mode
+  - Run ```.\build\x64-debug\Debug\cpp-app.exe``` to run the debug build

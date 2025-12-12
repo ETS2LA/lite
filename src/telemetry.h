@@ -1,20 +1,30 @@
+#pragma once
+#define NOMINMAX
+
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <string>
+#include <windows.h>
+
 #define SUBSTANCE_SIZE 25
-#define stringsize  64
+#define STRINGSIZE  64
+#define WHEEL_MAX 16
 
 
-// MARK: SCSTrailer struct
-typedef struct SCSTrailer {
+// MARK: TelemetryDataTrailer struct
+struct TelemetryDataTrailer {
     // Constant bool
 	struct {
-		bool wheelSteerable[16];
-		bool wheelSimulated[16];
-		bool wheelPowered[16];
-		bool wheelLiftable[16];
+		bool wheelSteerable[WHEEL_MAX];
+		bool wheelSimulated[WHEEL_MAX];
+		bool wheelPowered[WHEEL_MAX];
+		bool wheelLiftable[WHEEL_MAX];
 	} con_b;
 
     // Common bool
 	struct {
-		bool wheelOnGround[16];
+		bool wheelOnGround[WHEEL_MAX];
 		bool attached;
 	} com_b;
 
@@ -22,7 +32,7 @@ typedef struct SCSTrailer {
 
     // Common unsigned int
 	struct {
-		unsigned int wheelSubstance[16];
+		unsigned int wheelSubstance[WHEEL_MAX];
 	} com_ui;
 
     // Constant unsigned int
@@ -36,17 +46,17 @@ typedef struct SCSTrailer {
 		float wearChassis;
 		float wearWheels;
 		float wearBody;
-		float wheelSuspDeflection[16];
-		float wheelVelocity[16];
-		float wheelSteering[16];
-		float wheelRotation[16];
-		float wheelLift[16];
-		float wheelLiftOffset[16];
+		float wheelSuspDeflection[WHEEL_MAX];
+		float wheelVelocity[WHEEL_MAX];
+		float wheelSteering[WHEEL_MAX];
+		float wheelRotation[WHEEL_MAX];
+		float wheelLift[WHEEL_MAX];
+		float wheelLiftOffset[WHEEL_MAX];
 	} com_f;
 
 	/// Constant float
 	struct {
-		float wheelRadius[16];
+		float wheelRadius[WHEEL_MAX];
 	} con_f;
 
     // Common float vector
@@ -70,9 +80,9 @@ typedef struct SCSTrailer {
 		float hookPositionX;
 		float hookPositionY;
 		float hookPositionZ;
-		float wheelPositionX[16];
-		float wheelPositionY[16];
-		float wheelPositionZ[16];
+		float wheelPositionX[WHEEL_MAX];
+		float wheelPositionY[WHEEL_MAX];
+		float wheelPositionZ[WHEEL_MAX];
 	} con_fv;
 
     char buffer_fv[4];
@@ -89,22 +99,22 @@ typedef struct SCSTrailer {
 
     // Constant string
 	struct {
-		char id[stringsize];
-		char cargoAcessoryId[stringsize];
-		char bodyType[stringsize];
-		char brandId[stringsize];
-		char brand[stringsize];
-		char name[stringsize];
-		char chainType[stringsize];
-		char licensePlate[stringsize];
-		char licensePlateCountry[stringsize];
-		char licensePlateCountryId[stringsize];
+		char id[STRINGSIZE];
+		char cargoAcessoryId[STRINGSIZE];
+		char bodyType[STRINGSIZE];
+		char brandId[STRINGSIZE];
+		char brand[STRINGSIZE];
+		char name[STRINGSIZE];
+		char chainType[STRINGSIZE];
+		char licensePlate[STRINGSIZE];
+		char licensePlateCountry[STRINGSIZE];
+		char licensePlateCountryId[STRINGSIZE];
 	} con_s;
 };
 
 
-// MARK: SCSTelemetry struct
-typedef struct SCSTelemetry {
+// MARK: TelemetryData struct
+struct TelemetryData {
 
 	// Display if game / sdk runs
 	bool sdkActive;
@@ -162,7 +172,7 @@ typedef struct SCSTelemetry {
 		unsigned int retarderBrake;
 		unsigned int lightsAuxFront;
 		unsigned int lightsAuxRoof;
-		unsigned int truck_wheelSubstance[16];
+		unsigned int truck_wheelSubstance[WHEEL_MAX];
 		unsigned int hshifterPosition[32];
 		unsigned int hshifterBitmask[32];
 	} truck_ui;
@@ -214,7 +224,7 @@ typedef struct SCSTelemetry {
 		float engineRpmMax;
 		float gearDifferential;
 		float cargoMass;
-		float truckWheelRadius[16];
+		float truckWheelRadius[WHEEL_MAX];
 		float gearRatiosForward[24];
 		float gearRatiosReverse[8];
 		float unitMass;
@@ -253,12 +263,12 @@ typedef struct SCSTelemetry {
 		float routeDistance;
 		float routeTime;
 		float speedLimit;
-		float truck_wheelSuspDeflection[16];
-		float truck_wheelVelocity[16];
-		float truck_wheelSteering[16];
-		float truck_wheelRotation[16];
-		float truck_wheelLift[16];
-		float truck_wheelLiftOffset[16];
+		float truck_wheelSuspDeflection[WHEEL_MAX];
+		float truck_wheelVelocity[WHEEL_MAX];
+		float truck_wheelSteering[WHEEL_MAX];
+		float truck_wheelRotation[WHEEL_MAX];
+		float truck_wheelLift[WHEEL_MAX];
+		float truck_wheelLiftOffset[WHEEL_MAX];
 	} truck_f;
 
     // Gameplay float
@@ -277,10 +287,10 @@ typedef struct SCSTelemetry {
 
     // Configuration bool
 	struct {
-		bool truckWheelSteerable[16];
-		bool truckWheelSimulated[16];
-		bool truckWheelPowered[16];
-		bool truckWheelLiftable[16];
+		bool truckWheelSteerable[WHEEL_MAX];
+		bool truckWheelSimulated[WHEEL_MAX];
+		bool truckWheelPowered[WHEEL_MAX];
+		bool truckWheelLiftable[WHEEL_MAX];
 
 		bool isCargoLoaded;
 		bool specialJob;
@@ -312,7 +322,7 @@ typedef struct SCSTelemetry {
 		bool lightsReverse;
 		bool lightsHazard;
 		bool cruiseControl; // special field not a sdk field
-		bool truck_wheelOnGround[16];
+		bool truck_wheelOnGround[WHEEL_MAX];
 		bool shifterToggle[2];
 		bool differentialLock;
 		bool liftAxle;
@@ -340,9 +350,9 @@ typedef struct SCSTelemetry {
 		float truckHookPositionX;
 		float truckHookPositionY;
 		float truckHookPositionZ;
-		float truckWheelPositionX[16];
-		float truckWheelPositionY[16];
-		float truckWheelPositionZ[16];
+		float truckWheelPositionX[WHEEL_MAX];
+		float truckWheelPositionY[WHEEL_MAX];
+		float truckWheelPositionZ[WHEEL_MAX];
 	} config_fv;
 
     // Truck float velocity
@@ -401,26 +411,26 @@ typedef struct SCSTelemetry {
 
     // Configuration string
 	struct {
-		char truckBrandId[stringsize];
-		char truckBrand[stringsize];
-		char truckId[stringsize];
+		char truckBrandId[STRINGSIZE];
+		char truckBrand[STRINGSIZE];
+		char truckId[STRINGSIZE];
 
-		char truckName[stringsize];
-		char cargoId[stringsize];
-		char cargo[stringsize];
-		char cityDstId[stringsize];
-		char cityDst[stringsize];
-		char compDstId[stringsize];
-		char compDst[stringsize];
-		char citySrcId[stringsize];
-		char citySrc[stringsize];
-		char compSrcId[stringsize];
-		char compSrc[stringsize];
+		char truckName[STRINGSIZE];
+		char cargoId[STRINGSIZE];
+		char cargo[STRINGSIZE];
+		char cityDstId[STRINGSIZE];
+		char cityDst[STRINGSIZE];
+		char compDstId[STRINGSIZE];
+		char compDst[STRINGSIZE];
+		char citySrcId[STRINGSIZE];
+		char citySrc[STRINGSIZE];
+		char compSrcId[STRINGSIZE];
+		char compSrc[STRINGSIZE];
 		char shifterType[16];
 
-		char truckLicensePlate[stringsize];
-		char truckLicensePlateCountryId[stringsize];
-		char truckLicensePlateCountry[stringsize];
+		char truckLicensePlate[STRINGSIZE];
+		char truckLicensePlateCountryId[STRINGSIZE];
+		char truckLicensePlateCountry[STRINGSIZE];
 
 		char jobMarket[32];
 	} config_s;
@@ -428,14 +438,14 @@ typedef struct SCSTelemetry {
     // Gameplay string
 	struct {
 		char fineOffence[32];
-		char ferrySourceName[stringsize];
-		char ferryTargetName[stringsize];
-		char ferrySourceId[stringsize];
-		char ferryTargetId[stringsize];
-		char trainSourceName[stringsize];
-		char trainTargetName[stringsize];
-		char trainSourceId[stringsize];
-		char trainTargetId[stringsize];
+		char ferrySourceName[STRINGSIZE];
+		char ferryTargetName[STRINGSIZE];
+		char ferrySourceId[STRINGSIZE];
+		char ferryTargetId[STRINGSIZE];
+		char trainSourceName[STRINGSIZE];
+		char trainTargetName[STRINGSIZE];
+		char trainSourceId[STRINGSIZE];
+		char trainTargetId[STRINGSIZE];
 	} gameplay_s;
 
 	char buffer_s[20];
@@ -477,12 +487,45 @@ typedef struct SCSTelemetry {
 
     // Substance string
 	struct {
-		char substance[SUBSTANCE_SIZE][stringsize];
+		char substance[SUBSTANCE_SIZE][STRINGSIZE];
 	} substances;
 
     // Trailer struct
 	struct {
-		SCSTrailer trailer[10];
+		TelemetryDataTrailer trailer[10];
 	} trailer;
 
+};
+
+
+// MARK: SCSTelemetry class
+class SCSTelemetry {
+public:
+    SCSTelemetry();
+    explicit SCSTelemetry(const std::wstring &mapName, std::size_t mapSize = sizeof(TelemetryData));
+    SCSTelemetry(const SCSTelemetry &) = delete;
+    SCSTelemetry &operator=(const SCSTelemetry &) = delete;
+    SCSTelemetry(SCSTelemetry &&other) noexcept;
+    SCSTelemetry &operator=(SCSTelemetry &&other) noexcept;
+    ~SCSTelemetry();
+
+    bool open(const std::wstring &mapName = L"Local\\SCSTelemetry", std::size_t mapSize = sizeof(TelemetryData));
+    void close();
+
+    bool hooked() const { return hooked_; }
+    std::size_t size() const { return size_; }
+
+    TelemetryData *data();
+    const TelemetryData *data() const;
+
+private:
+    bool ensure_open() const;
+
+    HANDLE mapHandle_;
+    void *view_;
+    std::size_t size_;
+    bool hooked_;
+    std::wstring mapName_;
+    std::size_t mapSize_;
+    TelemetryData fallback_{};
 };

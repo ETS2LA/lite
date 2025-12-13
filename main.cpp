@@ -1,6 +1,8 @@
-﻿#include <chrono>
+﻿#include "telemetry.h"
+#include "controller.h"
 
-#include "telemetry.h"
+#include <chrono>
+#include <thread>
 
 
 double getCurrentTimeInMilliseconds() {
@@ -12,19 +14,12 @@ double getCurrentTimeInMilliseconds() {
 }
 
 int main() {
-	SCSTelemetry telemetry;
+	SCSController controller;
 
-	float update_rate_ms = 0.0f;
-	float prev_speed = 0.0f;
-	double last_change = getCurrentTimeInMilliseconds();
 	while (true) {
-		TelemetryData* data = telemetry.data();
-		std::printf("speed: %f, update rate: %f ms\n", data->truck_f.speed, update_rate_ms);
-		if (prev_speed != data->truck_f.speed) {
-			prev_speed = data->truck_f.speed;
-			update_rate_ms = static_cast<float>(getCurrentTimeInMilliseconds() - last_change);
-			last_change = getCurrentTimeInMilliseconds();
-		}
+		controller.steering = static_cast<float>(sin(getCurrentTimeInMilliseconds() * 0.001));
+		controller.update();
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
 	}
 	return 0;
 }

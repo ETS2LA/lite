@@ -1,8 +1,13 @@
-﻿#include "telemetry.h"
-#include "controller.h"
+﻿#include "controller.h"
+#include "telemetry.h"
+#include "capture.h"
 
+#include <opencv2/opencv.hpp>
 #include <chrono>
 #include <thread>
+
+#include <winrt/Windows.UI.Xaml.h>
+#include <winrt/Windows.Graphics.Capture.h>
 
 
 double getCurrentTimeInMilliseconds() {
@@ -14,12 +19,16 @@ double getCurrentTimeInMilliseconds() {
 }
 
 int main() {
-	SCSController controller;
+	WindowCapture capture;
+	capture.initialize();
+
+	cv::Mat* frame;
 
 	while (true) {
-		controller.steering = static_cast<float>(sin(getCurrentTimeInMilliseconds() * 0.001));
-		controller.update();
-		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		frame = capture.get_frame();
+		cv::imshow("Captured Frame", *frame);
+		cv::waitKey(1);
 	}
+
 	return 0;
 }

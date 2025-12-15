@@ -1,0 +1,11 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "cmake: build x64-debug",
+            "type": "shell",
+            "command": "cd ${workspaceFolder} && cmake --preset=x64-debug -B build/x64-debug && cmake --build build/x64-debug",
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

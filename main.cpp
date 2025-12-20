@@ -6,19 +6,19 @@
 
 
 int main() {
-	WindowCapture capture;
-	capture.initialize();
+    WindowCapture capture;
+    capture.initialize();
 
-	cv::Mat* frame;
+    cv::Mat* frame;
 
-	while (true) {
-		frame = capture.get_frame();
-		if (!frame) {
-			continue;
-		}
-		cv::imshow("Captured Frame", *frame);
-		cv::waitKey(1);
-	}
+    while (true) {
+        frame = capture.get_frame();
+        if (!frame) {
+            continue;
+        }
+        cv::imshow("Captured Frame", *frame);
+        cv::waitKey(1);
+    }
 
-	return 0;
+    return 0;
 }

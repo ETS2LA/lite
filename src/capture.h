@@ -9,6 +9,13 @@
 #include <wrl.h>
 
 
+/**
+ * Screen bounds structure defining the position and size of a screen.
+ * @param x The x coordinate of the screen.
+ * @param y The y coordinate of the screen.
+ * @param width The width of the screen.
+ * @param height The height of the screen.
+ */
 struct ScreenBounds {
     int x;
     int y;
@@ -16,6 +23,13 @@ struct ScreenBounds {
     int height;
 };
 
+/**
+ * Window region structure defining the position of a window.
+ * @param x1 The left coordinate of the window.
+ * @param y1 The top coordinate of the window.
+ * @param x2 The right coordinate of the window.
+ * @param y2 The bottom coordinate of the window.
+ */
 struct WindowRegion {
     int x1;
     int y1;
@@ -23,6 +37,14 @@ struct WindowRegion {
     int y2;
 };
 
+/**
+ * Capture region structure defining the screen index and coordinates.
+ * @param screen_index The index of the screen to capture from.
+ * @param x1 The left coordinate of the capture region.
+ * @param y1 The top coordinate of the capture region.
+ * @param x2 The right coordinate of the capture region.
+ * @param y2 The bottom coordinate of the capture region.
+ */
 struct CaptureRegion {
     uint8_t screen_index;
     int x1;
@@ -59,6 +81,12 @@ public:
     uint8_t get_screen_index(int x, int y);
 
     /**
+     * Get the position of the target window.
+     * @return The window region structure containing x1, y1, x2, and y2.
+     */
+    WindowRegion get_window_position();
+
+    /**
      * Validate the capture area, ensuring that it is within the bounds of the screen.
      * @param region The capture region to validate and adjust if necessary.
      */
@@ -70,12 +98,6 @@ public:
      * @return True if the target window is the foreground window, false otherwise.
      */
     bool is_foreground_window() const;
-
-    /**
-     * Get the position of the target window.
-     * @return The window region structure containing x1, y1, x2, and y2.
-     */
-    WindowRegion get_window_position();
 
     /**
      * Set the capture region for screen capturing.
@@ -100,4 +122,7 @@ private:
     Microsoft::WRL::ComPtr<IDXGIOutput1> output1_;
     Microsoft::WRL::ComPtr<IDXGIOutputDuplication> output_duplication_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> staging_texture_;
+
+    void track_window();
+    WindowRegion last_window_position_{0, 0, 0, 0};
 };

@@ -15,7 +15,9 @@ ScreenCapture::ScreenCapture(CaptureRegion capture_region):
 capture_region_(capture_region) {}
 
 ScreenCapture::ScreenCapture(HWND target_window_handle):
-target_window_handle_(target_window_handle) {}
+target_window_handle_(target_window_handle) {
+    capture_region_ = {0, 0, 0, 1, 1};
+}
 
 
 void ScreenCapture::initialize() {
@@ -73,6 +75,7 @@ void ScreenCapture::initialize() {
     initialized = true;
 
     validate_capture_area(capture_region_);
+    track_window();
 }
 
 
@@ -82,6 +85,10 @@ cv::Mat* ScreenCapture::get_frame() {
         if (!initialized) {
             return has_frame_ ? &latest_frame_ : nullptr;
         }
+    }
+
+    if (target_window_handle_ != nullptr) {
+        track_window();
     }
 
     DXGI_OUTDUPL_FRAME_INFO frame_info;
@@ -248,6 +255,25 @@ uint8_t ScreenCapture::get_screen_index(int x, int y) {
 }
 
 
+WindowRegion ScreenCapture::get_window_position() {
+    WindowRegion region{0, 0, 0, 0};
+
+    if (target_window_handle_ == nullptr) {
+        return region;
+    }
+
+    RECT rect;
+    if (GetWindowRect(target_window_handle_, &rect)) {
+        region.x1 = rect.left;
+        region.y1 = rect.top;
+        region.x2 = rect.right;
+        region.y2 = rect.bottom;
+    }
+
+    return region;
+}
+
+
 void ScreenCapture::validate_capture_area(CaptureRegion& region) {
     ScreenBounds bounds = get_screen_bounds(region.screen_index);
 
@@ -291,20 +317,54 @@ bool ScreenCapture::is_foreground_window() const {
 }
 
 
-WindowRegion ScreenCapture::get_window_position() {
-    WindowRegion region{0, 0, 0, 0};
+void ScreenCapture::set_capture_region(const CaptureRegion& region) {
+    capture_region_ = region;
+    validate_capture_area(capture_region_);
 
-    if (target_window_handle_ == nullptr) {
-        return region;
+    printf("set captuere region\n");
+
+    output_duplication_.Reset();
+    output1_.Reset();
+    output_.Reset();
+
+    hr_ = adapter_->EnumOutputs(capture_region_.screen_index, &output_);
+    if (FAILED(hr_)) {
+        fprintf(stderr, "Screen Capture: EnumOutputs failed for index %d: 0x%X\n", static_cast<int>(capture_region_.screen_index), hr_);
+        return;
     }
-
-    RECT rect;
-    if (GetWindowRect(target_window_handle_, &rect)) {
-        region.x1 = rect.left;
-        region.y1 = rect.top;
-        region.x2 = rect.right;
-        region.y2 = rect.bottom;
+    hr_ = output_.As(&output1_);
+    if (FAILED(hr_)) {
+        fprintf(stderr, "Screen Capture: output.As failed: 0x%X\n", hr_);
+        return;
     }
+    hr_ = output1_->DuplicateOutput(d3d_device_.Get(), &output_duplication_);
+    if (FAILED(hr_)) {
+        fprintf(stderr, "Screen Capture: DuplicateOutput failed: 0x%X\n", hr_);
+        return;
+    }
+}
 
-    return region;
+
+void ScreenCapture::track_window() {
+    auto window_position = ScreenCapture::get_window_position();
+    auto screen_bounds = ScreenCapture::get_screen_bounds(capture_region_.screen_index);
+
+    if (window_position.x1 != last_window_position_.x1 ||
+        window_position.y1 != last_window_position_.y1 ||
+        window_position.x2 != last_window_position_.x2 ||
+        window_position.y2 != last_window_position_.y2) {
+        last_window_position_ = window_position;
+
+        auto screen_index = ScreenCapture::get_screen_index(
+            window_position.x1 + (window_position.x2 - window_position.x1) / 2,
+            window_position.y1 + (window_position.y2 - window_position.y1) / 2
+        );
+
+        capture_region_.screen_index = screen_index;
+        capture_region_.x1 = window_position.x1 - screen_bounds.x;
+        capture_region_.y1 = window_position.y1 - screen_bounds.y;
+        capture_region_.x2 = window_position.x2 - screen_bounds.x;
+        capture_region_.y2 = window_position.y2 - screen_bounds.y;
+        set_capture_region(capture_region_);
+    }
 }

@@ -3,6 +3,9 @@
 #define NOMINMAX
 
 #include <opencv2/opencv.hpp>
+#include <functional>
+#include <windows.h>
+#include <chrono>
 
 #include <d3d11.h>
 #include <dxgi1_2.h>
@@ -56,61 +59,26 @@ struct CaptureRegion {
 
 class ScreenCapture {
 public:
-    bool initialized = false;
-    std::wstring window_name = L"";
-
     ScreenCapture(CaptureRegion capture_region);
-    explicit ScreenCapture(HWND target_window_handle);
+    explicit ScreenCapture(std::function<HWND()> target_window_handle_function);
 
     void initialize();
+    bool is_initialized();
     cv::Mat* get_frame();
-
-    /**
-     * Get the screen position and screen size of a screen by its index.
-     * @param screen_index The index of the screen to get the dimensions for.
-     * @return The screen bounds structure containing x, y, width, and height.
-     */
     ScreenBounds get_screen_bounds(uint8_t screen_index);
-
-    /**
-     * Get the screen index of the screen that is closest to the given coordinates.
-     * @param x The x coordinate.
-     * @param y The y coordinate.
-     * @return The index of the screen that contains the given coordinates.
-     */
     uint8_t get_screen_index(int x, int y);
-
-    /**
-     * Get the position of the target window.
-     * @return The window region structure containing x1, y1, x2, and y2.
-     */
     WindowRegion get_window_position();
-
-    /**
-     * Validate the capture area, ensuring that it is within the bounds of the screen.
-     * @param region The capture region to validate and adjust if necessary.
-     */
     void validate_capture_area(CaptureRegion& region);
-
-    /**
-     * Check if the target window is currently the foreground window.
-     * If no target window is set, this function returns false.
-     * @return True if the target window is the foreground window, false otherwise.
-     */
     bool is_foreground_window() const;
-
-    /**
-     * Set the capture region for screen capturing.
-     * @param region The new capture region to set.
-     */
     void set_capture_region(const CaptureRegion& region);
 
 private:
+    bool initialized = false;
     bool has_frame_ = false;
     cv::Mat frame_buffer_;
     cv::Mat latest_frame_;
     CaptureRegion capture_region_{0, 0, 0, 0};
-    HWND target_window_handle_ = nullptr;
+    std::function<HWND()> target_window_handle_function_;
 
     HRESULT hr_ = S_OK;
     D3D_FEATURE_LEVEL feature_level_ = D3D_FEATURE_LEVEL_11_0;
@@ -125,4 +93,5 @@ private:
 
     void track_window();
     WindowRegion last_window_position_{0, 0, 0, 0};
+    double last_track_check_time_ = 0.0;
 };

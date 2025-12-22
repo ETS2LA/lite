@@ -7,10 +7,12 @@
 
 
 int main() {
-    HWND target_window = utils::find_window(L"Truck Simulator", { L"Discord" });
-
-    ScreenCapture capture(target_window);
-    capture.initialize();
+    ScreenCapture capture(
+        std::bind(
+            utils::find_window, std::wstring(L"Truck Simulator"),
+            std::vector<std::wstring>{ L"Discord" }
+        )
+    );
 
     cv::Mat* frame;
 
@@ -18,8 +20,6 @@ int main() {
     cv::resizeWindow("Captured Frame", 500, 300);
 
     while (true) {
-        WindowRegion window_pos = capture.get_window_position();
-
         frame = capture.get_frame();
 
         if (!frame) {
@@ -27,6 +27,11 @@ int main() {
         }
 
         cv::imshow("Captured Frame", *frame);
+
+        auto ra_frame = frame->clone();
+        utils::apply_route_advisor_crop(ra_frame, false);
+        cv::imshow("Route Advisor", ra_frame);
+
         cv::waitKey(1);
     }
 

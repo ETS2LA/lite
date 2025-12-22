@@ -11,15 +11,28 @@ using namespace std;
 using Microsoft::WRL::ComPtr;
 
 
+/**
+ * Constructor for ScreenCapture using a specified capture region.
+ * @param capture_region The region of the screen to capture.
+ */
 ScreenCapture::ScreenCapture(CaptureRegion capture_region):
 capture_region_(capture_region) {}
 
-ScreenCapture::ScreenCapture(HWND target_window_handle):
-target_window_handle_(target_window_handle) {
-    capture_region_ = {0, 0, 0, 1, 1};
+/**
+ * Constructor for ScreenCapture using a function to get the target window handle.
+ * @param target_window_handle_function A function that returns the handle of the target window.
+ */
+ScreenCapture::ScreenCapture(function<HWND()> target_window_handle_function):
+target_window_handle_function_(target_window_handle_function) {
+    ScreenBounds screen_bounds = get_screen_bounds(0);
+    capture_region_ = {0, screen_bounds.x, screen_bounds.y, screen_bounds.width, screen_bounds.height};
 }
 
 
+/**
+ * Initialize the screen capture resources.
+ * This function will be automatically called when get_frame() is invoked for the first time, but can also be called manually if needed.
+ */
 void ScreenCapture::initialize() {
     if (initialized) {
         return;
@@ -75,10 +88,22 @@ void ScreenCapture::initialize() {
     initialized = true;
 
     validate_capture_area(capture_region_);
-    track_window();
 }
 
 
+/**
+ * Check if the ScreenCapture has been initialized.
+ * @return True if initialized, false otherwise.
+ */
+bool ScreenCapture::is_initialized() {
+    return initialized;
+}
+
+
+/**
+ * Get the latest captured frame.
+ * @return A pointer to the captured cv::Mat frame, or nullptr if no frame is available.
+ */
 cv::Mat* ScreenCapture::get_frame() {
     if (!initialized) {
         initialize();
@@ -87,7 +112,7 @@ cv::Mat* ScreenCapture::get_frame() {
         }
     }
 
-    if (target_window_handle_ != nullptr) {
+    if (target_window_handle_function_ != nullptr) {
         track_window();
     }
 
@@ -184,96 +209,121 @@ cv::Mat* ScreenCapture::get_frame() {
 }
 
 
+/**
+ * Get the screen position and screen size of a screen by its index.
+ * @param screen_index The index of the screen to get the dimensions for.
+ * @return The screen bounds structure containing x, y, width, and height.
+ */
 ScreenBounds ScreenCapture::get_screen_bounds(uint8_t screen_index) {
-    if (!initialized) {
-        initialize();
-        if (!initialized) {
-            return ScreenBounds{0, 0, 0, 0};
-        }
-    }
+    std::vector<MONITORINFOEXW> monitors;
+    EnumDisplayMonitors(
+        nullptr,
+        nullptr,
+        [](HMONITOR hMon, HDC, LPRECT, LPARAM data) -> BOOL {
+            auto vec = reinterpret_cast<std::vector<MONITORINFOEXW>*>(data);
+            MONITORINFOEXW info{};
+            info.cbSize = sizeof(info);
+            if (GetMonitorInfoW(hMon, &info)) {
+                vec->push_back(info);
+            }
+            return TRUE;
+        },
+        reinterpret_cast<LPARAM>(&monitors)
+    );
 
-    ComPtr<IDXGIOutput> temp_output;
-    HRESULT hr = adapter_->EnumOutputs(screen_index, &temp_output);
-    if (FAILED(hr)) {
-        fprintf(stderr, "Screen Capture: EnumOutputs failed for index %d: 0x%X\n", static_cast<int>(screen_index), hr);
+    if (screen_index >= monitors.size()) {
         return ScreenBounds{0, 0, 0, 0};
     }
 
-    DXGI_OUTPUT_DESC output_desc;
-    hr = temp_output->GetDesc(&output_desc);
-    if (FAILED(hr)) {
-        fprintf(stderr, "Screen Capture: GetDesc failed for output index %d: 0x%X\n", static_cast<int>(screen_index), hr);
-        return ScreenBounds{0, 0, 0, 0};
-    }
-
-    RECT desktop_rect = output_desc.DesktopCoordinates;
-    ScreenBounds bounds;
-    bounds.x = desktop_rect.left;
-    bounds.y = desktop_rect.top;
-    bounds.width = desktop_rect.right - desktop_rect.left;
-    bounds.height = desktop_rect.bottom - desktop_rect.top;
-
-    return bounds;
+    const RECT& r = monitors[screen_index].rcMonitor;
+    return ScreenBounds{r.left, r.top, r.right - r.left, r.bottom - r.top};
 }
 
 
+/**
+ * Get the screen index of the screen that is closest to the given coordinates.
+ * @param x The x coordinate.
+ * @param y The y coordinate.
+ * @return The index of the screen that contains the given coordinates.
+ */
 uint8_t ScreenCapture::get_screen_index(int x, int y) {
-    if (!initialized) {
-        initialize();
-        if (!initialized) {
-            return 0;
+    std::vector<MONITORINFOEXW> monitors;
+    EnumDisplayMonitors(
+        nullptr,
+        nullptr,
+        [](HMONITOR hMon, HDC, LPRECT, LPARAM data) -> BOOL {
+            auto vec = reinterpret_cast<std::vector<MONITORINFOEXW>*>(data);
+            MONITORINFOEXW info{};
+            info.cbSize = sizeof(info);
+            if (GetMonitorInfoW(hMon, &info)) {
+                vec->push_back(info);
+            }
+            return TRUE;
+        },
+        reinterpret_cast<LPARAM>(&monitors)
+    );
+
+    if (monitors.empty()) {
+        return 0;
+    }
+
+    uint8_t best_index = 0;
+    long long best_dist = LLONG_MAX;
+
+    for (uint8_t i = 0; i < monitors.size(); ++i) {
+        const RECT& r = monitors[i].rcMonitor;
+        const long cx = (r.left + r.right) / 2;
+        const long cy = (r.top + r.bottom) / 2;
+        const long dx = cx - x;
+        const long dy = cy - y;
+        const long long d2 = 1LL * dx * dx + 1LL * dy * dy;
+        if (d2 < best_dist) {
+            best_dist = d2;
+            best_index = i;
         }
     }
 
-    uint8_t screen_index = 0;
-    int closest_distance = INT_MAX;
-
-    ComPtr<IDXGIOutput> temp_output;
-    for (uint8_t i = 0; adapter_->EnumOutputs(i, &temp_output) != DXGI_ERROR_NOT_FOUND; ++i) {
-        DXGI_OUTPUT_DESC output_desc;
-        HRESULT hr = temp_output->GetDesc(&output_desc);
-        if (FAILED(hr)) {
-            fprintf(stderr, "Screen Capture: GetDesc failed for output index %d: 0x%X\n", static_cast<int>(i), hr);
-            continue;
-        }
-
-        RECT desktop_rect = output_desc.DesktopCoordinates;
-        int center_x = (desktop_rect.left + desktop_rect.right) / 2;
-        int center_y = (desktop_rect.top + desktop_rect.bottom) / 2;
-
-        int delta_x = center_x - x;
-        int delta_y = center_y - y;
-        int distance = delta_x * delta_x + delta_y * delta_y;
-
-        if (distance < closest_distance) {
-            closest_distance = distance;
-            screen_index = i;
-        }
-    }
-
-    return screen_index;
+    return best_index;
 }
 
 
+/**
+ * Get the position of the target window.
+ * @return The window region structure containing x1, y1, x2, and y2.
+ */
 WindowRegion ScreenCapture::get_window_position() {
     WindowRegion region{0, 0, 0, 0};
 
-    if (target_window_handle_ == nullptr) {
+    if (target_window_handle_function_ == nullptr) {
         return region;
     }
 
-    RECT rect;
-    if (GetWindowRect(target_window_handle_, &rect)) {
-        region.x1 = rect.left;
-        region.y1 = rect.top;
-        region.x2 = rect.right;
-        region.y2 = rect.bottom;
+    HWND hwnd = target_window_handle_function_();
+
+    RECT client_rect;
+    if (!GetClientRect(hwnd, &client_rect)) {
+        return region;
     }
+
+    POINT top_left{client_rect.left, client_rect.top};
+    POINT bottom_right{client_rect.right, client_rect.bottom};
+    if (!ClientToScreen(hwnd, &top_left) || !ClientToScreen(hwnd, &bottom_right)) {
+        return region;
+    }
+
+    region.x1 = top_left.x;
+    region.y1 = top_left.y;
+    region.x2 = bottom_right.x;
+    region.y2 = bottom_right.y;
 
     return region;
 }
 
 
+/**
+ * Validate the capture area, ensuring that it is within the bounds of the screen.
+ * @param region The capture region to validate and adjust if necessary.
+ */
 void ScreenCapture::validate_capture_area(CaptureRegion& region) {
     ScreenBounds bounds = get_screen_bounds(region.screen_index);
 
@@ -285,21 +335,21 @@ void ScreenCapture::validate_capture_area(CaptureRegion& region) {
         region.y2 = region.y1 + 1;
     }
 
-    region.x1 = max(0, min(region.x1, bounds.width - 1));
-    region.y1 = max(0, min(region.y1, bounds.height - 1));
-    region.x2 = max(0, min(region.x2, bounds.width - 1));
-    region.y2 = max(0, min(region.y2, bounds.height - 1));
+    region.x1 = max(0, min(region.x1, bounds.width));
+    region.y1 = max(0, min(region.y1, bounds.height));
+    region.x2 = max(0, min(region.x2, bounds.width));
+    region.y2 = max(0, min(region.y2, bounds.height));
 
     if (region.x1 == region.x2) {
         if (region.x1 == 0) {
-            region.x2 = bounds.width - 1;
+            region.x2 = bounds.width;
         } else {
             region.x1 = 0;
         }
     }
     if (region.y1 == region.y2) {
         if (region.y1 == 0) {
-            region.y2 = bounds.height - 1;
+            region.y2 = bounds.height;
         } else {
             region.y1 = 0;
         }
@@ -307,21 +357,28 @@ void ScreenCapture::validate_capture_area(CaptureRegion& region) {
 }
 
 
+/**
+ * Check if the target window is currently the foreground window.
+ * If no target window is set, this function returns false.
+ * @return True if the target window is the foreground window, false otherwise.
+ */
 bool ScreenCapture::is_foreground_window() const {
-    if (target_window_handle_ == nullptr) {
+    if (target_window_handle_function_ == nullptr) {
         return false;
     }
 
     HWND foreground_window = GetForegroundWindow();
-    return foreground_window == target_window_handle_;
+    return foreground_window == target_window_handle_function_();
 }
 
 
+/**
+ * Set the capture region for screen capturing.
+ * @param region The new capture region to set.
+ */
 void ScreenCapture::set_capture_region(const CaptureRegion& region) {
     capture_region_ = region;
     validate_capture_area(capture_region_);
-
-    printf("set captuere region\n");
 
     output_duplication_.Reset();
     output1_.Reset();
@@ -346,8 +403,16 @@ void ScreenCapture::set_capture_region(const CaptureRegion& region) {
 
 
 void ScreenCapture::track_window() {
+    auto now = chrono::high_resolution_clock::now();
+    auto now_ms = chrono::time_point_cast<chrono::microseconds>(now);
+    double current_time = now_ms.time_since_epoch().count() / 1e6;
+
+    if (current_time - last_track_check_time_ < 0.2) {
+        return;
+    }
+    last_track_check_time_ = current_time;
+
     auto window_position = ScreenCapture::get_window_position();
-    auto screen_bounds = ScreenCapture::get_screen_bounds(capture_region_.screen_index);
 
     if (window_position.x1 != last_window_position_.x1 ||
         window_position.y1 != last_window_position_.y1 ||
@@ -359,6 +424,8 @@ void ScreenCapture::track_window() {
             window_position.x1 + (window_position.x2 - window_position.x1) / 2,
             window_position.y1 + (window_position.y2 - window_position.y1) / 2
         );
+
+        auto screen_bounds = ScreenCapture::get_screen_bounds(screen_index);
 
         capture_region_.screen_index = screen_index;
         capture_region_.x1 = window_position.x1 - screen_bounds.x;

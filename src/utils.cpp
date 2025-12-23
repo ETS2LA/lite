@@ -106,4 +106,15 @@ void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
 }
 
 
+/**
+ * Get the current time in seconds with nanosecond precision.
+ * @return The current time in seconds.
+ */
+double get_time_seconds() {
+    auto now = chrono::high_resolution_clock::now();
+    auto now_ns = chrono::time_point_cast<chrono::nanoseconds>(now);
+    return static_cast<double>(now_ns.time_since_epoch().count()) / 1e9;
+}
+
+
 }

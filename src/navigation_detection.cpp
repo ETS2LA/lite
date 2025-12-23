@@ -33,21 +33,21 @@ bool turn_ahead_detected = false;
 int turn_ahead_direction = TURN_NONE;
 
 
-vector<int> get_lane_edges(const cv::Mat& binary_image, int y_coordinate, float tilt, int x_offset, int y_offset) {
+vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, int x_offset, int y_offset) {
     bool detecting_lane = false;
     vector<int> lane_edges;
 
-    for (int x = 0; x < binary_image.cols; ++x) {
-        int y = static_cast<int>(round(y_coordinate + y_offset + (binary_image.cols / 2 - x + x_offset) * tilt));
+    for (int x = 0; x < frame.cols; ++x) {
+        int y = static_cast<int>(round(y_coordinate + y_offset + (frame.cols / 2 - x + x_offset) * tilt));
         if (y < 0) {
             y = 0;
         }
-        if (y > binary_image.rows - 1) {
-            y = binary_image.rows - 1;
+        if (y > frame.rows - 1) {
+            y = frame.rows - 1;
         }
 
-        uint8_t pixel = binary_image.at<uint8_t>(y, x);
-        if (pixel >= 128) {
+        uint8_t pixel = frame.at<uint8_t>(y, x);
+        if (pixel > 0) {
             if (!detecting_lane) {
                 detecting_lane = true;
                 lane_edges.push_back(x - x_offset);
@@ -61,7 +61,7 @@ vector<int> get_lane_edges(const cv::Mat& binary_image, int y_coordinate, float 
     }
 
     if (lane_edges.size() < 2) {
-        lane_edges.push_back(binary_image.cols);
+        lane_edges.push_back(frame.cols);
     }
 
     return lane_edges;
@@ -145,7 +145,8 @@ void run() {
     int right_x_lane = lane_position.second;
     int left_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - left_x_lane - x_offset) * tilt));
     int right_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - right_x_lane - x_offset) * tilt));
-    if (left_x_lane + right_x_lane == frame.cols - 1) {
+    if (right_x_lane == frame.cols - 1) {
+        left_x_lane = 0;
         right_x_lane = 0;
         left_y_lane = y_coordinate_of_lane;
         right_y_lane = y_coordinate_of_lane;
@@ -156,7 +157,7 @@ void run() {
     pair<int, int> turn_position = get_lane_position(turn_edges);
     int left_x_turn = turn_position.first;
     int right_x_turn = turn_position.second;
-    if (left_x_turn + right_x_turn == frame.cols - 1) {
+    if (right_x_turn == frame.cols - 1) {
         left_x_turn = 0;
         right_x_turn = 0;
     }
@@ -239,7 +240,7 @@ void run() {
         }
     }
 
-    correction = last_correction + (correction - last_correction) / 4.0f;
+    correction = last_correction + (correction - last_correction) / 2.0f;
     last_correction = correction;
 
     if (telemetry_data->truck_f.speed > -0.1f) {
@@ -298,6 +299,9 @@ void run() {
         cv::namedWindow("Navigation Detection", cv::WINDOW_NORMAL);
         cv::resizeWindow("Navigation Detection", frame.cols, frame.rows);
         cv::setWindowProperty("Navigation Detection", cv::WND_PROP_TOPMOST, 1);
+        auto target_window = utils::find_window(L"Navigation Detection", {});
+        utils::set_icon(target_window, L"assets/favicon.ico");
+        utils::set_window_title_bar_color(target_window, RGB(0, 0, 0));
     }
 
     cv::imshow("Navigation Detection", frame);

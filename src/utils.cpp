@@ -117,4 +117,66 @@ double get_time_seconds() {
 }
 
 
+/**
+ * Set the icon of a window.
+ * @param hwnd The handle to the window.
+ * @param icon_path The path to the .ico file.
+ */
+void set_icon(HWND hwnd, const std::wstring& icon_path) {
+    HICON h_icon = static_cast<HICON>(LoadImageW(
+        nullptr,
+        icon_path.c_str(),
+        IMAGE_ICON,
+        32,
+        32,
+        LR_LOADFROMFILE | LR_DEFAULTSIZE | LR_SHARED
+    ));
+
+    if (h_icon) {
+        SendMessageW(hwnd, WM_SETICON, ICON_BIG, reinterpret_cast<LPARAM>(h_icon));
+        SendMessageW(hwnd, WM_SETICON, ICON_SMALL, reinterpret_cast<LPARAM>(h_icon));
+    }
+}
+
+
+/**
+ * Set the title bar color of a window.
+ * @param hwnd The handle to the window.
+ * @param color The color to set the title bar to.
+ */
+void set_window_title_bar_color(HWND hwnd, COLORREF color) {
+    HMODULE h_dwm = LoadLibraryW(L"dwmapi.dll");
+    if (!h_dwm) return;
+
+    using DwmSetWindowAttributeFn = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
+    auto pDwmSetWindowAttribute = reinterpret_cast<DwmSetWindowAttributeFn>(GetProcAddress(h_dwm, "DwmSetWindowAttribute"));
+    if (!pDwmSetWindowAttribute) {
+        return;
+    }
+
+    constexpr DWORD DWMWA_CAPTION_COLOR = 35;
+    pDwmSetWindowAttribute(hwnd, DWMWA_CAPTION_COLOR, &color, sizeof(color));
+}
+
+
+/**
+ * Set the outline color of a window.
+ * @param hwnd The handle to the window.
+ * @param color The color to set the outline to.
+ */
+void set_window_outline_color(HWND hwnd, COLORREF color) {
+    HMODULE h_dwm = LoadLibraryW(L"dwmapi.dll");
+    if (!h_dwm) return;
+
+    using DwmSetWindowAttributeFn = HRESULT(WINAPI*)(HWND, DWORD, LPCVOID, DWORD);
+    auto pDwmSetWindowAttribute = reinterpret_cast<DwmSetWindowAttributeFn>(GetProcAddress(h_dwm, "DwmSetWindowAttribute"));
+    if (!pDwmSetWindowAttribute) {
+        return;
+    }
+
+    constexpr DWORD DWMWA_BORDER_COLOR = 34;
+    pDwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
+}
+
+
 }

@@ -25,6 +25,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
 
+add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND robocopy "${CMAKE_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets" /MIR /FFT /Z /R:0 /W:0 >nul || (exit 0)
+)
+
 if (MSVC)
     file(GLOB OPENCV_DLLS "${OpenCV_DIR}/x64/*/bin/*.dll")
     add_custom_command(

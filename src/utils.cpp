@@ -81,6 +81,27 @@ void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
         map_y2 = static_cast<int>(std::round(height - (ra_distance_bottom * scale)));
     }
 
+    if (map_x1 > map_x2) {
+        map_x2 = map_x1 + 1;
+    }
+
+    if (map_y1 > map_y2) {
+        map_y2 = map_y1 + 1;
+    }
+
+    map_x1 = max(0, min(map_x1, frame.cols));
+    map_y1 = max(0, min(map_y1, frame.rows));
+    map_x2 = max(0, min(map_x2, frame.cols));
+    map_y2 = max(0, min(map_y2, frame.rows));
+
+    if (map_x1 == map_x2) {
+        return;
+    }
+
+    if (map_y1 == map_y2) {
+        return;
+    }
+
     frame = frame(cv::Rect(map_x1, map_y1, map_x2 - map_x1, map_y2 - map_y1)).clone();
 }
 

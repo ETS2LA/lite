@@ -15,9 +15,16 @@ int main() {
     );
 
     cv::Mat* frame;
+    cv::Mat combined;
+    cv::Mat mask_red, mask_green;
 
-    cv::namedWindow("Captured Frame", cv::WINDOW_NORMAL);
-    cv::resizeWindow("Captured Frame", 500, 300);
+    cv::Scalar lower_red(0, 0, 160);
+    cv::Scalar upper_red(110, 110, 255);
+    cv::Scalar lower_green(0, 200, 0);
+    cv::Scalar upper_green(230, 255, 150);
+
+    cv::namedWindow("Frame", cv::WINDOW_NORMAL);
+    cv::resizeWindow("Frame", 420, 219);
 
     while (true) {
         frame = capture.get_frame();
@@ -26,12 +33,39 @@ int main() {
             continue;
         }
 
-        cv::imshow("Captured Frame", *frame);
+        cv::cvtColor(*frame, *frame, cv::COLOR_BGRA2BGR);
 
-        auto ra_frame = frame->clone();
-        utils::apply_route_advisor_crop(ra_frame, false);
-        cv::imshow("Route Advisor", ra_frame);
+        utils::apply_route_advisor_crop(*frame, true);
 
+        mask_red = cv::Mat::zeros(frame->size(), CV_8U);
+        mask_green = cv::Mat::zeros(frame->size(), CV_8U);
+
+        cv::inRange(*frame, lower_red, upper_red, mask_red);
+        cv::inRange(*frame, lower_green, upper_green, mask_green);
+        cv::bitwise_or(mask_red, mask_green, combined);
+
+        cv::rectangle(
+            combined,
+            cv::Point(0, 0),
+            cv::Point(
+                static_cast<int>(std::round(combined.cols/5.7f)),
+                static_cast<int>(std::round(combined.rows/4.0f))
+            ),
+            cv::Scalar(0),
+            -1
+        );
+        cv::rectangle(
+            combined,
+            cv::Point(combined.cols - 1, 0),
+            cv::Point(
+                static_cast<int>(std::round(combined.cols - 1 - combined.cols/5.7f)),
+                static_cast<int>(std::round(combined.rows/4.0f))
+            ),
+            cv::Scalar(0),
+            -1
+        );
+
+        cv::imshow("Frame", combined);
         cv::waitKey(1);
     }
 

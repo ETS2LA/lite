@@ -145,6 +145,8 @@ void set_icon(HWND hwnd, const std::wstring& icon_path) {
  * @param color The color to set the title bar to.
  */
 void set_window_title_bar_color(HWND hwnd, COLORREF color) {
+    if (!hwnd) return;
+
     HMODULE h_dwm = LoadLibraryW(L"dwmapi.dll");
     if (!h_dwm) return;
 
@@ -165,6 +167,8 @@ void set_window_title_bar_color(HWND hwnd, COLORREF color) {
  * @param color The color to set the outline to.
  */
 void set_window_outline_color(HWND hwnd, COLORREF color) {
+    if (!hwnd) return;
+
     HMODULE h_dwm = LoadLibraryW(L"dwmapi.dll");
     if (!h_dwm) return;
 

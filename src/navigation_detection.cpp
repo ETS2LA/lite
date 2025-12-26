@@ -16,6 +16,7 @@ ScreenCapture capture(
 
 SCSController controller;
 SCSTelemetry telemetry;
+InputHandler input_handler;
 
 static cv::Mat frame;
 static cv::Mat mask_red_green;
@@ -27,7 +28,9 @@ static cv::Scalar upper_red(110, 110, 255, 255);
 static cv::Scalar lower_green(0, 200, 0, 0);
 static cv::Scalar upper_green(230, 255, 150, 255);
 
+bool steering_enabled = true;
 float last_correction = 0.0f;
+int detection_offset_lane_y = 0;
 bool turn_ahead_detected = false;
 int turn_ahead_direction = TURN_NONE;
 
@@ -92,6 +95,18 @@ pair<int, int> get_lane_position(const vector<int>& lane_edges) {
 namespace navigation_detection {
 
 void initialize() {
+    input_handler.register_key_binding(
+        KeyBinding{
+            "x",
+            []() {
+                steering_enabled = !steering_enabled;
+                utils::set_window_outline_color(
+                    utils::find_window(L"Navigation Detection", {}),
+                    steering_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0)
+                );
+            }
+        }
+    );
 }
 
 
@@ -128,8 +143,6 @@ void run() {
         tilt = -0.25f;
     }
 
-    // MARK: CHANGE
-    int detection_offset_lane_y = 0;
     int x_offset = 0; // lane_change_offset
     int y_offset = detection_offset_lane_y;
 
@@ -199,6 +212,27 @@ void run() {
         }
     }
 
+    if (approve_upper_y_left != 0 && approve_upper_y_right != 0) {
+        if (
+            (y_coordinate_of_lane >= approve_lower_y_left + (approve_lower_y_left - approve_upper_y_left) &&
+             y_coordinate_of_lane <= approve_upper_y_left - (approve_lower_y_left - approve_upper_y_left))
+            ||
+            (y_coordinate_of_lane >= approve_lower_y_right + (approve_lower_y_right - approve_upper_y_right) &&
+             y_coordinate_of_lane <= approve_upper_y_right - (approve_lower_y_right - approve_upper_y_right))
+        ) {
+            int distance = min(approve_lower_y_left, approve_lower_y_right) - y_coordinate_of_lane;
+            if (distance < 0) {
+                detection_offset_lane_y = distance;
+            } else {
+                detection_offset_lane_y = 0;
+            }
+        } else {
+            detection_offset_lane_y = 0;
+        }
+    } else {
+        detection_offset_lane_y = 0;
+    }
+
     if (width_turn == 0) {
         if (approve_upper_y_left != 0) {
             turn_ahead_detected = true;
@@ -235,13 +269,21 @@ void run() {
         }
     }
 
-    correction = last_correction + (correction - last_correction) / 2.0f;
-    last_correction = correction;
 
-    if (telemetry_data->truck_f.speed > -0.1f) {
-        controller.steering = -correction / 30.0f;
+    input_handler.update();
+
+    if (steering_enabled) {
+        correction = last_correction + (correction - last_correction) / 2.0f;
+        last_correction = correction;
+
+        if (telemetry_data->truck_f.speed > -0.1f) {
+            controller.steering = -correction / 30.0f;
+        } else {
+            controller.steering = correction / 30.0f;
+        }
     } else {
-        controller.steering = correction / 30.0f;
+        last_correction = 0.0f;
+        controller.steering = 0.0f;
     }
 
     controller.update();
@@ -297,6 +339,7 @@ void run() {
         auto target_window = utils::find_window(L"Navigation Detection", {});
         utils::set_icon(target_window, L"assets/favicon.ico");
         utils::set_window_title_bar_color(target_window, RGB(0, 0, 0));
+        utils::set_window_outline_color(target_window, steering_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0));
     }
 
     cv::imshow("Navigation Detection", frame);

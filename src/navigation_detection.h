@@ -5,6 +5,7 @@
 #include "controller.h"
 #include "telemetry.h"
 #include "capture.h"
+#include "input.h"
 #include "utils.h"
 
 

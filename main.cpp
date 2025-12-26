@@ -1,10 +1,6 @@
-﻿#include "controller.h"
-#include "telemetry.h"
-#include "capture.h"
-#include "utils.h"
+﻿#include "utils.h"
 
 #include "navigation_detection.h"
-
 
 
 int main() {

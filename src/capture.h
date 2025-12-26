@@ -64,7 +64,7 @@ public:
 
     void initialize();
     bool is_initialized();
-    cv::Mat* get_frame();
+    bool get_frame(cv::Mat& dst);
     ScreenBounds get_screen_bounds(uint8_t screen_index);
     uint8_t get_screen_index(int x, int y);
     WindowRegion get_window_position();
@@ -74,9 +74,8 @@ public:
 
 private:
     bool initialized = false;
-    bool has_frame_ = false;
+    cv::Mat roi_;
     cv::Mat frame_buffer_;
-    cv::Mat latest_frame_;
     CaptureRegion capture_region_{0, 0, 0, 0};
     std::function<HWND()> target_window_handle_function_;
 

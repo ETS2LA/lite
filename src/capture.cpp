@@ -102,13 +102,14 @@ bool ScreenCapture::is_initialized() {
 
 /**
  * Get the latest captured frame.
- * @return A pointer to the captured cv::Mat frame, or nullptr if no frame is available.
- */
-cv::Mat* ScreenCapture::get_frame() {
+ * @param dst The destination cv::Mat to store the captured frame.
+ * @return True if a frame was successfully captured, false otherwise.
+*/
+bool ScreenCapture::get_frame(cv::Mat& dst) {
     if (!initialized) {
         initialize();
         if (!initialized) {
-            return has_frame_ ? &latest_frame_ : nullptr;
+            return false;
         }
     }
 
@@ -122,7 +123,7 @@ cv::Mat* ScreenCapture::get_frame() {
     hr_ = output_duplication_->AcquireNextFrame(1, &frame_info, &desktop_resource);
 
     if (hr_ == DXGI_ERROR_WAIT_TIMEOUT) {
-        return has_frame_ ? &latest_frame_ : nullptr;
+        return false;
     }
 
     if (hr_ == DXGI_ERROR_ACCESS_LOST) {
@@ -130,12 +131,12 @@ cv::Mat* ScreenCapture::get_frame() {
         output_duplication_.Reset();
         hr_ = output1_->DuplicateOutput(d3d_device_.Get(), &output_duplication_);
         initialized = SUCCEEDED(hr_);
-        return has_frame_ ? &latest_frame_ : nullptr;
+        return false;
     }
 
     if (FAILED(hr_)) {
         fprintf(stderr, "Screen Capture: AcquireNextFrame failed: 0x%X\n", hr_);
-        return has_frame_ ? &latest_frame_ : nullptr;
+        return false;
     }
 
     ComPtr<ID3D11Texture2D> acquired_desktop_image;
@@ -162,7 +163,7 @@ cv::Mat* ScreenCapture::get_frame() {
             hr_ = d3d_device_->CreateTexture2D(&staging_desc, nullptr, &staging_texture_);
             if (FAILED(hr_)) {
                 fprintf(stderr, "Screen Capture: CreateTexture2D (staging) failed: 0x%X\n", hr_);
-                return has_frame_ ? &latest_frame_ : nullptr;
+                return false;
             }
             frame_buffer_.create(static_cast<int>(desc.Height), static_cast<int>(desc.Width), CV_8UC4);
         }
@@ -188,24 +189,24 @@ cv::Mat* ScreenCapture::get_frame() {
                     wrapped.copyTo(frame_buffer_);
                 }
 
-                latest_frame_ = frame_buffer_(
+                roi_ = frame_buffer_(
                     cv::Rect(
                         capture_region_.x1,
                         capture_region_.y1,
                         capture_region_.x2 - capture_region_.x1,
                         capture_region_.y2 - capture_region_.y1
                     )
-                ).clone();
+                );
+                roi_.copyTo(dst);
 
                 d3d_context_->Unmap(staging_texture_.Get(), 0);
-                has_frame_ = true;
             }
         }
     }
 
     output_duplication_->ReleaseFrame();
 
-    return has_frame_ ? &latest_frame_ : nullptr;
+    return true;
 }
 
 

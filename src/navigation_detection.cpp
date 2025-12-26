@@ -17,16 +17,15 @@ ScreenCapture capture(
 SCSController controller;
 SCSTelemetry telemetry;
 
-static cv::Mat* temp_frame;
 static cv::Mat frame;
 static cv::Mat mask_red_green;
 static cv::Mat mask_red;
 static cv::Mat mask_green;
 
-static cv::Scalar lower_red(0, 0, 160);
-static cv::Scalar upper_red(110, 110, 255);
-static cv::Scalar lower_green(0, 200, 0);
-static cv::Scalar upper_green(230, 255, 150);
+static cv::Scalar lower_red(0, 0, 160, 0);
+static cv::Scalar upper_red(110, 110, 255, 255);
+static cv::Scalar lower_green(0, 200, 0, 0);
+static cv::Scalar upper_green(230, 255, 150, 255);
 
 float last_correction = 0.0f;
 bool turn_ahead_detected = false;
@@ -97,15 +96,11 @@ void initialize() {
 
 
 void run() {
-    temp_frame = capture.get_frame();
-
-    if (!temp_frame || temp_frame->empty()) {
+    if (!capture.get_frame(frame) || frame.empty()) {
         return;
     }
-    frame = temp_frame->clone();
-    TelemetryData* telemetry_data = telemetry.data();
 
-    cv::cvtColor(frame, frame, cv::COLOR_BGRA2BGR);
+    TelemetryData* telemetry_data = telemetry.data();
 
     utils::apply_route_advisor_crop(frame, true);
 

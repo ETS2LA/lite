@@ -55,4 +55,8 @@ void SCSController::update() {
     if (initialized && buffer) {
         memcpy(buffer, static_cast<ControllerData*>(this), sizeof(ControllerData));
     }
+
+    // set indicators back to false
+    lblinker = false;
+    rblinker = false;
 }

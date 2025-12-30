@@ -15,7 +15,7 @@
 // MARK: TelemetryDataTrailer struct
 struct TelemetryDataTrailer {
     // Constant bool
-    struct {
+    struct ConstantBool {
         bool wheelSteerable[WHEEL_MAX];
         bool wheelSimulated[WHEEL_MAX];
         bool wheelPowered[WHEEL_MAX];
@@ -23,7 +23,7 @@ struct TelemetryDataTrailer {
     } con_b;
 
     // Common bool
-    struct {
+    struct CommonBool {
         bool wheelOnGround[WHEEL_MAX];
         bool attached;
     } com_b;
@@ -31,17 +31,17 @@ struct TelemetryDataTrailer {
     char buffer_b[3];
 
     // Common unsigned int
-    struct {
+    struct CommonUnsignedInt {
         unsigned int wheelSubstance[WHEEL_MAX];
     } com_ui;
 
     // Constant unsigned int
-    struct {
+    struct ConstantUnsignedInt {
         unsigned int wheelCount;
     } con_ui;
 
     // Common float
-    struct {
+    struct CommonFloat {
         float cargoDamage;
         float wearChassis;
         float wearWheels;
@@ -55,12 +55,12 @@ struct TelemetryDataTrailer {
     } com_f;
 
     /// Constant float
-    struct {
+    struct ConstantFloat {
         float wheelRadius[WHEEL_MAX];
     } con_f;
 
     // Common float vector
-    struct {
+    struct CommonFloatVector {
         float linearVelocityX;
         float linearVelocityY;
         float linearVelocityZ;
@@ -76,7 +76,7 @@ struct TelemetryDataTrailer {
     } com_fv;
 
     // Constant float vector
-    struct {
+    struct ConstantFloatVector {
         float hookPositionX;
         float hookPositionY;
         float hookPositionZ;
@@ -88,7 +88,7 @@ struct TelemetryDataTrailer {
     char buffer_fv[4];
 
     // Common double placement
-    struct {
+    struct CommonDoublePlacement {
         double worldX;
         double worldY;
         double worldZ;
@@ -98,7 +98,7 @@ struct TelemetryDataTrailer {
     } com_dp;
 
     // Constant string
-    struct {
+    struct ConstantString {
         char id[STRINGSIZE];
         char cargoAcessoryId[STRINGSIZE];
         char bodyType[STRINGSIZE];
@@ -132,7 +132,7 @@ struct TelemetryData {
 
 
     // Game independent unsigned int
-    struct {
+    struct ScsValuesUnsignedInt {
         // Telemetry Plugin Version
         unsigned int telemetry_plugin_revision;
         // Game major version
@@ -148,13 +148,13 @@ struct TelemetryData {
     } scs_values;
 
     // Common unsigned int
-    struct {
+    struct CommonUnsignedInt {
         // In game time in minutes
         unsigned int time_abs;
     } com_ui;
 
     // Configuration unsigned int
-    struct {
+    struct ConfigurationUnsignedInt {
         unsigned int gears;
         unsigned int gears_reverse;
         unsigned int retarderStepCount;
@@ -167,7 +167,7 @@ struct TelemetryData {
     } config_ui;
 
     // Truck unsigned int
-    struct {
+    struct TruckUnsignedInt {
         unsigned int shifterSlot;
         unsigned int retarderBrake;
         unsigned int lightsAuxFront;
@@ -178,7 +178,7 @@ struct TelemetryData {
     } truck_ui;
 
     // Gameplay unsigned int
-    struct {
+    struct GameplayUnsignedInt {
         unsigned int jobDeliveredDeliveryTime;
         unsigned int jobStartingTime;
         unsigned int jobFinishedTime;
@@ -187,31 +187,31 @@ struct TelemetryData {
     char buffer_ui[48];
 
     // Common int
-    struct {
+    struct CommonInt {
         int restStop;
     } com_i;
 
     // Truck int
-    struct {
+    struct TruckInt {
         int gear;
         int gearDashboard;
         int hshifterResulting[32];
     } truck_i;
 
     // Gameplay int
-    struct {
+    struct GameplayInt {
         int jobDeliveredEarnedXp;
     } gameplay_i;
 
     char buffer_i[56];
 
     // Common float
-    struct {
+    struct CommonFloat {
         float scale;
     } com_f;
 
     // Configuration float
-    struct {
+    struct ConfigurationFloat {
         float fuelCapacity;
         float fuelWarningFactor;
         float adblueCapacity;
@@ -231,7 +231,7 @@ struct TelemetryData {
     } config_f;
 
     // Truck float
-    struct {
+    struct TruckFloat {
         float speed;
         float engineRpm;
         float userSteer;
@@ -272,21 +272,21 @@ struct TelemetryData {
     } truck_f;
 
     // Gameplay float
-    struct {
+    struct GameplayFloat {
         float jobDeliveredCargoDamage;
         float jobDeliveredDistanceKm;
         float refuelAmount;
     } gameplay_f;
 
     // Job float
-    struct {
+    struct JobFloat {
         float cargoDamage;
     } job_f;
 
     char buffer_f[28];
 
     // Configuration bool
-    struct {
+    struct ConfigurationBool {
         bool truckWheelSteerable[WHEEL_MAX];
         bool truckWheelSimulated[WHEEL_MAX];
         bool truckWheelPowered[WHEEL_MAX];
@@ -297,7 +297,7 @@ struct TelemetryData {
     } config_b;
 
     // Truck bool
-    struct {
+    struct TruckBool {
         bool parkBrake;
         bool motorBrake;
         bool airPressureWarning;
@@ -332,7 +332,7 @@ struct TelemetryData {
     } truck_b;
 
     // Gameplay bool
-    struct {
+    struct GameplayBool {
         bool jobDeliveredAutoparkUsed;
         bool jobDeliveredAutoloadUsed;
     } gameplay_b;
@@ -340,7 +340,7 @@ struct TelemetryData {
     char buffer_b[25];
 
     // Configuration float vector
-    struct {
+    struct ConfigurationFloatVector {
         float cabinPositionX;
         float cabinPositionY;
         float cabinPositionZ;
@@ -356,7 +356,7 @@ struct TelemetryData {
     } config_fv;
 
     // Truck float velocity
-    struct {
+    struct TruckFloatVelocity {
         float lv_accelerationX;
         float lv_accelerationY;
         float lv_accelerationZ;
@@ -380,7 +380,7 @@ struct TelemetryData {
     char buffer_fv[60];
 
     // Truck float placement
-    struct {
+    struct TruckFloatPlacement {
         float cabinOffsetX;
         float cabinOffsetY;
         float cabinOffsetZ;
@@ -398,7 +398,7 @@ struct TelemetryData {
     char buffer_fp[152];
 
     // Truck double placement
-    struct {
+    struct TruckDoublePlacement {
         double coordinateX;
         double coordinateY;
         double coordinateZ;
@@ -410,7 +410,7 @@ struct TelemetryData {
     char buffer_dp[52];
 
     // Configuration string
-    struct {
+    struct ConfigurationString {
         char truckBrandId[STRINGSIZE];
         char truckBrand[STRINGSIZE];
         char truckId[STRINGSIZE];
@@ -436,7 +436,7 @@ struct TelemetryData {
     } config_s;
 
     // Gameplay string
-    struct {
+    struct GameplayString {
         char fineOffence[32];
         char ferrySourceName[STRINGSIZE];
         char ferryTargetName[STRINGSIZE];
@@ -451,14 +451,14 @@ struct TelemetryData {
     char buffer_s[20];
 
     // Configuration unsigned long long
-    struct {
+    struct ConfigurationUnsignedLongLong {
         unsigned long long jobIncome;
     } config_ull;
 
     char buffer_ull[192];
 
     // Gameplay long long
-    struct {
+    struct GameplayLongLong {
         long long jobCancelledPenalty;
         long long jobDeliveredRevenue;
         long long fineAmount;
@@ -470,7 +470,7 @@ struct TelemetryData {
     char buffer_ll[52];
 
     // Special bool
-    struct {
+    struct SpecialBool {
         bool onJob;
         bool jobFinished;
         bool jobCancelled;
@@ -486,12 +486,12 @@ struct TelemetryData {
     char buffer_special[90];
 
     // Substance string
-    struct {
+    struct SubstanceString {
         char substance[SUBSTANCE_SIZE][STRINGSIZE];
     } substances;
 
     // Trailer struct
-    struct {
+    struct Trailer {
         TelemetryDataTrailer trailer[10];
     } trailer;
 

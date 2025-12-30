@@ -28,19 +28,37 @@ static cv::Scalar upper_red(110, 110, 255, 255);
 static cv::Scalar lower_green(0, 200, 0, 0);
 static cv::Scalar upper_green(230, 255, 150, 255);
 
-bool steering_enabled = true;
+bool control_enabled = true;
 float last_correction = 0.0f;
 int detection_offset_lane_y = 0;
+
+int lane_change_current_lane = 0;
+float lane_change_target_offset = 0.0f;
+float lane_change_offset = 0.0f;
+float lane_change_progress = 0.0f;
+double lane_change_start_time = 0.0;
+float lane_change_start_offset = 0.0f;
+
 bool turn_ahead_detected = false;
+float last_turn_ahead_detected = 0.0f;
 int turn_ahead_direction = TURN_NONE;
 
+bool indicator_left = false;
+bool indicator_right = false;
+bool last_indicator_left = false;
+bool last_indicator_right = false;
+bool indicator_left_wait_for_response = false;
+bool indicator_right_wait_for_response = false;
+double indicator_left_response_timer = 0.0;
+double indicator_right_response_timer = 0.0;
 
-vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, int x_offset, int y_offset) {
+
+vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, int y_offset) {
     bool detecting_lane = false;
     vector<int> lane_edges;
 
     for (int x = 0; x < frame.cols; ++x) {
-        int y = static_cast<int>(round(y_coordinate + y_offset + (frame.cols / 2 - x + x_offset) * tilt));
+        int y = static_cast<int>(round(y_coordinate + y_offset + (frame.cols / 2 - x) * tilt));
         if (y < 0) {
             y = 0;
         }
@@ -52,12 +70,12 @@ vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, i
         if (pixel > 0) {
             if (!detecting_lane) {
                 detecting_lane = true;
-                lane_edges.push_back(x - x_offset);
+                lane_edges.push_back(x);
             }
         } else {
             if (detecting_lane) {
                 detecting_lane = false;
-                lane_edges.push_back(x - x_offset);
+                lane_edges.push_back(x);
             }
         }
     }
@@ -99,10 +117,10 @@ void initialize() {
         KeyBinding{
             "x",
             []() {
-                steering_enabled = !steering_enabled;
+                control_enabled = !control_enabled;
                 utils::set_window_outline_color(
                     utils::find_window(L"Navigation Detection", {}),
-                    steering_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0)
+                    control_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0)
                 );
             }
         }
@@ -111,11 +129,16 @@ void initialize() {
 
 
 void run() {
+    double current_time = utils::get_time_seconds();
+
     if (!capture.get_frame(frame) || frame.empty()) {
         return;
     }
 
     TelemetryData* telemetry_data = telemetry.data();
+
+    indicator_left = telemetry_data->truck_b.blinkerLeftActive;
+    indicator_right = telemetry_data->truck_b.blinkerRightActive;
 
     utils::apply_route_advisor_crop(frame, true);
 
@@ -143,16 +166,13 @@ void run() {
         tilt = -0.25f;
     }
 
-    int x_offset = 0; // lane_change_offset
-    int y_offset = detection_offset_lane_y;
-
-    vector<int> lane_edges = get_lane_edges(mask_red_green, y_coordinate_of_lane, tilt, x_offset, y_offset);
+    vector<int> lane_edges = get_lane_edges(mask_red_green, y_coordinate_of_lane, tilt, detection_offset_lane_y);
 
     pair<int, int> lane_position = get_lane_position(lane_edges);
     int left_x_lane = lane_position.first;
     int right_x_lane = lane_position.second;
-    int left_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - left_x_lane - x_offset) * tilt));
-    int right_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - right_x_lane - x_offset) * tilt));
+    int left_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - left_x_lane) * tilt));
+    int right_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - right_x_lane) * tilt));
     if (right_x_lane == frame.cols - 1) {
         left_x_lane = 0;
         right_x_lane = 0;
@@ -160,7 +180,7 @@ void run() {
         right_y_lane = y_coordinate_of_lane;
     }
 
-    vector<int> turn_edges = get_lane_edges(mask_red_green, y_coordinate_of_turn, 0.0f, x_offset, y_offset);
+    vector<int> turn_edges = get_lane_edges(mask_red_green, y_coordinate_of_turn, 0.0f, detection_offset_lane_y);
 
     pair<int, int> turn_position = get_lane_position(turn_edges);
     int left_x_turn = turn_position.first;
@@ -257,6 +277,44 @@ void run() {
         turn_ahead_direction = TURN_NONE;
     }
 
+    if (turn_ahead_detected) {
+        last_turn_ahead_detected = current_time;
+        lane_change_current_lane = 0;
+        lane_change_start_time = current_time;
+        lane_change_start_offset = lane_change_offset;
+    }
+
+    bool indicator_changed_by_code = turn_ahead_detected;
+
+    if (indicator_left != last_indicator_left) {
+        indicator_left_wait_for_response = false;
+    }
+    if (indicator_right != last_indicator_right) {
+        indicator_right_wait_for_response = false;
+    }
+
+    if (current_time - 1 > indicator_left_response_timer) {
+        indicator_left_wait_for_response = false;
+    }
+    if (current_time - 1 > indicator_right_response_timer) {
+        indicator_right_wait_for_response = false;
+    }
+
+    if (indicator_left && indicator_left != last_indicator_left && !indicator_changed_by_code && current_time - 1 > last_turn_ahead_detected) {
+        lane_change_current_lane += 1;
+        lane_change_start_time = current_time;
+        lane_change_start_offset = lane_change_offset;
+    }
+    if (indicator_right && indicator_right != last_indicator_right && !indicator_changed_by_code && current_time - 1 > last_turn_ahead_detected) {
+        lane_change_current_lane -= 1;
+        lane_change_start_time = current_time;
+        lane_change_start_offset = lane_change_offset;
+    }
+
+    lane_change_target_offset = static_cast<float>(frame.cols / 31.0f) * static_cast<float>(lane_change_current_lane);
+    lane_change_progress = static_cast<float>(std::clamp((current_time - lane_change_start_time) / 3.0, 0.0, 1.0));
+    lane_change_offset = lane_change_start_offset + (lane_change_target_offset - lane_change_start_offset) * lane_change_progress;
+
 
     float correction = 0.0f;
     if (width_lane != 0) {
@@ -267,12 +325,14 @@ void run() {
         } else if (turn_ahead_direction == TURN_RIGHT) {
             correction = frame.cols / 2.0f - center_x_lane + width_lane / 40.0f;
         }
+        correction += lane_change_offset;
     }
 
 
+    // check for input updates
     input_handler.update();
 
-    if (steering_enabled) {
+    if (control_enabled) {
         correction = last_correction + (correction - last_correction) / 2.0f;
         last_correction = correction;
 
@@ -281,11 +341,40 @@ void run() {
         } else {
             controller.steering = correction / 30.0f;
         }
+
+        // handle indicators for turns
+        if (turn_ahead_direction == TURN_LEFT && !indicator_left && !indicator_left_wait_for_response) {
+            controller.lblinker = true;
+            indicator_left_wait_for_response = true;
+            indicator_left_response_timer = current_time;
+        }
+        if (turn_ahead_direction == TURN_RIGHT && !indicator_right && !indicator_right_wait_for_response) {
+            controller.rblinker = true;
+            indicator_right_wait_for_response = true;
+            indicator_right_response_timer = current_time;
+        }
+
+        // handle indicators for lane changes
+        if (lane_change_progress == 1.0f && indicator_left && !indicator_left_wait_for_response && !indicator_changed_by_code) {
+            controller.lblinker = true;
+            indicator_left_wait_for_response = true;
+            indicator_left_response_timer = current_time;
+        }
+        if (lane_change_progress == 1.0f && indicator_right && !indicator_right_wait_for_response && !indicator_changed_by_code) {
+            controller.rblinker = true;
+            indicator_right_wait_for_response = true;
+            indicator_right_response_timer = current_time;
+        }
     } else {
         last_correction = 0.0f;
         controller.steering = 0.0f;
     }
 
+
+    last_indicator_left = indicator_left;
+    last_indicator_right = indicator_right;
+
+    // send controller updates to game
     controller.update();
 
 
@@ -339,7 +428,7 @@ void run() {
         auto target_window = utils::find_window(L"Navigation Detection", {});
         utils::set_icon(target_window, L"assets/favicon.ico");
         utils::set_window_title_bar_color(target_window, RGB(0, 0, 0));
-        utils::set_window_outline_color(target_window, steering_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0));
+        utils::set_window_outline_color(target_window, control_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0));
     }
 
     cv::imshow("Navigation Detection", frame);

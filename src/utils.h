@@ -10,6 +10,27 @@
 
 namespace utils {
 
+struct WorldCoordinate {
+    double x;
+    double y;
+    double z;
+};
+
+struct ScreenCoordinate {
+    double x;
+    double y;
+    double distance;
+};
+
+struct CameraCoordinate {
+    double x;
+    double y;
+    double z;
+    float pitch;
+    float yaw;
+    float roll;
+};
+
 HWND find_window(const std::wstring& window_name, const std::vector<std::wstring>& blacklist);
 std::vector<int> get_window_position(HWND hwnd);
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right = true);
@@ -17,5 +38,11 @@ double get_time_seconds();
 void set_icon(HWND hwnd, const std::wstring& icon_path);
 void set_window_title_bar_color(HWND hwnd, COLORREF color);
 void set_window_outline_color(HWND hwnd, COLORREF color);
+ScreenCoordinate convert_to_screen_coordinate(
+    const WorldCoordinate& world_coords,
+    const CameraCoordinate& camera_coords,
+    const int window_width,
+    const int window_height
+);
 
 }

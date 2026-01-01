@@ -13,9 +13,9 @@ static void framebuffer_size_callback(GLFWwindow*, int w, int h) {
 }
 
 
-void window_state_update_thread(GLFWwindow* window, function<HWND()> target_window_handle_function) {
+void AR::window_state_update_thread() {
     while (true) {
-        HWND target_hwnd = target_window_handle_function();
+        HWND target_hwnd = target_window_handle_function_();
         if (!target_hwnd) {
             continue;
         }
@@ -25,25 +25,28 @@ void window_state_update_thread(GLFWwindow* window, function<HWND()> target_wind
         if (target_position[2] - target_position[0] > 0 &&
             target_position[3] - target_position[1] > 0
         ) {
+            window_width_ = target_position[2] - target_position[0];
+            window_height_ = target_position[3] - target_position[1];
+
             // update AR window position and size to match target window
             glfwSetWindowPos(
-                window,
+                window_,
                 target_position[0],
                 target_position[1]
             );
             glfwSetWindowSize(
-                window,
-                target_position[2] - target_position[0],
-                target_position[3] - target_position[1]
+                window_,
+                window_width_,
+                window_height_
             );
         }
 
         // when the target window is not the foreground window, hide the AR window
         HWND foreground_window = GetForegroundWindow();
         if (foreground_window != target_hwnd) {
-            glfwHideWindow(window);
+            glfwHideWindow(window_);
         } else {
-            glfwShowWindow(window);
+            glfwShowWindow(window_);
         }
 
         this_thread::sleep_for(chrono::milliseconds(100));
@@ -99,9 +102,8 @@ target_window_handle_function_(target_window_handle_function) {
 
     // start a thread to update window position
     position_thread_ = thread(
-        window_state_update_thread,
-        window_,
-        target_window_handle_function_
+        &AR::window_state_update_thread,
+        this
     );
     position_thread_.detach();
 }
@@ -115,25 +117,40 @@ AR::~AR() {
 
 void AR::run() {
     if (!window_) return;
+    telemetry_data_ = telemetry_.data();
+
+    utils::WorldCoordinate world_coords{
+        10350,
+        45,
+        -9166
+    };
+
+    utils::CameraCoordinate camera_coords{
+        telemetry_data_->truck_dp.coordinateX,
+        telemetry_data_->truck_dp.coordinateY + 1.5,
+        telemetry_data_->truck_dp.coordinateZ,
+        360.0 - telemetry_data_->truck_dp.rotationY * 360.0 + 360.0 - telemetry_data_->truck_fp.cabinOffsetrotationY * 360.0,
+        360.0 - telemetry_data_->truck_dp.rotationX * 360.0 + 360.0 - telemetry_data_->truck_fp.cabinOffsetrotationX * 360.0,
+        360.0 - telemetry_data_->truck_dp.rotationZ * 360.0 + 360.0 - telemetry_data_->truck_fp.cabinOffsetrotationZ * 360.0
+    };
+
+    utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
+        world_coords,
+        camera_coords,
+        window_width_,
+        window_height_
+    );
 
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT);
 
-    // draw semi-transparent white triangle
-    glBegin(GL_TRIANGLES);
-    glColor4f(1.0f, 1.0f, 1.0f, 0.5f);
-    glVertex2f(-0.5f, -0.5f);
-    glVertex2f(0.5f, -0.5f);
-    glVertex2f(0.0f, 0.5f);
-    glEnd();
-
-    // draw opaque white outline around the triangle
-    glLineWidth(3.0f);
-    glBegin(GL_LINE_LOOP);
-    glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
-    glVertex2f(-0.5f, -0.5f);
-    glVertex2f(0.5f, -0.5f);
-    glVertex2f(0.0f, 0.5f);
+    glPointSize(50.0f);
+    glBegin(GL_POINTS);
+    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+    glVertex2f(
+        (screen_coords.x / window_width_) * 2 - 1,
+        1 - (screen_coords.y / window_height_) * 2
+    );
     glEnd();
 
     glfwSwapBuffers(window_);

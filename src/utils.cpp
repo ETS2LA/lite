@@ -1,4 +1,5 @@
 #include "utils.h"
+#include <numbers>
 
 using namespace std;
 
@@ -212,6 +213,61 @@ void set_window_outline_color(HWND hwnd, COLORREF color) {
 
     constexpr DWORD DWMWA_BORDER_COLOR = 34;
     pDwmSetWindowAttribute(hwnd, DWMWA_BORDER_COLOR, &color, sizeof(color));
+}
+
+
+/**
+ * Convert degrees to radians.
+ * @param degrees The angle in degrees.
+ */
+float degrees_to_radians(float degrees) {
+    return degrees * static_cast<float>(numbers::pi) / 180.0f;
+}
+
+
+ScreenCoordinate convert_to_screen_coordinate(const WorldCoordinate& world_coords, const CameraCoordinate& camera_coords, const int window_width, const int window_height) {
+    ScreenCoordinate screen_coord;
+
+    double relative_x = world_coords.x - camera_coords.x;
+    double relative_y = world_coords.y - camera_coords.y;
+    double relative_z = world_coords.z - camera_coords.z;
+
+    float cos_yaw = cosf(degrees_to_radians(camera_coords.yaw));
+    float sin_yaw = sinf(degrees_to_radians(camera_coords.yaw));
+    double new_x = relative_x * cos_yaw + relative_z * sin_yaw;
+    double new_z = relative_z * cos_yaw - relative_x * sin_yaw;
+
+    float cos_pitch = cosf(degrees_to_radians(camera_coords.pitch));
+    float sin_pitch = sinf(degrees_to_radians(camera_coords.pitch));
+    double new_y = relative_y * cos_pitch - new_z * sin_pitch;
+    double final_z = new_z * cos_pitch + relative_y * sin_pitch;
+
+    float cos_roll = cosf(degrees_to_radians(camera_coords.roll));
+    float sin_roll = sinf(degrees_to_radians(camera_coords.roll));
+    double final_x = new_x * cos_roll - new_y * sin_roll;
+    double final_y = new_y * cos_roll + new_x * sin_roll;
+
+
+    if (final_z >= 0) {
+        screen_coord.x = -1;
+        screen_coord.y = -1;
+        screen_coord.distance = -1;
+        return screen_coord;
+    }
+
+    // FOV for 6th cam is always 65 degrees
+    double fov_rad = degrees_to_radians(65.0);
+
+    double window_distance = (window_height * (4.0 / 3.0) / 2.0) / tan(fov_rad / 2.0);
+
+    screen_coord.x = (final_x / final_z) * window_distance + (window_width / 2.0);
+    screen_coord.y = (final_y / final_z) * window_distance + (window_height / 2.0);
+
+    screen_coord.x = window_width - screen_coord.x;
+
+    screen_coord.distance = sqrt(relative_x * relative_x + relative_y * relative_y + relative_z * relative_z);
+
+    return screen_coord;
 }
 
 

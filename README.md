@@ -6,6 +6,9 @@
   - Install it
   - Create an environment variable named `OpenCV_DIR` and set its value to the path of the OpenCV folder, which contains folders like `bin`, `x64`, `include`, etc.
   - Add the absolute path of the `/x64/*/bin` folder (where `*` is for example `vc14`, `vc15`, `vc16`, etc.) in the `OpenCV_DIR` to the system PATH
+- Get [GLFW](https://github.com/glfw/glfw) (source, not precompiled)
+  - Extract it
+  - Create an environment variable named `glfw3_DIR` and set its value to the path of the GLFW folder, which contains folders like `CMake`, `docs`, `include`, etc.
 - Get [CMake](https://cmake.org/)
   - Install it (select the option to add it to the system PATH)
 - Build the app in release mode

@@ -426,7 +426,7 @@ void run() {
         cv::resizeWindow("Navigation Detection", frame.cols, frame.rows);
         cv::setWindowProperty("Navigation Detection", cv::WND_PROP_TOPMOST, 1);
         auto target_window = utils::find_window(L"Navigation Detection", {});
-        utils::set_icon(target_window, L"assets/favicon.ico");
+        utils::set_icon(target_window, L"assets/lite_icon.ico");
         utils::set_window_title_bar_color(target_window, RGB(0, 0, 0));
         utils::set_window_outline_color(target_window, control_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0));
     }

@@ -11,6 +11,7 @@
 namespace utils {
 
 HWND find_window(const std::wstring& window_name, const std::vector<std::wstring>& blacklist);
+std::vector<int> get_window_position(HWND hwnd);
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right = true);
 double get_time_seconds();
 void set_icon(HWND hwnd, const std::wstring& icon_path);

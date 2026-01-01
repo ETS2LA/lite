@@ -14,13 +14,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 
 find_package(OpenCV REQUIRED)
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
+find_package(OpenGL REQUIRED)
+add_subdirectory($ENV{glfw3_DIR} glfw)
 
 file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/*.h")
 
 add_executable(${PROJECT_NAME} main.cpp ${SRC_FILES})
 target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OpenCV_LIBS}
+    OpenGL::GL
+    glfw
     windowsapp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

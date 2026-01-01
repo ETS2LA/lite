@@ -54,6 +54,38 @@ HWND find_window(const wstring& window_name, const vector<wstring>& blacklist) {
 
 
 /**
+ * Get the position of a window.
+ * @param hwnd The handle to the window.
+ * @return A vector containing the x1, y1, x2, and y2 coordinates of the window.
+ */
+vector<int> get_window_position(HWND hwnd) {
+    vector<int> position(4);
+
+    if (hwnd == nullptr) {
+        return position;
+    }
+
+    RECT client_rect;
+    if (!GetClientRect(hwnd, &client_rect)) {
+        return position;
+    }
+
+    POINT top_left{client_rect.left, client_rect.top};
+    POINT bottom_right{client_rect.right, client_rect.bottom};
+    if (!ClientToScreen(hwnd, &top_left) || !ClientToScreen(hwnd, &bottom_right)) {
+        return position;
+    }
+
+    position[0] = top_left.x;
+    position[1] = top_left.y;
+    position[2] = bottom_right.x;
+    position[3] = bottom_right.y;
+
+    return position;
+}
+
+
+/**
  * Applies a crop to the given frame to focus on the route advisor area.
  * @param frame The frame to apply the crop to.
  */

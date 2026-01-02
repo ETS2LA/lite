@@ -46,7 +46,7 @@ void AR::window_state_update_thread() {
         if (foreground_window != target_hwnd) {
             glfwHideWindow(window_);
         } else {
-            glfwShowWindow(window_);
+            ShowWindow(glfwGetWin32Window(window_), SW_SHOWNOACTIVATE);
         }
 
         this_thread::sleep_for(chrono::milliseconds(100));

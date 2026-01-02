@@ -279,6 +279,27 @@ ScreenCoordinate convert_to_screen_coordinate(const Coordinate& world_coords, co
 
 
 /**
+ * Convert screen coordinates to angles.
+ * @param screen_coord The screen coordinates.
+ * @param window_width The width of the window.
+ * @param window_height The height of the window.
+ * @return The angles corresponding to the screen coordinates.
+ */
+Angle convert_to_angle(const ScreenCoordinate screen_coord, const int window_width, const int window_height) {
+    Angle angle;
+
+    // FOV for 6th cam is always 65 degrees
+    double fov_rad = degrees_to_radians(65.0);
+    double window_distance = (window_height * (4.0 / 3.0) / 2.0) / tan(fov_rad / 2.0);
+
+    angle.azimuth = atan2f(static_cast<float>(screen_coord.x - window_width / 2.0), static_cast<float>(window_distance)) * (180.0f / static_cast<float>(numbers::pi));
+    angle.elevation = atan2f(static_cast<float>(screen_coord.y - window_height / 2.0), static_cast<float>(window_distance)) * (180.0f / static_cast<float>(numbers::pi));
+
+    return angle;
+}
+
+
+/**
  * Rotate a vector by given rotation angles.
  * @param vector The vector to rotate.
  * @param rotation The rotation angles in degrees.
@@ -332,9 +353,9 @@ CameraCoordinate get_6th_camera_coordinate(TelemetryData* telemetry_data) {
     };
     // only truck rotation
     Rotation truck_rotation{
-        telemetry_data->truck_dp.rotationY * 360.0,
-        telemetry_data->truck_dp.rotationX * 360.0,
-        telemetry_data->truck_dp.rotationZ * 360.0
+        static_cast<float>(telemetry_data->truck_dp.rotationY * 360.0),
+        static_cast<float>(telemetry_data->truck_dp.rotationX * 360.0),
+        static_cast<float>(telemetry_data->truck_dp.rotationZ * 360.0)
     };
     Coordinate rotated_offset = rotate_vector(offset_vector, truck_rotation);
 
@@ -343,9 +364,9 @@ CameraCoordinate get_6th_camera_coordinate(TelemetryData* telemetry_data) {
         telemetry_data->truck_dp.coordinateX + rotated_offset.x,
         telemetry_data->truck_dp.coordinateY + rotated_offset.y,
         telemetry_data->truck_dp.coordinateZ + rotated_offset.z,
-        360.0 - telemetry_data->truck_dp.rotationY * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationY * 360.0,
-        360.0 - telemetry_data->truck_dp.rotationX * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationX * 360.0,
-        360.0 - telemetry_data->truck_dp.rotationZ * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationZ * 360.0
+        static_cast<float>(360.0 - telemetry_data->truck_dp.rotationY * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationY * 360.0),
+        static_cast<float>(360.0 - telemetry_data->truck_dp.rotationX * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationX * 360.0),
+        static_cast<float>(360.0 - telemetry_data->truck_dp.rotationZ * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationZ * 360.0)
     };
 
     return camera_coords;

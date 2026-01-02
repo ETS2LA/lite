@@ -37,6 +37,16 @@ struct Rotation {
 };
 
 /**
+ * Angle structure.
+ * @param azimuth Azimuth angle in degrees.
+ * @param elevation Elevation angle in degrees.
+ */
+struct Angle {
+    float azimuth;
+    float elevation;
+};
+
+/**
  * Screen coordinate structure.
  * @param x X coordinate on the screen.
  * @param y Y coordinate on the screen.
@@ -86,6 +96,12 @@ float degrees_to_radians(float degrees);
 ScreenCoordinate convert_to_screen_coordinate(
     const Coordinate& world_coords,
     const CameraCoordinate& camera_coords,
+    const int window_width,
+    const int window_height
+);
+
+Angle convert_to_angle(
+    const ScreenCoordinate screen_coord,
     const int window_width,
     const int window_height
 );

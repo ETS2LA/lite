@@ -225,7 +225,14 @@ float degrees_to_radians(float degrees) {
 }
 
 
-ScreenCoordinate convert_to_screen_coordinate(const WorldCoordinate& world_coords, const CameraCoordinate& camera_coords, const int window_width, const int window_height) {
+/**
+ * Convert world coordinates to screen coordinates.
+ * @param world_coords The world coordinates.
+ * @param camera_coords The camera coordinates.
+ * @param window_width The width of the window.
+ * @param window_height The height of the window.
+ */
+ScreenCoordinate convert_to_screen_coordinate(const Coordinate& world_coords, const CameraCoordinate& camera_coords, const int window_width, const int window_height) {
     ScreenCoordinate screen_coord;
 
     double relative_x = world_coords.x - camera_coords.x;
@@ -268,6 +275,80 @@ ScreenCoordinate convert_to_screen_coordinate(const WorldCoordinate& world_coord
     screen_coord.distance = sqrt(relative_x * relative_x + relative_y * relative_y + relative_z * relative_z);
 
     return screen_coord;
+}
+
+
+/**
+ * Rotate a vector by given rotation angles.
+ * @param vector The vector to rotate.
+ * @param rotation The rotation angles in degrees.
+ */
+Coordinate rotate_vector(const Coordinate& vector, const Rotation& rotation) {
+    float pitch = degrees_to_radians(rotation.pitch);
+    float yaw = degrees_to_radians(rotation.yaw);
+    float roll = degrees_to_radians(rotation.roll);
+
+    float cos_pitch = cosf(pitch);
+    float sin_pitch = sinf(pitch);
+    float cos_yaw = cosf(yaw);
+    float sin_yaw = sinf(yaw);
+    float cos_roll = cosf(roll);
+    float sin_roll = sinf(roll);
+
+    Coordinate result;
+
+    result.x = (
+        vector.x * (cos_yaw * cos_roll + sin_yaw * sin_pitch * sin_roll) +
+        vector.y * (-sin_roll * cos_yaw + cos_roll * sin_pitch * sin_yaw) +
+        vector.z * cos_pitch * sin_yaw
+    );
+
+    result.y = (
+        vector.x * (cos_pitch * sin_roll) +
+        vector.y * cos_roll * cos_pitch +
+        vector.z * -sin_pitch
+    );
+
+    result.z = (
+        vector.x * (-sin_yaw * cos_roll + cos_yaw * sin_pitch * sin_roll) +
+        vector.y * (sin_roll * sin_yaw + cos_roll * sin_pitch * cos_yaw) +
+        vector.z * cos_pitch * cos_yaw
+    );
+
+    return result;
+}
+
+
+/**
+ * Get the coordinates of the 6th camera from telemetry data.
+ * @param telemetry_data The telemetry data.
+ */
+CameraCoordinate get_6th_camera_coordinate(TelemetryData* telemetry_data) {
+    // vector from the truck center to the 6th camera
+    Coordinate offset_vector{
+        0.0,
+        1.5,
+        -0.1
+    };
+    // only truck rotation
+    Rotation truck_rotation{
+        telemetry_data->truck_dp.rotationY * 360.0,
+        telemetry_data->truck_dp.rotationX * 360.0,
+        telemetry_data->truck_dp.rotationZ * 360.0
+    };
+    Coordinate rotated_offset = rotate_vector(offset_vector, truck_rotation);
+
+    // truck position with rotated offset and with cabin rotation applied
+    CameraCoordinate camera_coords{
+        telemetry_data->truck_dp.coordinateX + rotated_offset.x,
+        telemetry_data->truck_dp.coordinateY + rotated_offset.y,
+        telemetry_data->truck_dp.coordinateZ + rotated_offset.z,
+        360.0 - telemetry_data->truck_dp.rotationY * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationY * 360.0,
+        360.0 - telemetry_data->truck_dp.rotationX * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationX * 360.0,
+        360.0 - telemetry_data->truck_dp.rotationZ * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationZ * 360.0
+    };
+
+    return camera_coords;
 }
 
 

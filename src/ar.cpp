@@ -119,20 +119,13 @@ void AR::run() {
     if (!window_) return;
     telemetry_data_ = telemetry_.data();
 
-    utils::WorldCoordinate world_coords{
+    utils::Coordinate world_coords{
         10350,
         45,
         -9166
     };
 
-    utils::CameraCoordinate camera_coords{
-        telemetry_data_->truck_dp.coordinateX,
-        telemetry_data_->truck_dp.coordinateY + 1.5,
-        telemetry_data_->truck_dp.coordinateZ,
-        360.0 - telemetry_data_->truck_dp.rotationY * 360.0 + 360.0 - telemetry_data_->truck_fp.cabinOffsetrotationY * 360.0,
-        360.0 - telemetry_data_->truck_dp.rotationX * 360.0 + 360.0 - telemetry_data_->truck_fp.cabinOffsetrotationX * 360.0,
-        360.0 - telemetry_data_->truck_dp.rotationZ * 360.0 + 360.0 - telemetry_data_->truck_fp.cabinOffsetrotationZ * 360.0
-    };
+    utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
     utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
         world_coords,

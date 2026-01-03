@@ -92,6 +92,9 @@ void set_window_title_bar_color(HWND hwnd, COLORREF color);
 void set_window_outline_color(HWND hwnd, COLORREF color);
 
 float degrees_to_radians(float degrees);
+float radians_to_degrees(float radians);
+double degrees_to_radians(double degrees);
+double radians_to_degrees(double radians);
 
 ScreenCoordinate convert_to_screen_coordinate(
     const Coordinate& world_coords,

@@ -226,6 +226,33 @@ float degrees_to_radians(float degrees) {
 
 
 /**
+ * Convert radians to degrees.
+ * @param radians The angle in radians.
+ */
+float radians_to_degrees(float radians) {
+    return radians * 180.0f / static_cast<float>(numbers::pi);
+}
+
+
+/**
+ * Convert degrees to radians.
+ * @param degrees The angle in degrees.
+ */
+double degrees_to_radians(double degrees) {
+    return degrees * numbers::pi / 180.0;
+}
+
+
+/**
+ * Convert radians to degrees.
+ * @param radians The angle in radians.
+ */
+double radians_to_degrees(double radians) {
+    return radians * 180.0 / numbers::pi;
+}
+
+
+/**
  * Convert world coordinates to screen coordinates.
  * @param world_coords The world coordinates.
  * @param camera_coords The camera coordinates.
@@ -239,18 +266,18 @@ ScreenCoordinate convert_to_screen_coordinate(const Coordinate& world_coords, co
     double relative_y = world_coords.y - camera_coords.y;
     double relative_z = world_coords.z - camera_coords.z;
 
-    float cos_yaw = cosf(degrees_to_radians(camera_coords.yaw));
-    float sin_yaw = sinf(degrees_to_radians(camera_coords.yaw));
+    float cos_yaw = cos(degrees_to_radians(camera_coords.yaw));
+    float sin_yaw = sin(degrees_to_radians(camera_coords.yaw));
     double new_x = relative_x * cos_yaw + relative_z * sin_yaw;
     double new_z = relative_z * cos_yaw - relative_x * sin_yaw;
 
-    float cos_pitch = cosf(degrees_to_radians(camera_coords.pitch));
-    float sin_pitch = sinf(degrees_to_radians(camera_coords.pitch));
+    float cos_pitch = cos(degrees_to_radians(camera_coords.pitch));
+    float sin_pitch = sin(degrees_to_radians(camera_coords.pitch));
     double new_y = relative_y * cos_pitch - new_z * sin_pitch;
     double final_z = new_z * cos_pitch + relative_y * sin_pitch;
 
-    float cos_roll = cosf(degrees_to_radians(camera_coords.roll));
-    float sin_roll = sinf(degrees_to_radians(camera_coords.roll));
+    float cos_roll = cos(degrees_to_radians(camera_coords.roll));
+    float sin_roll = sin(degrees_to_radians(camera_coords.roll));
     double final_x = new_x * cos_roll - new_y * sin_roll;
     double final_y = new_y * cos_roll + new_x * sin_roll;
 
@@ -292,8 +319,8 @@ Angle convert_to_angle(const ScreenCoordinate screen_coord, const int window_wid
     double fov_rad = degrees_to_radians(65.0);
     double window_distance = (window_height * (4.0 / 3.0) / 2.0) / tan(fov_rad / 2.0);
 
-    angle.azimuth = atan2f(static_cast<float>(screen_coord.x - window_width / 2.0), static_cast<float>(window_distance)) * (180.0f / static_cast<float>(numbers::pi));
-    angle.elevation = atan2f(static_cast<float>(screen_coord.y - window_height / 2.0), static_cast<float>(window_distance)) * (180.0f / static_cast<float>(numbers::pi));
+    angle.azimuth = atan2(screen_coord.x - window_width / 2.0, window_distance) * (180.0f / numbers::pi);
+    angle.elevation = atan2(screen_coord.y - window_height / 2.0, window_distance) * (180.0f / numbers::pi);
 
     return angle;
 }
@@ -309,12 +336,12 @@ Coordinate rotate_vector(const Coordinate& vector, const Rotation& rotation) {
     float yaw = degrees_to_radians(rotation.yaw);
     float roll = degrees_to_radians(rotation.roll);
 
-    float cos_pitch = cosf(pitch);
-    float sin_pitch = sinf(pitch);
-    float cos_yaw = cosf(yaw);
-    float sin_yaw = sinf(yaw);
-    float cos_roll = cosf(roll);
-    float sin_roll = sinf(roll);
+    float cos_pitch = cos(pitch);
+    float sin_pitch = sin(pitch);
+    float cos_yaw = cos(yaw);
+    float sin_yaw = sin(yaw);
+    float cos_roll = cos(roll);
+    float sin_roll = sin(roll);
 
     Coordinate result;
 

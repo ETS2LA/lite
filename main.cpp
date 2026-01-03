@@ -10,7 +10,8 @@ int main() {
     std::thread ar_thread([]() {
         AR ar(
             std::bind(
-                utils::find_window, std::wstring(L"Truck Simulator"),
+                utils::find_window,
+                std::wstring(L"Truck Simulator"),
                 std::vector<std::wstring>{ L"Discord" }
             )
         );

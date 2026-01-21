@@ -216,12 +216,12 @@ bool ScreenCapture::get_frame(cv::Mat& dst) {
  * @return The screen bounds structure containing x, y, width, and height.
  */
 ScreenBounds ScreenCapture::get_screen_bounds(uint8_t screen_index) {
-    std::vector<MONITORINFOEXW> monitors;
+    vector<MONITORINFOEXW> monitors;
     EnumDisplayMonitors(
         nullptr,
         nullptr,
         [](HMONITOR hMon, HDC, LPRECT, LPARAM data) -> BOOL {
-            auto vec = reinterpret_cast<std::vector<MONITORINFOEXW>*>(data);
+            auto vec = reinterpret_cast<vector<MONITORINFOEXW>*>(data);
             MONITORINFOEXW info{};
             info.cbSize = sizeof(info);
             if (GetMonitorInfoW(hMon, &info)) {
@@ -248,12 +248,12 @@ ScreenBounds ScreenCapture::get_screen_bounds(uint8_t screen_index) {
  * @return The index of the screen that contains the given coordinates.
  */
 uint8_t ScreenCapture::get_screen_index(int x, int y) {
-    std::vector<MONITORINFOEXW> monitors;
+    vector<MONITORINFOEXW> monitors;
     EnumDisplayMonitors(
         nullptr,
         nullptr,
         [](HMONITOR hMon, HDC, LPRECT, LPARAM data) -> BOOL {
-            auto vec = reinterpret_cast<std::vector<MONITORINFOEXW>*>(data);
+            auto vec = reinterpret_cast<vector<MONITORINFOEXW>*>(data);
             MONITORINFOEXW info{};
             info.cbSize = sizeof(info);
             if (GetMonitorInfoW(hMon, &info)) {

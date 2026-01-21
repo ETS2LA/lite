@@ -103,15 +103,15 @@ void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
     float scale = height / 1080.0f;
 
     if (side_right == false) {
-        map_x1 = static_cast<int>(std::round(ra_distance_right * scale - 1.0f));
-        map_y1 = static_cast<int>(std::round(height - (ra_distance_bottom * scale + ra_height * scale)));
-        map_x2 = static_cast<int>(std::round(ra_distance_right * scale + ra_width * scale - 1.0f));
-        map_y2 = static_cast<int>(std::round(height - (ra_distance_bottom * scale)));
+        map_x1 = static_cast<int>(round(ra_distance_right * scale - 1.0f));
+        map_y1 = static_cast<int>(round(height - (ra_distance_bottom * scale + ra_height * scale)));
+        map_x2 = static_cast<int>(round(ra_distance_right * scale + ra_width * scale - 1.0f));
+        map_y2 = static_cast<int>(round(height - (ra_distance_bottom * scale)));
     } else {
-        map_x1 = static_cast<int>(std::round(width - (ra_distance_right * scale + ra_width * scale)));
-        map_y1 = static_cast<int>(std::round(height - (ra_distance_bottom * scale + ra_height * scale)));
-        map_x2 = static_cast<int>(std::round(width - (ra_distance_right * scale)));
-        map_y2 = static_cast<int>(std::round(height - (ra_distance_bottom * scale)));
+        map_x1 = static_cast<int>(round(width - (ra_distance_right * scale + ra_width * scale)));
+        map_y1 = static_cast<int>(round(height - (ra_distance_bottom * scale + ra_height * scale)));
+        map_x2 = static_cast<int>(round(width - (ra_distance_right * scale)));
+        map_y2 = static_cast<int>(round(height - (ra_distance_bottom * scale)));
     }
 
     if (map_x1 > map_x2) {
@@ -155,7 +155,7 @@ double get_time_seconds() {
  * @param hwnd The handle to the window.
  * @param icon_path The path to the .ico file.
  */
-void set_icon(HWND hwnd, const std::wstring& icon_path) {
+void set_icon(HWND hwnd, const wstring& icon_path) {
     HICON h_icon = static_cast<HICON>(LoadImageW(
         nullptr,
         icon_path.c_str(),

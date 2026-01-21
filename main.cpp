@@ -12,12 +12,25 @@ int main() {
             std::bind(
                 utils::find_window,
                 std::wstring(L"Truck Simulator"),
-                std::vector<std::wstring>{ L"Discord" }
+                std::vector<std::wstring>{L"Discord"}
             )
         );
 
         while (true) {
             auto start = utils::get_time_seconds();
+
+            ar.circle(
+                utils::Coordinate{
+                    10350,
+                    45,
+                    -9166
+                },
+                15.0f,
+                3.0f,
+                utils::ColorFloat{1.0f, 0.0f, 0.0f, 1.0f}
+            );
+
+            ar.draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
 
             ar.run();
 

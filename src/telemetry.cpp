@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <utility>
 
+using namespace std;
+
 
 SCSTelemetry::SCSTelemetry()
     : mapHandle_(nullptr), view_(&fallback_), size_(sizeof(TelemetryData)), hooked_(false),
@@ -10,7 +12,7 @@ SCSTelemetry::SCSTelemetry()
     open(mapName_, mapSize_);
 }
 
-SCSTelemetry::SCSTelemetry(const std::wstring &mapName, std::size_t mapSize)
+SCSTelemetry::SCSTelemetry(const wstring &mapName, size_t mapSize)
     : mapHandle_(nullptr), view_(&fallback_), size_(sizeof(TelemetryData)), hooked_(false),
       mapName_(mapName), mapSize_(mapSize ? mapSize : sizeof(TelemetryData)) {
     open(mapName_, mapSize_);
@@ -44,7 +46,7 @@ SCSTelemetry::~SCSTelemetry() {
     close();
 }
 
-bool SCSTelemetry::open(const std::wstring &mapName, std::size_t mapSize) {
+bool SCSTelemetry::open(const wstring &mapName, size_t mapSize) {
     close();
 
     mapName_ = mapName;

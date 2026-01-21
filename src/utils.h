@@ -76,6 +76,34 @@ struct CameraCoordinate {
     float roll;
 };
 
+/**
+ * Float RGBA color structure.
+ * @param r Red (0.0 - 1.0)
+ * @param g Green (0.0 - 1.0)
+ * @param b Blue (0.0 - 1.0)
+ * @param a Alpha (0.0 - 1.0)
+ */
+struct ColorFloat {
+    float r;
+    float g;
+    float b;
+    float a;
+};
+
+/**
+ * Integer RGBA color structure.
+ * @param r Red (0 - 255)
+ * @param g Green (0 - 255)
+ * @param b Blue (0 - 255)
+ * @param a Alpha (0 - 255)
+ */
+struct ColorInt {
+    int r;
+    int g;
+    int b;
+    int a;
+};
+
 
 HWND find_window(
     const std::wstring& window_name,

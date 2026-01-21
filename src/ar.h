@@ -11,13 +11,40 @@
 
 class AR {
 public:
-    AR(const std::function<HWND()> target_window_handle_function);
+    AR(const std::function<HWND()> target_window_handle_function, const int msaa_samples = 8);
     ~AR();
+    void draw_wheel_trajectory(const utils::ColorFloat& color);
     void run();
+
+    void circle(
+        const float x,
+        const float y,
+        const float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void circle(
+        const utils::ScreenCoordinate& center,
+        const float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void circle(
+        const utils::Coordinate& center,
+        const float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void circle(
+        const utils::Coordinate& center,
+        const utils::CameraCoordinate& camera_coords,
+        const float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
 
 private:
     void window_state_update_thread();
-    void draw_wheel_trajectory();
 
     GLFWwindow* window_;
     std::function<HWND()> target_window_handle_function_;

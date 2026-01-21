@@ -3,7 +3,6 @@
 #define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3native.h>
 
-#include <cmath>
 #include <numbers>
 #include <vector>
 
@@ -43,6 +42,11 @@ void AR::window_state_update_thread() {
                 window_width_,
                 window_height_
             );
+
+            glfwPollEvents();
+            glClear(GL_COLOR_BUFFER_BIT);
+            glfwSwapBuffers(window_);
+            glClear(GL_COLOR_BUFFER_BIT);
         }
 
         // when the target window is not the foreground window, hide the AR window
@@ -58,13 +62,14 @@ void AR::window_state_update_thread() {
 }
 
 
-AR::AR(function<HWND()> target_window_handle_function):
+AR::AR(function<HWND()> target_window_handle_function, int msaa_samples):
 target_window_handle_function_(target_window_handle_function) {
     glfwInit();
 
     // make black pixels transparent
     glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     glfwWindowHint(GLFW_TRANSPARENT_FRAMEBUFFER, GLFW_TRUE);
+    glfwWindowHint(GLFW_SAMPLES, msaa_samples);
 
     window_ = glfwCreateWindow(100, 100, "AR", nullptr, nullptr);
     if (!window_) {
@@ -78,9 +83,6 @@ target_window_handle_function_(target_window_handle_function) {
     // enable alpha blending
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    // enable antialiasing
-    glEnable(GL_LINE_SMOOTH);
 
     HWND hwnd = glfwGetWin32Window(window_);
     utils::set_icon(hwnd, L"assets/ar_icon.ico");
@@ -112,7 +114,11 @@ target_window_handle_function_(target_window_handle_function) {
     position_thread_.detach();
 
     // run one initial window update
+    telemetry_data_ = telemetry_.data();
+    glfwPollEvents();
+    glClear(GL_COLOR_BUFFER_BIT);
     glfwSwapBuffers(window_);
+    glClear(GL_COLOR_BUFFER_BIT);
 }
 
 
@@ -140,7 +146,8 @@ double calculate_back_wheel_radius(double steering_angle, double wheelbase) {
 }
 
 
-void AR::draw_wheel_trajectory() {
+// MARK: draw_wheel_trajectory
+void AR::draw_wheel_trajectory(const utils::ColorFloat& color) {
     utils::Rotation truck_rotation{
         static_cast<float>(telemetry_data_->truck_dp.rotationY * 360.0),
         static_cast<float>(telemetry_data_->truck_dp.rotationX * 360.0),
@@ -261,7 +268,7 @@ void AR::draw_wheel_trajectory() {
     utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
     glLineWidth(3.0f);
-    glColor4f(1.0f, 0.75f, 0.0f, 1.0f);
+    glColor4f(color.r, color.g, color.b, color.a);
     glBegin(GL_LINE_STRIP);
     for (int i = 0; i <= 45; ++i) {
         double angle = utils::degrees_to_radians(
@@ -332,42 +339,129 @@ void AR::draw_wheel_trajectory() {
 }
 
 
+// MARK: run
 void AR::run() {
     if (!window_) return;
     glfwPollEvents();
 
     telemetry_data_ = telemetry_.data();
     if (!telemetry_data_->sdkActive || telemetry_data_->paused) {
+        glClear(GL_COLOR_BUFFER_BIT);
+        glfwSwapBuffers(window_);
         return;
     }
 
-    utils::Coordinate world_coords{
-        10350,
-        45,
-        -9166
-    };
+    glfwSwapBuffers(window_);
+    glClear(GL_COLOR_BUFFER_BIT);
+}
 
+
+// MARK: circle
+void AR::circle(
+    const float x,
+    const float y,
+    const float radius,
+    const float thickness,
+    const utils::ColorFloat& color
+) {
+    if (window_width_ <= 0 || window_height_ <= 0) return;
+
+    const int segments = max(ceil(2.0f * numbers::pi_v<float> * sqrt(radius)), 4.0f);
+
+    if (thickness > 0) {
+        glLineWidth(thickness);
+        glColor4f(color.r, color.g, color.b, color.a);
+        glBegin(GL_LINE_LOOP);
+        for (int i = 0; i < segments; ++i) {
+            float theta = 2.0f * numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(segments);
+            float dx = radius * cosf(theta);
+            float dy = radius * sinf(theta);
+
+            glVertex2f(
+                ((x + dx) / static_cast<float>(window_width_)) * 2.0f - 1.0f,
+                1.0f - ((y + dy) / static_cast<float>(window_height_)) * 2.0f
+            );
+        }
+        glEnd();
+    } else {
+        glColor4f(color.r, color.g, color.b, color.a);
+        glBegin(GL_TRIANGLE_FAN);
+        glVertex2f(
+            (x / static_cast<float>(window_width_)) * 2.0f - 1.0f,
+            1.0f - (y / static_cast<float>(window_height_)) * 2.0f
+        );
+        for (int i = 0; i <= segments; ++i) {
+            float theta = 2.0f * numbers::pi_v<float> * static_cast<float>(i) / static_cast<float>(segments);
+            float dx = radius * cosf(theta);
+            float dy = radius * sinf(theta);
+
+            glVertex2f(
+                ((x + dx) / static_cast<float>(window_width_)) * 2.0f - 1.0f,
+                1.0f - ((y + dy) / static_cast<float>(window_height_)) * 2.0f
+            );
+        }
+        glEnd();
+    }
+}
+
+void AR::circle(
+    const utils::ScreenCoordinate& center,
+    const float radius,
+    const float thickness,
+    const utils::ColorFloat& color
+) {
+    AR::circle(
+        static_cast<float>(center.x),
+        static_cast<float>(center.y),
+        radius,
+        thickness,
+        color
+    );
+}
+
+void AR::circle(
+    const utils::Coordinate& center,
+    const float radius,
+    const float thickness,
+    const utils::ColorFloat& color
+) {
     utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
     utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
-        world_coords,
+        center,
         camera_coords,
         window_width_,
         window_height_
     );
 
-    glClear(GL_COLOR_BUFFER_BIT);
-
-    glPointSize(50.0f);
-    glBegin(GL_POINTS);
-    glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
-    glVertex2f(
-        (screen_coords.x / window_width_) * 2 - 1,
-        1 - (screen_coords.y / window_height_) * 2
+    AR::circle(
+        static_cast<float>(screen_coords.x),
+        static_cast<float>(screen_coords.y),
+        radius,
+        thickness,
+        color
     );
-    glEnd();
+}
 
-    AR::draw_wheel_trajectory();
+void AR::circle(
+    const utils::Coordinate& center,
+    const utils::CameraCoordinate& camera_coords,
+    const float radius,
+    const float thickness,
+    const utils::ColorFloat& color
+) {
+    utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
+        center,
+        camera_coords,
+        window_width_,
+        window_height_
+    );
 
-    glfwSwapBuffers(window_);
+    AR::circle(
+        static_cast<float>(screen_coords.x),
+        static_cast<float>(screen_coords.y),
+        radius,
+        thickness,
+        color
+    );
 }

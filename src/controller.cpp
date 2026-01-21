@@ -2,6 +2,8 @@
 #include <windows.h>
 #include <iostream>
 
+using namespace std;
+
 
 SCSController::SCSController() : initialized(false), map_file(NULL), buffer(NULL) {
     memset(static_cast<ControllerData*>(this), 0, sizeof(ControllerData));
@@ -18,7 +20,7 @@ SCSController::SCSController() : initialized(false), map_file(NULL), buffer(NULL
     );
 
     if (map_file == NULL) {
-        std::printf("Could not create file mapping object (%lu).\n", GetLastError());
+        printf("Could not create file mapping object (%lu).\n", GetLastError());
         return;
     }
 
@@ -31,7 +33,7 @@ SCSController::SCSController() : initialized(false), map_file(NULL), buffer(NULL
     );
 
     if (buffer == NULL) {
-        std::printf("Could not map view of file (%lu).\n", GetLastError());
+        printf("Could not map view of file (%lu).\n", GetLastError());
         CloseHandle(map_file);
         map_file = NULL;
         return;

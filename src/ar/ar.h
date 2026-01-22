@@ -11,11 +11,13 @@
 
 class AR {
 public:
+    // MARK: public
     AR(const std::function<HWND()> target_window_handle_function, const int msaa_samples = 8);
     ~AR();
     void draw_wheel_trajectory(const utils::ColorFloat& color);
     void run();
 
+    // MARK: circle
     void circle(
         const float x,
         const float y,
@@ -44,6 +46,7 @@ public:
     );
 
 private:
+    // MARK: private
     void window_state_update_thread();
 
     GLFWwindow* window_;

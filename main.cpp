@@ -29,6 +29,15 @@ int main() {
                 3.0f,
                 utils::ColorFloat{1.0f, 0.0f, 0.0f, 1.0f}
             );
+            ar.rectangle(
+                100.0f,
+                100.0f,
+                200.0f,
+                200.0f,
+                10.0f,
+                3.0f,
+                utils::ColorFloat{1.0f, 0.0f, 0.0f, 1.0f}
+            );
 
             ar.draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
 

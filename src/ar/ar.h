@@ -45,6 +45,39 @@ public:
         const utils::ColorFloat& color
     );
 
+    // MARK: rectangle
+    void rectangle(
+        const float x1,
+        const float y1,
+        const float x2,
+        const float y2,
+        float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void rectangle(
+        const utils::ScreenCoordinate& top_left,
+        const utils::ScreenCoordinate& bottom_right,
+        float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void rectangle(
+        const utils::Coordinate& top_left,
+        const utils::Coordinate& bottom_right,
+        float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void rectangle(
+        const utils::Coordinate& top_left,
+        const utils::Coordinate& bottom_right,
+        const utils::CameraCoordinate& camera_coords,
+        float radius,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+
 private:
     // MARK: private
     void window_state_update_thread();

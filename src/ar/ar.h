@@ -17,6 +17,39 @@ public:
     void draw_wheel_trajectory(const utils::ColorFloat& color);
     void run();
 
+    // MARK: line
+    void line(
+        const float x1,
+        const float y1,
+        const float x2,
+        const float y2,
+        const float roundness,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void line(
+        const utils::ScreenCoordinate& start,
+        const utils::ScreenCoordinate& end,
+        const float roundness,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void line(
+        const utils::Coordinate& start,
+        const utils::Coordinate& end,
+        const float roundness,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void line(
+        const utils::Coordinate& start,
+        const utils::Coordinate& end,
+        const utils::CameraCoordinate& camera_coords,
+        const float roundness,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+
     // MARK: circle
     void circle(
         const float x,

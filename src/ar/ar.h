@@ -111,6 +111,37 @@ public:
         const utils::ColorFloat& color
     );
 
+    // MARK: polyline
+    void polyline(
+        const std::vector<std::pair<float, float>>& points,
+        const bool closed,
+        const bool rounded,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void polyline(
+        const std::vector<utils::ScreenCoordinate>& points,
+        const bool closed,
+        const bool rounded,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void polyline(
+        const std::vector<utils::Coordinate>& points,
+        const bool closed,
+        const bool rounded,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+    void polyline(
+        const std::vector<utils::Coordinate>& points,
+        const utils::CameraCoordinate& camera_coords,
+        const bool closed,
+        const bool rounded,
+        const float thickness,
+        const utils::ColorFloat& color
+    );
+
 private:
     // MARK: private
     void window_state_update_thread();

@@ -1,6 +1,6 @@
 ﻿#include "navigation_detection.h"
 #include "utils.h"
-#include "ar/ar.h"
+#include "AR/ar.h"
 #include <thread>
 
 

@@ -143,34 +143,6 @@ public:
         const utils::ColorFloat& color
     );
 
-    // MARK: text
-    void text(
-        const std::string& text,
-        const float x,
-        const float y,
-        const float size,
-        const utils::ColorFloat& color
-    );
-    void text(
-        const std::string& text,
-        const utils::ScreenCoordinates& origin,
-        const float size,
-        const utils::ColorFloat& color
-    );
-    void text(
-        const std::string& text,
-        const utils::Coordinates& origin,
-        const float size,
-        const utils::ColorFloat& color
-    );
-    void text(
-        const std::string& text,
-        const utils::Coordinates& origin,
-        const utils::CameraCoordinates& camera_coords,
-        const float size,
-        const utils::ColorFloat& color
-    );
-
 private:
     // MARK: private
     void window_state_update_thread();

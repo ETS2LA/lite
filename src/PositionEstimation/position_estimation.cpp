@@ -170,13 +170,6 @@ void PositionEstimation::run(AR& ar) {
             (position.y - camera_coords.y) * (position.y - camera_coords.y) +
             (position.z - camera_coords.z) * (position.z - camera_coords.z)
         );
-        //ar.text(
-        //    format("{:.1f}", distance),
-        //    obj.x,
-        //    obj.y,
-        //    15.0f,
-        //    {0.0f, 1.0f, 0.0f, 1.0f}
-        //);
         cv::circle(
             display_frame,
             cv::Point(static_cast<int>(obj.x / 2.5), static_cast<int>(obj.y / 2.5)),

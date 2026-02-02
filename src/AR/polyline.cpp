@@ -231,7 +231,7 @@ void AR::polyline(
 
 
 void AR::polyline(
-    const std::vector<utils::ScreenCoordinate>& points,
+    const std::vector<utils::ScreenCoordinates>& points,
     const bool closed,
     const bool rounded,
     const float thickness,
@@ -254,18 +254,18 @@ void AR::polyline(
 
 
 void AR::polyline(
-    const std::vector<utils::Coordinate>& points,
+    const std::vector<utils::Coordinates>& points,
     const bool closed,
     const bool rounded,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
     std::vector<std::pair<float, float>> pts;
     pts.reserve(points.size());
     for (const auto& p : points) {
-        utils::ScreenCoordinate screen_p = utils::convert_to_screen_coordinate(
+        utils::ScreenCoordinates screen_p = utils::convert_to_screen_coordinate(
             p,
             camera_coords,
             window_width_,
@@ -285,8 +285,8 @@ void AR::polyline(
 
 
 void AR::polyline(
-    const std::vector<utils::Coordinate>& points,
-    const utils::CameraCoordinate& camera_coords,
+    const std::vector<utils::Coordinates>& points,
+    const utils::CameraCoordinates& camera_coords,
     const bool closed,
     const bool rounded,
     const float thickness,
@@ -295,7 +295,7 @@ void AR::polyline(
     std::vector<std::pair<float, float>> pts;
     pts.reserve(points.size());
     for (const auto& p : points) {
-        utils::ScreenCoordinate screen_p = utils::convert_to_screen_coordinate(
+        utils::ScreenCoordinates screen_p = utils::convert_to_screen_coordinate(
             p,
             camera_coords,
             window_width_,

@@ -11,7 +11,7 @@
 
 namespace navigation_detection {
 
-void initialize();
+void initialize(ScreenCapture* capture);
 void run();
 
 }

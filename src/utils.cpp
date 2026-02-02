@@ -259,8 +259,8 @@ double radians_to_degrees(double radians) {
  * @param window_width The width of the window.
  * @param window_height The height of the window.
  */
-ScreenCoordinate convert_to_screen_coordinate(const Coordinate& world_coords, const CameraCoordinate& camera_coords, const int window_width, const int window_height) {
-    ScreenCoordinate screen_coord;
+ScreenCoordinates convert_to_screen_coordinate(const Coordinates& world_coords, const CameraCoordinates& camera_coords, const int window_width, const int window_height) {
+    ScreenCoordinates screen_coord;
 
     double relative_x = world_coords.x - camera_coords.x;
     double relative_y = world_coords.y - camera_coords.y;
@@ -312,17 +312,17 @@ ScreenCoordinate convert_to_screen_coordinate(const Coordinate& world_coords, co
  * @param window_height The height of the window.
  * @return The angles corresponding to the screen coordinates.
  */
-Angle convert_to_angle(const ScreenCoordinate screen_coord, const int window_width, const int window_height) {
-    Angle angle;
+Angles convert_to_angles(const ScreenCoordinates screen_coord, const int window_width, const int window_height) {
+    Angles angles;
 
     // FOV for 6th cam is always 65 degrees
     double fov_rad = degrees_to_radians(65.0);
     double window_distance = (window_height * (4.0 / 3.0) / 2.0) / tan(fov_rad / 2.0);
 
-    angle.azimuth = atan2(screen_coord.x - window_width / 2.0, window_distance) * (180.0f / numbers::pi);
-    angle.elevation = atan2(screen_coord.y - window_height / 2.0, window_distance) * (180.0f / numbers::pi);
+    angles.azimuth = atan2(screen_coord.x - window_width / 2.0, window_distance) * (180.0f / numbers::pi);
+    angles.elevation = atan2(screen_coord.y - window_height / 2.0, window_distance) * (180.0f / numbers::pi);
 
-    return angle;
+    return angles;
 }
 
 
@@ -331,10 +331,10 @@ Angle convert_to_angle(const ScreenCoordinate screen_coord, const int window_wid
  * @param vector The vector to rotate.
  * @param rotation The rotation angles in degrees.
  */
-Coordinate rotate_vector(const Coordinate& vector, const Rotation& rotation) {
-    float pitch = degrees_to_radians(rotation.pitch);
-    float yaw = degrees_to_radians(rotation.yaw);
-    float roll = degrees_to_radians(rotation.roll);
+Coordinates rotate_vector(const Coordinates& vector, const Rotations& rotations) {
+    float pitch = degrees_to_radians(rotations.pitch);
+    float yaw = degrees_to_radians(rotations.yaw);
+    float roll = degrees_to_radians(rotations.roll);
 
     float cos_pitch = cos(pitch);
     float sin_pitch = sin(pitch);
@@ -343,7 +343,7 @@ Coordinate rotate_vector(const Coordinate& vector, const Rotation& rotation) {
     float cos_roll = cos(roll);
     float sin_roll = sin(roll);
 
-    Coordinate result;
+    Coordinates result;
 
     result.x = (
         vector.x * (cos_yaw * cos_roll + sin_yaw * sin_pitch * sin_roll) +
@@ -371,23 +371,23 @@ Coordinate rotate_vector(const Coordinate& vector, const Rotation& rotation) {
  * Get the coordinates of the 6th camera from telemetry data.
  * @param telemetry_data The telemetry data.
  */
-CameraCoordinate get_6th_camera_coordinate(TelemetryData* telemetry_data) {
+CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data) {
     // vector from the truck center to the 6th camera
-    Coordinate offset_vector{
+    Coordinates offset_vector{
         0.0,
         1.5,
         -0.1
     };
     // only truck rotation
-    Rotation truck_rotation{
+    Rotations truck_rotation{
         static_cast<float>(telemetry_data->truck_dp.rotationY * 360.0),
         static_cast<float>(telemetry_data->truck_dp.rotationX * 360.0),
         static_cast<float>(telemetry_data->truck_dp.rotationZ * 360.0)
     };
-    Coordinate rotated_offset = rotate_vector(offset_vector, truck_rotation);
+    Coordinates rotated_offset = rotate_vector(offset_vector, truck_rotation);
 
     // truck position with rotated offset and with cabin rotation applied
-    CameraCoordinate camera_coords{
+    CameraCoordinates camera_coords{
         telemetry_data->truck_dp.coordinateX + rotated_offset.x,
         telemetry_data->truck_dp.coordinateY + rotated_offset.y,
         telemetry_data->truck_dp.coordinateZ + rotated_offset.z,

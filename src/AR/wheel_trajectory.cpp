@@ -23,23 +23,23 @@ double calculate_back_wheel_radius(double steering_angle, double wheelbase) {
 
 
 void AR::draw_wheel_trajectory(const utils::ColorFloat& color) {
-    utils::Rotation truck_rotation{
+    utils::Rotations truck_rotation{
         static_cast<float>(telemetry_data_->truck_dp.rotationY * 360.0),
         static_cast<float>(telemetry_data_->truck_dp.rotationX * 360.0),
         static_cast<float>(telemetry_data_->truck_dp.rotationZ * 360.0)
     };
 
-    vector<utils::Coordinate> wheel_coords;
+    vector<utils::Coordinates> wheel_coords;
     vector<double> wheel_angles;
     for (int i = 0; i < telemetry_data_->config_ui.truckWheelCount; ++i) {
         if (telemetry_data_->config_b.truckWheelSimulated[i]) {
-            utils::Coordinate wheel_vector{
+            utils::Coordinates wheel_vector{
                 telemetry_data_->config_fv.truckWheelPositionX[i],
                 telemetry_data_->config_fv.truckWheelPositionY[i],
                 telemetry_data_->config_fv.truckWheelPositionZ[i]
             };
             wheel_vector = utils::rotate_vector(wheel_vector, truck_rotation);
-            utils::Coordinate coord{
+            utils::Coordinates coord{
                 telemetry_data_->truck_dp.coordinateX + wheel_vector.x,
                 telemetry_data_->truck_dp.coordinateY + wheel_vector.y,
                 telemetry_data_->truck_dp.coordinateZ + wheel_vector.z
@@ -58,11 +58,11 @@ void AR::draw_wheel_trajectory(const utils::ColorFloat& color) {
         return;
     }
 
-    utils::Coordinate front_left_wheel = wheel_coords[0];
-    utils::Coordinate front_right_wheel = wheel_coords[1];
+    utils::Coordinates front_left_wheel = wheel_coords[0];
+    utils::Coordinates front_right_wheel = wheel_coords[1];
 
-    utils::Coordinate back_left_wheel{0, 0, 0};
-    utils::Coordinate back_right_wheel{0, 0, 0};
+    utils::Coordinates back_left_wheel{0, 0, 0};
+    utils::Coordinates back_right_wheel{0, 0, 0};
 
     for (int i = wheel_angles.size(); i < wheel_coords.size(); ++i) {
         if (i % 2 == 0) {
@@ -116,31 +116,31 @@ void AR::draw_wheel_trajectory(const utils::ColorFloat& color) {
     if (back_left_wheel_radius == INFINITY) back_left_wheel_radius = 1000000.0;
     if (back_right_wheel_radius == INFINITY) back_right_wheel_radius = 1000000.0;
 
-    utils::Coordinate left_offset_local{
+    utils::Coordinates left_offset_local{
         -back_left_wheel_radius - 0.3,
         0.0,
         0.0
     };
-    utils::Coordinate left_offset_world = utils::rotate_vector(left_offset_local, truck_rotation);
-    utils::Coordinate left_circle_center{
+    utils::Coordinates left_offset_world = utils::rotate_vector(left_offset_local, truck_rotation);
+    utils::Coordinates left_circle_center{
         back_left_wheel.x + left_offset_world.x,
         telemetry_data_->truck_dp.coordinateY + left_offset_world.y,
         back_left_wheel.z + left_offset_world.z
     };
 
-    utils::Coordinate right_offset_local{
+    utils::Coordinates right_offset_local{
         -back_right_wheel_radius + 0.3,
         0.0,
         0.0
     };
-    utils::Coordinate right_offset_world = utils::rotate_vector(right_offset_local, truck_rotation);
-    utils::Coordinate right_circle_center{
+    utils::Coordinates right_offset_world = utils::rotate_vector(right_offset_local, truck_rotation);
+    utils::Coordinates right_circle_center{
         back_right_wheel.x + right_offset_world.x,
         telemetry_data_->truck_dp.coordinateY + right_offset_world.y,
         back_right_wheel.z + right_offset_world.z
     };
 
-    utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
     glLineWidth(3.0f);
     glColor4f(color.r, color.g, color.b, color.a);
@@ -150,18 +150,18 @@ void AR::draw_wheel_trajectory(const utils::ColorFloat& color) {
             i * (1.0 / -front_left_wheel_radius) * 30.0 - utils::radians_to_degrees(atan(wheel_base_left / front_left_wheel_radius))
         );
 
-        utils::Coordinate local_point{
+        utils::Coordinates local_point{
             front_left_wheel_radius * cos(angle),
             0.0,
             front_left_wheel_radius * sin(angle)
         };
-        utils::Coordinate world_point = utils::rotate_vector(local_point, truck_rotation);
+        utils::Coordinates world_point = utils::rotate_vector(local_point, truck_rotation);
 
         double x = left_circle_center.x + world_point.x;
         double y = left_circle_center.y + world_point.y;
         double z = left_circle_center.z + world_point.z;
 
-        utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
+        utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
             {x, y, z},
             camera_coords,
             window_width_,
@@ -184,18 +184,18 @@ void AR::draw_wheel_trajectory(const utils::ColorFloat& color) {
             i * (1.0 / -front_right_wheel_radius) * 30.0 - utils::radians_to_degrees(atan(wheel_base_right / front_right_wheel_radius))
         );
 
-        utils::Coordinate local_point{
+        utils::Coordinates local_point{
             front_right_wheel_radius * cos(angle),
             0.0,
             front_right_wheel_radius * sin(angle)
         };
-        utils::Coordinate world_point = utils::rotate_vector(local_point, truck_rotation);
+        utils::Coordinates world_point = utils::rotate_vector(local_point, truck_rotation);
 
         double x = right_circle_center.x + world_point.x;
         double y = right_circle_center.y + world_point.y;
         double z = right_circle_center.z + world_point.z;
 
-        utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
+        utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
             {x, y, z},
             camera_coords,
             window_width_,

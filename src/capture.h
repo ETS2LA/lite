@@ -6,6 +6,7 @@
 #include <functional>
 #include <windows.h>
 #include <chrono>
+#include <mutex>
 
 #include <d3d11.h>
 #include <dxgi1_2.h>
@@ -60,7 +61,7 @@ struct CaptureRegion {
 class ScreenCapture {
 public:
     ScreenCapture(CaptureRegion capture_region);
-    explicit ScreenCapture(std::function<HWND()> target_window_handle_function);
+    ScreenCapture(std::function<HWND()> target_window_handle_function);
 
     void initialize();
     bool is_initialized();
@@ -71,6 +72,7 @@ public:
     void validate_capture_area(CaptureRegion& region);
     bool is_foreground_window() const;
     void set_capture_region(const CaptureRegion& region);
+    CaptureRegion get_capture_region();
 
 private:
     bool initialized = false;
@@ -79,6 +81,7 @@ private:
     CaptureRegion capture_region_{0, 0, 0, 0};
     std::function<HWND()> target_window_handle_function_;
 
+    std::mutex d3d_mutex_;
     HRESULT hr_ = S_OK;
     D3D_FEATURE_LEVEL feature_level_ = D3D_FEATURE_LEVEL_11_0;
     Microsoft::WRL::ComPtr<ID3D11Device> d3d_device_;

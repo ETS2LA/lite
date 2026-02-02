@@ -18,7 +18,7 @@ namespace utils {
  * @param y Y coordinate.
  * @param z Z coordinate.
  */
-struct Coordinate {
+struct Coordinates {
     double x;
     double y;
     double z;
@@ -30,7 +30,7 @@ struct Coordinate {
  * @param yaw Yaw angle in degrees.
  * @param roll Roll angle in degrees.
  */
-struct Rotation {
+struct Rotations {
     float pitch;
     float yaw;
     float roll;
@@ -41,7 +41,7 @@ struct Rotation {
  * @param azimuth Azimuth angle in degrees.
  * @param elevation Elevation angle in degrees.
  */
-struct Angle {
+struct Angles {
     float azimuth;
     float elevation;
 };
@@ -52,7 +52,7 @@ struct Angle {
  * @param y Y coordinate on the screen.
  * @param distance The distance from the camera to the point.
  */
-struct ScreenCoordinate {
+struct ScreenCoordinates {
     double x;
     double y;
     double distance;
@@ -67,7 +67,7 @@ struct ScreenCoordinate {
  * @param yaw Yaw angle of the camera in degrees.
  * @param roll Roll angle of the camera in degrees.
  */
-struct CameraCoordinate {
+struct CameraCoordinates {
     double x;
     double y;
     double z;
@@ -124,24 +124,24 @@ float radians_to_degrees(float radians);
 double degrees_to_radians(double degrees);
 double radians_to_degrees(double radians);
 
-ScreenCoordinate convert_to_screen_coordinate(
-    const Coordinate& world_coords,
-    const CameraCoordinate& camera_coords,
+ScreenCoordinates convert_to_screen_coordinate(
+    const Coordinates& world_coords,
+    const CameraCoordinates& camera_coords,
     const int window_width,
     const int window_height
 );
 
-Angle convert_to_angle(
-    const ScreenCoordinate screen_coord,
+Angles convert_to_angles(
+    const ScreenCoordinates screen_coord,
     const int window_width,
     const int window_height
 );
 
-Coordinate rotate_vector(
-    const Coordinate& vector,
-    const Rotation& rotation
+Coordinates rotate_vector(
+    const Coordinates& vector,
+    const Rotations& rotation
 );
 
-CameraCoordinate get_6th_camera_coordinate(TelemetryData* telemetry_data);
+CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data);
 
 }

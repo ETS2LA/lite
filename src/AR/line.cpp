@@ -142,8 +142,8 @@ void AR::line(
 
 
 void AR::line(
-    const utils::ScreenCoordinate& start,
-    const utils::ScreenCoordinate& end,
+    const utils::ScreenCoordinates& start,
+    const utils::ScreenCoordinates& end,
     const float roundness,
     const float thickness,
     const utils::ColorFloat& color
@@ -161,21 +161,21 @@ void AR::line(
 
 
 void AR::line(
-    const utils::Coordinate& start,
-    const utils::Coordinate& end,
+    const utils::Coordinates& start,
+    const utils::Coordinates& end,
     const float roundness,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
-    utils::ScreenCoordinate screen_start = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates screen_start = utils::convert_to_screen_coordinate(
         start,
         camera_coords,
         window_width_,
         window_height_
     );
-    utils::ScreenCoordinate screen_end = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates screen_end = utils::convert_to_screen_coordinate(
         end,
         camera_coords,
         window_width_,
@@ -195,20 +195,20 @@ void AR::line(
 
 
 void AR::line(
-    const utils::Coordinate& start,
-    const utils::Coordinate& end,
-    const utils::CameraCoordinate& camera_coords,
+    const utils::Coordinates& start,
+    const utils::Coordinates& end,
+    const utils::CameraCoordinates& camera_coords,
     const float roundness,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinate screen_start = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates screen_start = utils::convert_to_screen_coordinate(
         start,
         camera_coords,
         window_width_,
         window_height_
     );
-    utils::ScreenCoordinate screen_end = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates screen_end = utils::convert_to_screen_coordinate(
         end,
         camera_coords,
         window_width_,

@@ -84,7 +84,7 @@ void AR::circle(
 
 
 void AR::circle(
-    const utils::ScreenCoordinate& center,
+    const utils::ScreenCoordinates& center,
     const float radius,
     const float thickness,
     const utils::ColorFloat& color
@@ -100,14 +100,14 @@ void AR::circle(
 
 
 void AR::circle(
-    const utils::Coordinate& center,
+    const utils::Coordinates& center,
     const float radius,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
-    utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
         center,
         camera_coords,
         window_width_,
@@ -125,13 +125,13 @@ void AR::circle(
 
 
 void AR::circle(
-    const utils::Coordinate& center,
-    const utils::CameraCoordinate& camera_coords,
+    const utils::Coordinates& center,
+    const utils::CameraCoordinates& camera_coords,
     const float radius,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinate screen_coords = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
         center,
         camera_coords,
         window_width_,

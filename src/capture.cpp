@@ -117,6 +117,8 @@ bool ScreenCapture::get_frame(cv::Mat& dst) {
         track_window();
     }
 
+    scoped_lock lock(d3d_mutex_);
+
     DXGI_OUTDUPL_FRAME_INFO frame_info;
     ComPtr<IDXGIResource> desktop_resource;
 
@@ -403,6 +405,18 @@ void ScreenCapture::set_capture_region(const CaptureRegion& region) {
 }
 
 
+/**
+ * Get the current capture region.
+ * @return The current CaptureRegion structure.
+ */
+CaptureRegion ScreenCapture::get_capture_region() {
+    return capture_region_;
+}
+
+
+/**
+ * Track the target window and update the capture region if the window position has changed.
+ */
 void ScreenCapture::track_window() {
     auto now = chrono::high_resolution_clock::now();
     auto now_ms = chrono::time_point_cast<chrono::microseconds>(now);

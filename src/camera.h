@@ -14,14 +14,14 @@
  */
 struct CameraData {
     float fov;
-    utils::CameraCoordinate position;
+    utils::CameraCoordinates position;
 };
 
 
 class SCSCamera {
 public:
     SCSCamera();
-    explicit SCSCamera(const std::wstring& mapName, std::size_t mapSize = 36U);
+    SCSCamera(const std::wstring& mapName, std::size_t mapSize = 36U);
     SCSCamera(const SCSCamera&) = delete;
     SCSCamera& operator=(const SCSCamera&) = delete;
     SCSCamera(SCSCamera&& other) noexcept;

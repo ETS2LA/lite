@@ -208,8 +208,8 @@ void AR::rectangle(
 
 
 void AR::rectangle(
-    const utils::ScreenCoordinate& top_left,
-    const utils::ScreenCoordinate& bottom_right,
+    const utils::ScreenCoordinates& top_left,
+    const utils::ScreenCoordinates& bottom_right,
     float radius,
     const float thickness,
     const utils::ColorFloat& color
@@ -227,21 +227,21 @@ void AR::rectangle(
 
 
 void AR::rectangle(
-    const utils::Coordinate& top_left,
-    const utils::Coordinate& bottom_right,
+    const utils::Coordinates& top_left,
+    const utils::Coordinates& bottom_right,
     float radius,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinate camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
-    utils::ScreenCoordinate top_left_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates top_left_screen = utils::convert_to_screen_coordinate(
         top_left,
         camera_coords,
         window_width_,
         window_height_
     );
-    utils::ScreenCoordinate bottom_right_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates bottom_right_screen = utils::convert_to_screen_coordinate(
         bottom_right,
         camera_coords,
         window_width_,
@@ -261,20 +261,20 @@ void AR::rectangle(
 
 
 void AR::rectangle(
-    const utils::Coordinate& top_left,
-    const utils::Coordinate& bottom_right,
-    const utils::CameraCoordinate& camera_coords,
+    const utils::Coordinates& top_left,
+    const utils::Coordinates& bottom_right,
+    const utils::CameraCoordinates& camera_coords,
     float radius,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinate top_left_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates top_left_screen = utils::convert_to_screen_coordinate(
         top_left,
         camera_coords,
         window_width_,
         window_height_
     );
-    utils::ScreenCoordinate bottom_right_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenCoordinates bottom_right_screen = utils::convert_to_screen_coordinate(
         bottom_right,
         camera_coords,
         window_width_,

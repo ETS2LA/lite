@@ -7,13 +7,7 @@
 
 using namespace std;
 
-ScreenCapture capture(
-    bind(
-        utils::find_window, wstring(L"Truck Simulator"),
-        vector<wstring>{L"Discord"}
-    )
-);
-
+ScreenCapture* capture;
 SCSController controller;
 SCSTelemetry telemetry;
 InputHandler input_handler;
@@ -112,7 +106,9 @@ pair<int, int> get_lane_position(const vector<int>& lane_edges) {
 
 namespace navigation_detection {
 
-void initialize() {
+void initialize(ScreenCapture* screen_capture) {
+    capture = screen_capture;
+
     input_handler.register_key_binding(
         KeyBinding{
             "x",
@@ -131,7 +127,7 @@ void initialize() {
 void run() {
     double current_time = utils::get_time_seconds();
 
-    if (!capture.get_frame(frame) || frame.empty()) {
+    if (!capture->get_frame(frame) || frame.empty()) {
         return;
     }
 

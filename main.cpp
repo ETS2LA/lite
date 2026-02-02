@@ -1,13 +1,23 @@
-﻿#include "navigation_detection.h"
+﻿#include "PositionEstimation/position_estimation.h"
+#include "navigation_detection.h"
 #include "utils.h"
 #include "AR/ar.h"
 #include <thread>
 
 
 int main() {
-    navigation_detection::initialize();
+    ScreenCapture* capture = new ScreenCapture(
+        std::bind(
+            utils::find_window,
+            std::wstring(L"Truck Simulator"),
+            std::vector<std::wstring>{L"Discord"}
+        )
+    );
+    capture->initialize();
 
-    std::thread ar_thread([]() {
+    navigation_detection::initialize(capture);
+
+    std::thread ar_thread([capture]() {
         AR ar(
             std::bind(
                 utils::find_window,
@@ -16,8 +26,12 @@ int main() {
             )
         );
 
+        PositionEstimation position_estimation(capture);
+
         while (true) {
             auto start = utils::get_time_seconds();
+
+            position_estimation.run(ar);
 
             ar.draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
 

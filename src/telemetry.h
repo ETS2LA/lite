@@ -502,7 +502,7 @@ struct TelemetryData {
 class SCSTelemetry {
 public:
     SCSTelemetry();
-    explicit SCSTelemetry(const std::wstring &mapName, std::size_t mapSize = sizeof(TelemetryData));
+    SCSTelemetry(const std::wstring &mapName, std::size_t mapSize = sizeof(TelemetryData));
     SCSTelemetry(const SCSTelemetry &) = delete;
     SCSTelemetry &operator=(const SCSTelemetry &) = delete;
     SCSTelemetry(SCSTelemetry &&other) noexcept;

@@ -5,6 +5,7 @@
 
 #include <GLFW/glfw3.h>
 #include <functional>
+#include <string>
 #include <windows.h>
 #include <thread>
 
@@ -28,23 +29,23 @@ public:
         const utils::ColorFloat& color
     );
     void line(
-        const utils::ScreenCoordinate& start,
-        const utils::ScreenCoordinate& end,
+        const utils::ScreenCoordinates& start,
+        const utils::ScreenCoordinates& end,
         const float roundness,
         const float thickness,
         const utils::ColorFloat& color
     );
     void line(
-        const utils::Coordinate& start,
-        const utils::Coordinate& end,
+        const utils::Coordinates& start,
+        const utils::Coordinates& end,
         const float roundness,
         const float thickness,
         const utils::ColorFloat& color
     );
     void line(
-        const utils::Coordinate& start,
-        const utils::Coordinate& end,
-        const utils::CameraCoordinate& camera_coords,
+        const utils::Coordinates& start,
+        const utils::Coordinates& end,
+        const utils::CameraCoordinates& camera_coords,
         const float roundness,
         const float thickness,
         const utils::ColorFloat& color
@@ -59,20 +60,20 @@ public:
         const utils::ColorFloat& color
     );
     void circle(
-        const utils::ScreenCoordinate& center,
+        const utils::ScreenCoordinates& center,
         const float radius,
         const float thickness,
         const utils::ColorFloat& color
     );
     void circle(
-        const utils::Coordinate& center,
+        const utils::Coordinates& center,
         const float radius,
         const float thickness,
         const utils::ColorFloat& color
     );
     void circle(
-        const utils::Coordinate& center,
-        const utils::CameraCoordinate& camera_coords,
+        const utils::Coordinates& center,
+        const utils::CameraCoordinates& camera_coords,
         const float radius,
         const float thickness,
         const utils::ColorFloat& color
@@ -89,23 +90,23 @@ public:
         const utils::ColorFloat& color
     );
     void rectangle(
-        const utils::ScreenCoordinate& top_left,
-        const utils::ScreenCoordinate& bottom_right,
+        const utils::ScreenCoordinates& top_left,
+        const utils::ScreenCoordinates& bottom_right,
         float radius,
         const float thickness,
         const utils::ColorFloat& color
     );
     void rectangle(
-        const utils::Coordinate& top_left,
-        const utils::Coordinate& bottom_right,
+        const utils::Coordinates& top_left,
+        const utils::Coordinates& bottom_right,
         float radius,
         const float thickness,
         const utils::ColorFloat& color
     );
     void rectangle(
-        const utils::Coordinate& top_left,
-        const utils::Coordinate& bottom_right,
-        const utils::CameraCoordinate& camera_coords,
+        const utils::Coordinates& top_left,
+        const utils::Coordinates& bottom_right,
+        const utils::CameraCoordinates& camera_coords,
         float radius,
         const float thickness,
         const utils::ColorFloat& color
@@ -120,25 +121,53 @@ public:
         const utils::ColorFloat& color
     );
     void polyline(
-        const std::vector<utils::ScreenCoordinate>& points,
+        const std::vector<utils::ScreenCoordinates>& points,
         const bool closed,
         const bool rounded,
         const float thickness,
         const utils::ColorFloat& color
     );
     void polyline(
-        const std::vector<utils::Coordinate>& points,
+        const std::vector<utils::Coordinates>& points,
         const bool closed,
         const bool rounded,
         const float thickness,
         const utils::ColorFloat& color
     );
     void polyline(
-        const std::vector<utils::Coordinate>& points,
-        const utils::CameraCoordinate& camera_coords,
+        const std::vector<utils::Coordinates>& points,
+        const utils::CameraCoordinates& camera_coords,
         const bool closed,
         const bool rounded,
         const float thickness,
+        const utils::ColorFloat& color
+    );
+
+    // MARK: text
+    void text(
+        const std::string& text,
+        const float x,
+        const float y,
+        const float size,
+        const utils::ColorFloat& color
+    );
+    void text(
+        const std::string& text,
+        const utils::ScreenCoordinates& origin,
+        const float size,
+        const utils::ColorFloat& color
+    );
+    void text(
+        const std::string& text,
+        const utils::Coordinates& origin,
+        const float size,
+        const utils::ColorFloat& color
+    );
+    void text(
+        const std::string& text,
+        const utils::Coordinates& origin,
+        const utils::CameraCoordinates& camera_coords,
+        const float size,
         const utils::ColorFloat& color
     );
 

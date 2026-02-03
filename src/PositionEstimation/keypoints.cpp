@@ -17,7 +17,6 @@ inline int bias_towards_center(const double x, const double gamma, const double 
 vector<pair<float, float>> PositionEstimation::get_keypoints(cv::Mat& frame) {
 	vector<pair<float, float>> points;
 	if (frame.empty()) {
-        printf("PositionEstimation: Empty frame received for keypoint detection.\n");
 		return points;
 	}
 

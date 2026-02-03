@@ -19,28 +19,6 @@ PositionEstimation::PositionEstimation(ScreenCapture* capture)
     telemetry_data_ = telemetry_.data();
     window_width_ = capture_->get_capture_region().x2 - capture_->get_capture_region().x1;
     window_height_ = capture_->get_capture_region().y2 - capture_->get_capture_region().y1;
-
-    input_handler_.register_key_binding(
-        KeyBinding{
-            "y",
-            [this]() {
-                telemetry_data_ = telemetry_.data();
-                auto coord = utils::get_6th_camera_coordinate(telemetry_data_);
-                auto point = utils::convert_to_screen_coordinate(
-                    target_,
-                    coord,
-                    window_width_,
-                    window_height_
-                );
-                test_object_.angles = utils::convert_to_angles(
-                    {static_cast<float>(point.x), static_cast<float>(point.y), 0.0f},
-                    window_width_,
-                    window_height_
-                );
-                test_object_.camera_coords = coord;
-            }
-        }
-    );
 }
 
 
@@ -126,23 +104,38 @@ utils::Coordinates triangulate_position(
         s = d / b;
     }
 
+    // prevent triangulated points from being placed behind either cameras ray
+    if (s < 1e-6) {
+        s = 1e-6;
+    }
+    if (t < 0.0) {
+        t = 0.0;
+    }
+
     const utils::Coordinates c0{p0.x + d0.x * t, p0.y + d0.y * t, p0.z + d0.z * t};
     const utils::Coordinates c1{p1.x + d1.x * s, p1.y + d1.y * s, p1.z + d1.z * s};
 
     const double baseline = std::sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
     const double sin_angle = std::sqrt(std::max(0.0, 1.0 - b * b));
-    object.accuracy = static_cast<float>(baseline * sin_angle / (1.0 + object.unseen_count));
+    object.accuracy = baseline * sin_angle;
 
-    return utils::Coordinates{
+    // compute midpoint and ensure it lies in front of the current camera
+    const utils::Coordinates mid{
         (c0.x + c1.x) * 0.5,
         (c0.y + c1.y) * 0.5,
         (c0.z + c1.z) * 0.5
     };
+
+    const utils::Coordinates v1{mid.x - p1.x, mid.y - p1.y, mid.z - p1.z};
+    if (dot(d1, v1) < 0.0) {
+        object.accuracy = 0.0f;
+    }
+
+    return mid;
 }
 
 
 void PositionEstimation::run(AR& ar) {
-    input_handler_.update();
     window_width_ = capture_->get_capture_region().x2 - capture_->get_capture_region().x1;
     window_height_ = capture_->get_capture_region().y2 - capture_->get_capture_region().y1;
 
@@ -151,7 +144,19 @@ void PositionEstimation::run(AR& ar) {
     auto keypoints = get_keypoints();
     auto objects = tracker_.update(keypoints, camera_coords, window_width_, window_height_);
 
-    cv::Mat display_frame(window_height_ / 2.5, window_width_ / 2.5, CV_8UC1, cv::Scalar(0));
+    cv::Mat display_frame(500, 500, CV_8UC3, cv::Scalar(0, 0, 0));
+
+    for (const auto& kp : keypoints) {
+        ar.rectangle(
+            kp.first - 2.0f,
+            kp.second - 2.0f,
+            kp.first + 2.0f,
+            kp.second + 2.0f,
+            0.0f,
+            1.0f,
+            utils::ColorFloat{1.0f, 0.0f, 0.0f, 1.0f}
+        );
+    }
 
     for (auto& obj : objects) {
         auto position = triangulate_position(
@@ -161,7 +166,7 @@ void PositionEstimation::run(AR& ar) {
             window_height_
         );
 
-        if (obj.accuracy < 0.5f) {
+        if (obj.accuracy < 0.1f) {
             continue;
         }
 
@@ -172,12 +177,23 @@ void PositionEstimation::run(AR& ar) {
         );
         cv::circle(
             display_frame,
-            cv::Point(static_cast<int>(obj.x / 2.5), static_cast<int>(obj.y / 2.5)),
+            cv::Point(static_cast<int>((camera_coords.z - position.z) * 3.0f + display_frame.cols / 2.0), static_cast<int>(display_frame.rows / 2.0 - (camera_coords.x - position.x) * 3.0f)),
             2,
-            cv::Scalar(distance * 5.0f),
+            cv::Scalar(
+                abs(position.y - camera_coords.y) <= 1.0f ? 127 + (position.y - camera_coords.y) * 15.0f : 0,
+                abs(position.y - camera_coords.y) > 1.0f ? 127 + (position.y - camera_coords.y) * 15.0f : 0,
+                abs(position.y - camera_coords.y) <= 1.0f ? 127 + (position.y - camera_coords.y) * 15.0f : 0
+            ),
             -1
         );
     }
+    cv::circle(
+        display_frame,
+        cv::Point(static_cast<int>(display_frame.cols / 2.0), static_cast<int>(display_frame.rows / 2.0)),
+        3,
+        cv::Scalar(0, 0, 255),
+        -1
+    );
     cv::imshow("Position Estimation Debug", display_frame);
     cv::waitKey(1);
 }

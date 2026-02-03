@@ -26,7 +26,6 @@ public:
 private:
     ScreenCapture* capture_;
     SCSTelemetry telemetry_;
-    InputHandler input_handler_;
     TelemetryData* telemetry_data_;
     cv::Ptr<cv::FastFeatureDetector> feature_detector_ = cv::FastFeatureDetector::create(10, true, cv::FastFeatureDetector::TYPE_9_16);
 
@@ -34,13 +33,5 @@ private:
     cv::Mat frame_gray_;
     int window_width_;
     int window_height_;
-    Tracker tracker_;
-
-    // TEMP:
-    Tracker::Object test_object_;
-    utils::Coordinates target_{
-        10350,
-        45,
-        -9166
-    };
+    Tracker tracker_{0, 10.0f};
 };

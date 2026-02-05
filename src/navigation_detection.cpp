@@ -127,7 +127,8 @@ void initialize(ScreenCapture* screen_capture) {
 void run() {
     double current_time = utils::get_time_seconds();
 
-    if (!capture->get_frame(frame) || frame.empty()) {
+    FrameInfo info = capture->get_frame(frame);
+    if (!info.success || frame.empty()) {
         return;
     }
 

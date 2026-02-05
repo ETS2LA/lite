@@ -42,6 +42,9 @@ vector<pair<float, float>> PositionEstimation::get_keypoints(cv::Mat& frame) {
 
 
 vector<pair<float, float>> PositionEstimation::get_keypoints() {
-    capture_->get_frame(frame_);
+	FrameInfo info = capture_->get_frame(frame_);
+	if (!info.success) {
+		return {};
+	}
     return get_keypoints(frame_);
 }

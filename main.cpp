@@ -11,7 +11,8 @@ int main() {
             utils::find_window,
             std::wstring(L"Truck Simulator"),
             std::vector<std::wstring>{L"Discord"}
-        )
+        ),
+        CaptureMode::BackgroundThread
     );
     capture->initialize();
 

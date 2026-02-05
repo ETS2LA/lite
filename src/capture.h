@@ -2,10 +2,14 @@
 
 #define NOMINMAX
 
+#include "utils.h"
+
 #include <opencv2/opencv.hpp>
 #include <functional>
 #include <windows.h>
+#include <atomic>
 #include <chrono>
+#include <thread>
 #include <mutex>
 
 #include <d3d11.h>
@@ -57,15 +61,47 @@ struct CaptureRegion {
     int y2;
 };
 
+/**
+ * Enumeration for capture mode, defining whether to capture on demand or using a background thread.
+ * OnDemand: Capture frames only when get_frame() is called.
+ * BackgroundThread: Continuously capture frames in a background thread at a specified interval.
+ */
+enum class CaptureMode {
+    OnDemand,
+    BackgroundThread
+};
+
+
+/**
+ * Frame information structure containing the success status, frame ID, and timestamp of a captured frame.
+ * @param success Indicates whether the frame was successfully captured.
+ * @param id The unique identifier for the captured frame.
+ * @param timestamp The timestamp of when the frame was captured, in seconds.
+ */
+struct FrameInfo {
+    bool success;
+    unsigned int id;
+    double timestamp;
+};
+
 
 class ScreenCapture {
 public:
-    ScreenCapture(CaptureRegion capture_region);
-    ScreenCapture(std::function<HWND()> target_window_handle_function);
+    ScreenCapture(
+        CaptureRegion capture_region,
+        CaptureMode mode = CaptureMode::OnDemand,
+        std::chrono::milliseconds interval = std::chrono::milliseconds(0)
+    );
+    ScreenCapture(
+        std::function<HWND()> target_window_handle_function,
+        CaptureMode mode = CaptureMode::OnDemand,
+        std::chrono::milliseconds interval = std::chrono::milliseconds(0)
+    );
+    ~ScreenCapture();
 
     void initialize();
     bool is_initialized();
-    bool get_frame(cv::Mat& dst);
+    FrameInfo get_frame(cv::Mat& dst);
     ScreenBounds get_screen_bounds(uint8_t screen_index);
     uint8_t get_screen_index(int x, int y);
     WindowRegion get_window_position();
@@ -76,6 +112,17 @@ public:
 
 private:
     bool initialized = false;
+
+    std::thread capture_thread_;
+    CaptureMode capture_mode_ = CaptureMode::OnDemand;
+    std::chrono::milliseconds capture_interval_{std::chrono::milliseconds(0)};
+    std::atomic<bool> stop_capture_thread_{false};
+
+    std::mutex frame_mutex_;
+    cv::Mat latest_frame_;
+    FrameInfo latest_frame_info_{false, 0, 0.0};
+    std::atomic<unsigned int> frame_id_{0};
+
     cv::Mat roi_;
     cv::Mat frame_buffer_;
     CaptureRegion capture_region_{0, 0, 0, 0};
@@ -93,6 +140,8 @@ private:
     Microsoft::WRL::ComPtr<IDXGIOutputDuplication> output_duplication_;
     Microsoft::WRL::ComPtr<ID3D11Texture2D> staging_texture_;
 
+    void start_capture_thread();
+    FrameInfo capture_frame_internal(cv::Mat& dst);
     void track_window();
     WindowRegion last_window_position_{0, 0, 0, 0};
     double last_track_check_time_ = 0.0;

@@ -15,17 +15,41 @@ using Microsoft::WRL::ComPtr;
  * Constructor for ScreenCapture using a specified capture region.
  * @param capture_region The region of the screen to capture.
  */
-ScreenCapture::ScreenCapture(CaptureRegion capture_region):
-capture_region_(capture_region) {}
+ScreenCapture::ScreenCapture(
+    CaptureRegion capture_region,
+    CaptureMode mode,
+    std::chrono::milliseconds interval
+):
+capture_region_(capture_region),
+capture_mode_(mode),
+capture_interval_(interval)
+{}
 
 /**
  * Constructor for ScreenCapture using a function to get the target window handle.
  * @param target_window_handle_function A function that returns the handle of the target window.
  */
-ScreenCapture::ScreenCapture(function<HWND()> target_window_handle_function):
-target_window_handle_function_(target_window_handle_function) {
+ScreenCapture::ScreenCapture(
+    function<HWND()> target_window_handle_function,
+    CaptureMode mode,
+    std::chrono::milliseconds interval
+):
+target_window_handle_function_(target_window_handle_function),
+capture_mode_(mode),
+capture_interval_(interval)
+{
     ScreenBounds screen_bounds = get_screen_bounds(0);
     capture_region_ = {0, screen_bounds.x, screen_bounds.y, screen_bounds.width, screen_bounds.height};
+}
+
+/**
+ * Destructor for ScreenCapture, ensuring that any background thread is properly stopped.
+ */
+ScreenCapture::~ScreenCapture() {
+    if (capture_mode_ == CaptureMode::BackgroundThread && capture_thread_.joinable()) {
+        stop_capture_thread_.store(true, std::memory_order_relaxed);
+        capture_thread_.join();
+    }
 }
 
 
@@ -88,6 +112,10 @@ void ScreenCapture::initialize() {
     initialized = true;
 
     validate_capture_area(capture_region_);
+
+    if (capture_mode_ == CaptureMode::BackgroundThread) {
+        start_capture_thread();
+    }
 }
 
 
@@ -105,110 +133,24 @@ bool ScreenCapture::is_initialized() {
  * @param dst The destination cv::Mat to store the captured frame.
  * @return True if a frame was successfully captured, false otherwise.
 */
-bool ScreenCapture::get_frame(cv::Mat& dst) {
+FrameInfo ScreenCapture::get_frame(cv::Mat& dst) {
     if (!initialized) {
         initialize();
         if (!initialized) {
-            return false;
+            return FrameInfo{false, 0, 0.0};
         }
     }
 
-    if (target_window_handle_function_ != nullptr) {
-        track_window();
-    }
-
-    scoped_lock lock(d3d_mutex_);
-
-    DXGI_OUTDUPL_FRAME_INFO frame_info;
-    ComPtr<IDXGIResource> desktop_resource;
-
-    hr_ = output_duplication_->AcquireNextFrame(1, &frame_info, &desktop_resource);
-
-    if (hr_ == DXGI_ERROR_WAIT_TIMEOUT) {
-        return false;
-    }
-
-    if (hr_ == DXGI_ERROR_ACCESS_LOST) {
-        fprintf(stderr, "Screen Capture: Access lost, recreating duplication\n");
-        output_duplication_.Reset();
-        hr_ = output1_->DuplicateOutput(d3d_device_.Get(), &output_duplication_);
-        initialized = SUCCEEDED(hr_);
-        return false;
-    }
-
-    if (FAILED(hr_)) {
-        fprintf(stderr, "Screen Capture: AcquireNextFrame failed: 0x%X\n", hr_);
-        return false;
-    }
-
-    ComPtr<ID3D11Texture2D> acquired_desktop_image;
-    hr_ = desktop_resource.As(&acquired_desktop_image);
-    if (SUCCEEDED(hr_) && acquired_desktop_image) {
-        D3D11_TEXTURE2D_DESC desc;
-        acquired_desktop_image->GetDesc(&desc);
-
-        bool recreate = !staging_texture_;
-        if (staging_texture_) {
-            D3D11_TEXTURE2D_DESC current_desc{};
-            staging_texture_->GetDesc(&current_desc);
-            recreate = current_desc.Width != desc.Width || current_desc.Height != desc.Height;
+    if (capture_mode_ == CaptureMode::BackgroundThread) {
+        std::lock_guard<std::mutex> lock(frame_mutex_);
+        if (latest_frame_.empty()) {
+            return FrameInfo{false, 0, 0.0};
         }
-
-        if (recreate) {
-            D3D11_TEXTURE2D_DESC staging_desc = desc;
-            staging_desc.Usage = D3D11_USAGE_STAGING;
-            staging_desc.BindFlags = 0;
-            staging_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-            staging_desc.MiscFlags = 0;
-
-            staging_texture_.Reset();
-            hr_ = d3d_device_->CreateTexture2D(&staging_desc, nullptr, &staging_texture_);
-            if (FAILED(hr_)) {
-                fprintf(stderr, "Screen Capture: CreateTexture2D (staging) failed: 0x%X\n", hr_);
-                return false;
-            }
-            frame_buffer_.create(static_cast<int>(desc.Height), static_cast<int>(desc.Width), CV_8UC4);
-        }
-
-        if (staging_texture_) {
-            d3d_context_->CopyResource(staging_texture_.Get(), acquired_desktop_image.Get());
-
-            D3D11_MAPPED_SUBRESOURCE mapped{};
-            hr_ = d3d_context_->Map(staging_texture_.Get(), 0, D3D11_MAP_READ, 0, &mapped);
-            if (SUCCEEDED(hr_)) {
-                const UINT row_bytes = desc.Width * 4;
-                if (mapped.RowPitch == row_bytes) {
-                    const SIZE_T total_bytes = static_cast<SIZE_T>(row_bytes) * desc.Height;
-                    memcpy(frame_buffer_.data, mapped.pData, total_bytes);
-                } else {
-                    cv::Mat wrapped(
-                        static_cast<int>(desc.Height),
-                        static_cast<int>(desc.Width),
-                        CV_8UC4,
-                        mapped.pData,
-                        mapped.RowPitch
-                    );
-                    wrapped.copyTo(frame_buffer_);
-                }
-
-                roi_ = frame_buffer_(
-                    cv::Rect(
-                        capture_region_.x1,
-                        capture_region_.y1,
-                        capture_region_.x2 - capture_region_.x1,
-                        capture_region_.y2 - capture_region_.y1
-                    )
-                );
-                roi_.copyTo(dst);
-
-                d3d_context_->Unmap(staging_texture_.Get(), 0);
-            }
-        }
+        latest_frame_.copyTo(dst);
+        return latest_frame_info_;
     }
 
-    output_duplication_->ReleaseFrame();
-
-    return true;
+    return capture_frame_internal(dst);
 }
 
 
@@ -383,6 +325,12 @@ void ScreenCapture::set_capture_region(const CaptureRegion& region) {
     capture_region_ = region;
     validate_capture_area(capture_region_);
 
+    if (!initialized) {
+        return;
+    }
+
+    scoped_lock lock(d3d_mutex_);
+
     output_duplication_.Reset();
     output1_.Reset();
     output_.Reset();
@@ -449,4 +397,146 @@ void ScreenCapture::track_window() {
         capture_region_.y2 = window_position.y2 - screen_bounds.y;
         set_capture_region(capture_region_);
     }
+}
+
+
+/**
+ * Start the background thread for continuous screen capturing if the capture mode is set to BackgroundThread.
+ */
+void ScreenCapture::start_capture_thread() {
+    if (capture_thread_.joinable()) {
+        return;
+    }
+
+    stop_capture_thread_.store(false, std::memory_order_relaxed);
+    capture_thread_ = std::thread([this]() {
+        cv::Mat local_frame;
+        while (!stop_capture_thread_.load(std::memory_order_relaxed)) {
+            FrameInfo info = capture_frame_internal(local_frame);
+            if (info.success && !local_frame.empty()) {
+                std::lock_guard<std::mutex> lock(frame_mutex_);
+                local_frame.copyTo(latest_frame_);
+                latest_frame_info_ = info;
+            }
+
+            if (capture_interval_.count() > 0) {
+                std::this_thread::sleep_for(capture_interval_);
+            } else {
+                std::this_thread::yield();
+            }
+        }
+    });
+}
+
+
+/**
+ * Internal function to capture a single frame from the screen.
+ * @param dst The destination cv::Mat to store the captured frame.
+ * @return True if a frame was successfully captured, false otherwise.
+ */
+FrameInfo ScreenCapture::capture_frame_internal(cv::Mat& dst) {
+    FrameInfo info{false, 0, 0.0};
+    if (target_window_handle_function_ != nullptr) {
+        track_window();
+    }
+
+    scoped_lock lock(d3d_mutex_);
+
+    DXGI_OUTDUPL_FRAME_INFO frame_info;
+    ComPtr<IDXGIResource> desktop_resource;
+
+    hr_ = output_duplication_->AcquireNextFrame(1000, &frame_info, &desktop_resource);
+
+    if (hr_ == DXGI_ERROR_WAIT_TIMEOUT) {
+        return info;
+    }
+
+    if (hr_ == DXGI_ERROR_ACCESS_LOST) {
+        fprintf(stderr, "Screen Capture: Access lost, recreating duplication\n");
+        output_duplication_.Reset();
+        hr_ = output1_->DuplicateOutput(d3d_device_.Get(), &output_duplication_);
+        initialized = SUCCEEDED(hr_);
+        return info;
+    }
+
+    if (FAILED(hr_)) {
+        fprintf(stderr, "Screen Capture: AcquireNextFrame failed: 0x%X\n", hr_);
+        return info;
+    }
+
+    double capture_time = utils::get_time_seconds();
+
+    ComPtr<ID3D11Texture2D> acquired_desktop_image;
+    hr_ = desktop_resource.As(&acquired_desktop_image);
+    if (SUCCEEDED(hr_) && acquired_desktop_image) {
+        D3D11_TEXTURE2D_DESC desc;
+        acquired_desktop_image->GetDesc(&desc);
+
+        bool recreate = !staging_texture_;
+        if (staging_texture_) {
+            D3D11_TEXTURE2D_DESC current_desc{};
+            staging_texture_->GetDesc(&current_desc);
+            recreate = current_desc.Width != desc.Width || current_desc.Height != desc.Height;
+        }
+
+        if (recreate) {
+            D3D11_TEXTURE2D_DESC staging_desc = desc;
+            staging_desc.Usage = D3D11_USAGE_STAGING;
+            staging_desc.BindFlags = 0;
+            staging_desc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+            staging_desc.MiscFlags = 0;
+
+            staging_texture_.Reset();
+            hr_ = d3d_device_->CreateTexture2D(&staging_desc, nullptr, &staging_texture_);
+            if (FAILED(hr_)) {
+                fprintf(stderr, "Screen Capture: CreateTexture2D (staging) failed: 0x%X\n", hr_);
+                output_duplication_->ReleaseFrame();
+                return info;
+            }
+            frame_buffer_.create(static_cast<int>(desc.Height), static_cast<int>(desc.Width), CV_8UC4);
+        }
+
+        if (staging_texture_) {
+            d3d_context_->CopyResource(staging_texture_.Get(), acquired_desktop_image.Get());
+
+            D3D11_MAPPED_SUBRESOURCE mapped{};
+            hr_ = d3d_context_->Map(staging_texture_.Get(), 0, D3D11_MAP_READ, 0, &mapped);
+            if (SUCCEEDED(hr_)) {
+                const UINT row_bytes = desc.Width * 4;
+                if (mapped.RowPitch == row_bytes) {
+                    const SIZE_T total_bytes = static_cast<SIZE_T>(row_bytes) * desc.Height;
+                    memcpy(frame_buffer_.data, mapped.pData, total_bytes);
+                } else {
+                    cv::Mat wrapped(
+                        static_cast<int>(desc.Height),
+                        static_cast<int>(desc.Width),
+                        CV_8UC4,
+                        mapped.pData,
+                        mapped.RowPitch
+                    );
+                    wrapped.copyTo(frame_buffer_);
+                }
+
+                roi_ = frame_buffer_(
+                    cv::Rect(
+                        capture_region_.x1,
+                        capture_region_.y1,
+                        capture_region_.x2 - capture_region_.x1,
+                        capture_region_.y2 - capture_region_.y1
+                    )
+                );
+                roi_.copyTo(dst);
+
+                info.success = true;
+                info.id = frame_id_.fetch_add(1, std::memory_order_relaxed) + 1;
+                info.timestamp = capture_time;
+
+                d3d_context_->Unmap(staging_texture_.Get(), 0);
+            }
+        }
+    }
+
+    output_duplication_->ReleaseFrame();
+
+    return info;
 }

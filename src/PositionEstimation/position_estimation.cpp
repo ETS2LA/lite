@@ -43,7 +43,7 @@ utils::Coordinates triangulate_position(
         const double t_az = std::tan(az);
         const double t_el = -std::tan(el);
         const double len_inv = 1.0 / std::sqrt(t_az * t_az + t_el * t_el + 1.0);
-        
+
         double x = t_az * len_inv;
         double y = t_el * len_inv;
         double z = -1.0 * len_inv;
@@ -51,7 +51,7 @@ utils::Coordinates triangulate_position(
         const double roll = utils::degrees_to_radians(static_cast<double>(cam.roll));
         const double c_r = std::cos(roll);
         const double s_r = std::sin(roll);
-        
+
         // rot_z(-roll): x = x*c + y*s, y = y*c - x*s
         double nx = x * c_r + y * s_r;
         double ny = y * c_r - x * s_r;
@@ -73,7 +73,7 @@ utils::Coordinates triangulate_position(
         // rot_y(-yaw): x = x*c - z*s, z = z*c + x*s
         nx = x * c_y - z * s_y;
         nz = z * c_y + x * s_y;
-        
+
         return utils::Coordinates{nx, y, nz};
     };
 

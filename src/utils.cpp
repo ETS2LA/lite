@@ -91,27 +91,26 @@ vector<int> get_window_position(HWND hwnd) {
  * @param frame The frame to apply the crop to.
  */
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
-    float width = static_cast<float>(frame.cols);
-    float height = static_cast<float>(frame.rows);
+    float frame_width = static_cast<float>(frame.cols);
+    float frame_height = static_cast<float>(frame.rows);
     int map_x1, map_y1, map_x2, map_y2;
-    int arrow_x1, arrow_y1, arrow_x2, arrow_y2;
 
-    int ra_distance_right = 21;
-    int ra_distance_bottom = 100;
-    int ra_width = 420;
-    int ra_height = 219;
-    float scale = height / 1080.0f;
+    int distance_right = 24;
+    int distance_bottom = 51;
+    int width = 324;
+    int height = 228;
+    float scale = frame_height / 1080.0f;
 
     if (side_right == false) {
-        map_x1 = static_cast<int>(round(ra_distance_right * scale - 1.0f));
-        map_y1 = static_cast<int>(round(height - (ra_distance_bottom * scale + ra_height * scale)));
-        map_x2 = static_cast<int>(round(ra_distance_right * scale + ra_width * scale - 1.0f));
-        map_y2 = static_cast<int>(round(height - (ra_distance_bottom * scale)));
+        map_x1 = static_cast<int>(round(distance_right * scale - 1.0f));
+        map_y1 = static_cast<int>(round(frame_height - (distance_bottom * scale + height * scale)));
+        map_x2 = static_cast<int>(round(distance_right * scale + width * scale - 1.0f));
+        map_y2 = static_cast<int>(round(frame_height - (distance_bottom * scale)));
     } else {
-        map_x1 = static_cast<int>(round(width - (ra_distance_right * scale + ra_width * scale)));
-        map_y1 = static_cast<int>(round(height - (ra_distance_bottom * scale + ra_height * scale)));
-        map_x2 = static_cast<int>(round(width - (ra_distance_right * scale)));
-        map_y2 = static_cast<int>(round(height - (ra_distance_bottom * scale)));
+        map_x1 = static_cast<int>(round(frame_width - (distance_right * scale + width * scale)));
+        map_y1 = static_cast<int>(round(frame_height - (distance_bottom * scale + height * scale)));
+        map_x2 = static_cast<int>(round(frame_width - (distance_right * scale)));
+        map_y2 = static_cast<int>(round(frame_height - (distance_bottom * scale)));
     }
 
     if (map_x1 > map_x2) {

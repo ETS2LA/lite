@@ -47,6 +47,24 @@ double indicator_left_response_timer = 0.0;
 double indicator_right_response_timer = 0.0;
 
 
+float get_pixel_average(const cv::Mat& frame, int x, int y) {
+    int x_left = max(0, x - 1);
+    int x_right = min(frame.cols - 1, x + 1);
+    int y_above = max(0, y - 1);
+    int y_below = min(frame.rows - 1, y + 1);
+
+    float value = 0.0f;
+    value += static_cast<float>(frame.at<uint8_t>(y, x));
+    value += static_cast<float>(frame.at<uint8_t>(y_above, x_left));
+    value += static_cast<float>(frame.at<uint8_t>(y_above, x));
+    value += static_cast<float>(frame.at<uint8_t>(y_above, x_right));
+    value += static_cast<float>(frame.at<uint8_t>(y_below, x_left));
+    value += static_cast<float>(frame.at<uint8_t>(y_below, x));
+    value += static_cast<float>(frame.at<uint8_t>(y_below, x_right));
+
+    return value / (7.0f * 255.0f);
+}
+
 vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, int y_offset) {
     bool detecting_lane = false;
     vector<int> lane_edges;
@@ -81,14 +99,14 @@ vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, i
     return lane_edges;
 }
 
-pair<int, int> get_lane_position(const vector<int>& lane_edges) {
-    int left_x_lane = 0;
-    int right_x_lane = mask_red_green.cols - 1;
+pair<float, float> get_lane_position(const vector<int>& lane_edges, int y_coordinate) {
+    float left_x_lane = 0.0f;
+    float right_x_lane = static_cast<float>(mask_red_green.cols - 1);
     if (lane_edges.size() >= 2) {
-        double best_distance = numeric_limits<double>::max();
+        float best_distance = numeric_limits<float>::max();
         for (size_t i = 0; i + 1 < lane_edges.size(); i += 2) {
-            int left_x  = lane_edges[i];
-            int right_x = lane_edges[i + 1];
+            float left_x  = static_cast<float>(lane_edges[i]) - get_pixel_average(mask_red_green, lane_edges[i], y_coordinate);
+            float right_x = static_cast<float>(lane_edges[i + 1]) + get_pixel_average(mask_red_green, lane_edges[i + 1], y_coordinate);
             float center = (left_x + right_x) / 2.0f;
             float distance = abs(center - static_cast<float>(frame.cols - 1) / 2.0f);
 
@@ -139,9 +157,9 @@ void run() {
 
     utils::apply_route_advisor_crop(frame, true);
 
-    // remove speed limit and F5 to zoom icons
-    const int inverse_roi_width = static_cast<int>(round(frame.cols / 5.7f));
-    const int inverse_roi_height = static_cast<int>(round(frame.rows / 4.0f));
+    // remove speed limit icon
+    const int inverse_roi_width = static_cast<int>(round(frame.cols / 7.8f));
+    const int inverse_roi_height = static_cast<int>(round(frame.rows / 3.95f));
     frame(cv::Rect(0, 0, inverse_roi_width, inverse_roi_height)).setTo(cv::Scalar(0));
     frame(cv::Rect(frame.cols - inverse_roi_width, 0, inverse_roi_width, inverse_roi_height)).setTo(cv::Scalar(0));
 
@@ -165,35 +183,35 @@ void run() {
 
     vector<int> lane_edges = get_lane_edges(mask_red_green, y_coordinate_of_lane, tilt, detection_offset_lane_y);
 
-    pair<int, int> lane_position = get_lane_position(lane_edges);
-    int left_x_lane = lane_position.first;
-    int right_x_lane = lane_position.second;
-    int left_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - left_x_lane) * tilt));
-    int right_y_lane = static_cast<int>(round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - right_x_lane) * tilt));
+    pair<float, float> lane_position = get_lane_position(lane_edges, y_coordinate_of_lane);
+    float left_x_lane = lane_position.first;
+    float right_x_lane = lane_position.second;
+    float left_y_lane = round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - left_x_lane) * tilt);
+    float right_y_lane = round(y_coordinate_of_lane + detection_offset_lane_y + (frame.cols / 2.0f - right_x_lane) * tilt);
     if (right_x_lane == frame.cols - 1) {
-        left_x_lane = 0;
-        right_x_lane = 0;
+        left_x_lane = 0.0f;
+        right_x_lane = 0.0f;
         left_y_lane = y_coordinate_of_lane;
         right_y_lane = y_coordinate_of_lane;
     }
 
     vector<int> turn_edges = get_lane_edges(mask_red_green, y_coordinate_of_turn, 0.0f, detection_offset_lane_y);
 
-    pair<int, int> turn_position = get_lane_position(turn_edges);
-    int left_x_turn = turn_position.first;
-    int right_x_turn = turn_position.second;
+    pair<float, float> turn_position = get_lane_position(turn_edges, y_coordinate_of_turn);
+    float left_x_turn = turn_position.first;
+    float right_x_turn = turn_position.second;
     if (right_x_turn == frame.cols - 1) {
         left_x_turn = 0;
         right_x_turn = 0;
     }
 
-    int width_lane = right_x_lane - left_x_lane;
-    int width_turn = right_x_turn - left_x_turn;
+    float width_lane = right_x_lane - left_x_lane;
+    float width_turn = right_x_turn - left_x_turn;
     float center_x_lane = (left_x_lane + right_x_lane) / 2.0f;
     float center_x_turn = (left_x_turn + right_x_turn) / 2.0f;
 
-    int approve_x_left = static_cast<int>(round(mask_red_green.cols * 0.25f));
-    int approve_x_right = static_cast<int>(round(mask_red_green.cols * 0.75f));
+    int approve_x_left = static_cast<int>(round(mask_red_green.cols * 0.155f));
+    int approve_x_right = static_cast<int>(round(mask_red_green.cols * 0.845f));
 
     int approve_upper_y_left = 0;
     int approve_lower_y_left = 0;
@@ -330,7 +348,7 @@ void run() {
     input_handler.update();
 
     if (control_enabled) {
-        correction = last_correction + (correction - last_correction) / 2.0f;
+        correction = last_correction + (correction - last_correction) / 1.5f;
         last_correction = correction;
 
         if (telemetry_data->truck_f.speed > -0.1f) {

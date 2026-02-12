@@ -136,6 +136,7 @@ void initialize(ScreenCapture* screen_capture) {
                     utils::find_window(L"Navigation Detection", {}),
                     control_enabled ? RGB(0, 255, 0) : RGB(255, 0, 0)
                 );
+                controller.enabled(control_enabled);
             }
         }
     );
@@ -390,7 +391,7 @@ void run() {
     last_indicator_right = indicator_right;
 
     // send controller updates to game
-    controller.update();
+    controller.update(true);
 
 
     if (width_lane != 0) {

@@ -1,5 +1,10 @@
 #pragma once
 
+#include "telemetry.h"
+
+#include <atomic>
+#include <thread>
+
 
 #pragma pack(push, 1)
 
@@ -291,10 +296,19 @@ class SCSController : public ControllerData {
 public:
     SCSController();
     ~SCSController();
-    void update();
+    void update(bool gamepad_mode = false);
+    void enabled(bool enabled);
+    bool is_enabled() const;
 
 private:
+    void pid_loop();
+
     void* map_file;
     void* buffer;
     bool initialized;
+    std::thread pid_thread_;
+    std::atomic<bool> pid_running_;
+    std::atomic<float> steering_target_;
+    std::atomic<float> pid_output_;
+    std::atomic<bool> enabled_;
 };

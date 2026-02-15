@@ -59,7 +59,7 @@ enabled_(true)
 }
 
 SCSController::~SCSController() {
-    pid_running_.store(false, std::memory_order_relaxed);
+    pid_running_.store(false, std::memory_order_release);
     if (pid_thread_.joinable()) {
         pid_thread_.join();
     }
@@ -87,7 +87,7 @@ void SCSController::pid_loop() {
     SCSTelemetry telemetry;
     unsigned long long last_simulated_time = 0;
 
-    while (pid_running_.load(std::memory_order_relaxed)) {
+    while (pid_running_.load(std::memory_order_acquire)) {
         TelemetryData* telemetry_data = telemetry.data();
 
         // only update PID when telemetry data changed
@@ -97,47 +97,47 @@ void SCSController::pid_loop() {
         }
         last_simulated_time = telemetry_data->simulatedTime;
 
-        if (gamepad_mode_.load(std::memory_order_relaxed)) {
+        if (gamepad_mode_.load(std::memory_order_acquire)) {
             steering_output_.store(
                 clamp(
                     steering_pid.update(
-                        clamp(steering_target_.load(std::memory_order_relaxed), -1.0f, 1.0f),
+                        clamp(steering_target_.load(std::memory_order_acquire), -1.0f, 1.0f),
                         -clamp(telemetry_data->truck_f.gameSteer, -1.0f, 1.0f)
                     ),
                     -1.0f,
                     1.0f
                 ),
-                std::memory_order_relaxed
+                std::memory_order_release
             );
         }
 
-        if (speed_control_.load(std::memory_order_relaxed)) {
+        if (speed_control_.load(std::memory_order_acquire)) {
             if (speed_target_ - telemetry_data->truck_f.speed > -0.1f) {
                 acceleration_output_.store(
                     clamp(
                         acceleration_pid.update(
-                            speed_target_.load(std::memory_order_relaxed),
+                            speed_target_.load(std::memory_order_acquire),
                             telemetry_data->truck_f.speed
                         ),
                         0.0f,
                         1.0f
                     ),
-                    std::memory_order_relaxed
+                    std::memory_order_release
                 );
-                brake_output_.store(0.0f, std::memory_order_relaxed);
+                brake_output_.store(0.0f, std::memory_order_release);
                 brake_pid.reset();
             } else {
-                acceleration_output_.store(0.0f, std::memory_order_relaxed);
+                acceleration_output_.store(0.0f, std::memory_order_release);
                 brake_output_.store(
                     clamp(
                         -brake_pid.update(
-                            speed_target_.load(std::memory_order_relaxed),
+                            speed_target_.load(std::memory_order_acquire),
                             telemetry_data->truck_f.speed
                         ),
                         0.0f,
                         1.0f
                     ),
-                    std::memory_order_relaxed
+                    std::memory_order_release
                 );
                 acceleration_pid.reset();
             }
@@ -152,30 +152,30 @@ void SCSController::pid_loop() {
  * @param target_speed The target speed for PID control (if enabled)
  */
 void SCSController::update() {
-    if ((gamepad_mode || target_speed.has_value()) && enabled_.load(std::memory_order_relaxed)) {
+    if ((gamepad_mode || target_speed.has_value()) && enabled_.load(std::memory_order_acquire)) {
         // update atomic variables for PID loop
-        gamepad_mode_.store(gamepad_mode, std::memory_order_relaxed);
-        speed_control_.store(target_speed.has_value(), std::memory_order_relaxed);
+        gamepad_mode_.store(gamepad_mode, std::memory_order_release);
+        speed_control_.store(target_speed.has_value(), std::memory_order_release);
 
-        if (pid_running_.load(std::memory_order_relaxed) == false) {
-            pid_running_.store(true, std::memory_order_relaxed);
+        if (pid_running_.load(std::memory_order_acquire) == false) {
+            pid_running_.store(true, std::memory_order_release);
             pid_thread_ = thread(&SCSController::pid_loop, this);
         }
 
         // set and get steering values for steering PID
         if (gamepad_mode) {
-            steering_target_.store(steering, std::memory_order_relaxed);  // steering value from the ControllerData
-            steering = steering_output_.load(std::memory_order_relaxed);
+            steering_target_.store(steering, std::memory_order_release);  // steering value from the ControllerData
+            steering = steering_output_.load(std::memory_order_acquire);
         }
         // set and get speed values for speed PID
         if (target_speed.has_value()) {
-            speed_target_.store(target_speed.value(), std::memory_order_relaxed);
-            aforward = acceleration_output_.load(std::memory_order_relaxed);
-            abackward = brake_output_.load(std::memory_order_relaxed);
-            printf("Acceleration: %06.2f, Brake: %06.2f, Target Speed: %.2f\n", aforward, abackward, speed_target_.load(std::memory_order_relaxed)*3.6f);
+            speed_target_.store(target_speed.value(), std::memory_order_release);
+            aforward = acceleration_output_.load(std::memory_order_acquire);
+            abackward = brake_output_.load(std::memory_order_acquire);
+            printf("Acceleration: %06.2f, Brake: %06.2f, Target Speed: %.2f\n", aforward, abackward, speed_target_.load(std::memory_order_acquire)*3.6f);
         }
-    } else if (pid_running_.load(std::memory_order_relaxed)) {
-        pid_running_.store(false, std::memory_order_relaxed);
+    } else if (pid_running_.load(std::memory_order_acquire)) {
+        pid_running_.store(false, std::memory_order_release);
         if (pid_thread_.joinable()) {
             pid_thread_.join();
         }
@@ -197,7 +197,7 @@ void SCSController::update() {
  * @param enabled Whether to enable or disable the controller
  */
 void SCSController::enabled(bool enabled) {
-    enabled_.store(enabled, std::memory_order_relaxed);
+    enabled_.store(enabled, std::memory_order_release);
 
     if (!enabled) {
         steering = 0.0f;
@@ -213,5 +213,5 @@ void SCSController::enabled(bool enabled) {
  * @return True if enabled, false otherwise
  */
 bool SCSController::is_enabled() const {
-    return enabled_.load(std::memory_order_relaxed);
+    return enabled_.load(std::memory_order_acquire);
 }

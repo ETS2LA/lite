@@ -126,6 +126,7 @@ namespace navigation_detection {
 
 void initialize(ScreenCapture* screen_capture) {
     capture = screen_capture;
+    controller.gamepad_mode = true;
 
     input_handler.register_key_binding(
         KeyBinding{
@@ -391,7 +392,7 @@ void run() {
     last_indicator_right = indicator_right;
 
     // send controller updates to game
-    controller.update(true);
+    controller.update();
 
 
     if (width_lane != 0) {

@@ -105,6 +105,29 @@ struct ColorInt {
 };
 
 
+class PIDController {
+public:
+    PIDController(float kp, float ki, float kd);
+    void set_gains(float kp, float ki, float kd);
+    void get_gains(float& kp, float& ki, float& kd);
+    void set_integral_limit(float limit);
+    void get_integral_limit(float& limit);
+    float update(float target, float current_value);
+    void reset();
+
+private:
+    bool initialized_ = false;
+    float kp_;
+    float ki_;
+    float kd_;
+    float integral_;
+    float integral_limit_;
+    float previous_error_;
+    float previous_output_;
+    std::chrono::steady_clock::time_point last_update_time_;
+};
+
+
 HWND find_window(
     const std::wstring& window_name,
     const std::vector<std::wstring>& blacklist

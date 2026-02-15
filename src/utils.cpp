@@ -8,6 +8,102 @@ namespace utils {
 
 
 /**
+ * PID controller class.
+ * @param kp Proportional gain
+ * @param ki Integral gain
+ * @param kd Derivative gain
+ */
+PIDController::PIDController(float kp, float ki, float kd):
+kp_(kp),
+ki_(ki),
+kd_(kd),
+integral_(0.0f),
+integral_limit_(1.0f),
+previous_error_(0.0f) {}
+
+/**
+ * Set the PID gains.
+ * @param kp Proportional gain
+ * @param ki Integral gain
+ * @param kd Derivative gain
+ */
+void PIDController::set_gains(float kp, float ki, float kd) {
+    kp_ = kp;
+    ki_ = ki;
+    kd_ = kd;
+}
+
+/**
+ * Get the PID gains.
+ * @param kp Proportional gain
+ * @param ki Integral gain
+ * @param kd Derivative gain
+ */
+void PIDController::get_gains(float& kp, float& ki, float& kd) {
+    kp = kp_;
+    ki = ki_;
+    kd = kd_;
+}
+
+/**
+ * Set the integral limit to prevent windup.
+ * @param limit The maximum absolute value for the integral term.
+ */
+void PIDController::set_integral_limit(float limit) {
+    integral_limit_ = abs(limit);
+}
+
+/**
+ * Get the integral limit.
+ * @param limit The maximum absolute value for the integral term.
+ */
+void PIDController::get_integral_limit(float& limit) {
+    limit = integral_limit_;
+}
+
+/**
+ * Update the PID controller with the target and current values, and get the control output.
+ * @param target The desired target value.
+ * @param current_value The current value to compare against the target.
+ * @return The control output calculated by the PID controller.
+ */
+float PIDController::update(float target, float current_value) {
+    auto current_time = chrono::high_resolution_clock::now();
+    float dt = chrono::duration<float>(current_time - last_update_time_).count();
+    if (dt <= 0.0f) {
+        return previous_output_;
+    }
+    last_update_time_ = current_time;
+
+    float error = target - current_value;
+    if (!initialized_) {
+        previous_error_ = error;
+        initialized_ = true;
+    }
+
+    integral_ += error * dt;
+    float derivative = (error - previous_error_) / dt;
+    float output = kp_ * error + ki_ * integral_ + kd_ * derivative;
+
+    integral_ = clamp(integral_, -integral_limit_, integral_limit_);
+    previous_error_ = error;
+    previous_output_ = output;
+    return output;
+}
+
+/**
+ * Reset the PID controller.
+ */
+void PIDController::reset() {
+    initialized_ = false;
+    integral_ = 0.0f;
+    previous_error_ = 0.0f;
+    previous_output_ = 0.0f;
+    last_update_time_ = chrono::steady_clock::now();
+}
+
+
+/**
  * Finds a window whose title contains window_name but does not include any blacklist terms.
  * @param window_name The name (or part of the name) of the window to find.
  * @param blacklist A list of terms that should not be present in the window title.

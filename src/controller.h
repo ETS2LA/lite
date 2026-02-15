@@ -2,6 +2,7 @@
 
 #include "telemetry.h"
 
+#include <optional>
 #include <atomic>
 #include <thread>
 
@@ -296,9 +297,14 @@ class SCSController : public ControllerData {
 public:
     SCSController();
     ~SCSController();
-    void update(bool gamepad_mode = false);
+    void update();
     void enabled(bool enabled);
     bool is_enabled() const;
+
+    // Whether to use gamepad mode (PID control) or direct control
+    bool gamepad_mode;
+    // Automatically control aforward and abackward to reach target speed (if set)
+    std::optional<float> target_speed;
 
 private:
     void pid_loop();
@@ -309,6 +315,11 @@ private:
     std::thread pid_thread_;
     std::atomic<bool> pid_running_;
     std::atomic<float> steering_target_;
-    std::atomic<float> pid_output_;
+    std::atomic<float> steering_output_;
+    std::atomic<float> speed_target_;
+    std::atomic<float> acceleration_output_;
+    std::atomic<float> brake_output_;
     std::atomic<bool> enabled_;
+    std::atomic<bool> gamepad_mode_;
+    std::atomic<bool> speed_control_;
 };

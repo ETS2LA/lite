@@ -18,7 +18,7 @@ using Microsoft::WRL::ComPtr;
 ScreenCapture::ScreenCapture(
     CaptureRegion capture_region,
     CaptureMode mode,
-    std::chrono::milliseconds interval
+    chrono::milliseconds interval
 ):
 capture_region_(capture_region),
 capture_mode_(mode),
@@ -32,7 +32,7 @@ capture_interval_(interval)
 ScreenCapture::ScreenCapture(
     function<HWND()> target_window_handle_function,
     CaptureMode mode,
-    std::chrono::milliseconds interval
+    chrono::milliseconds interval
 ):
 target_window_handle_function_(target_window_handle_function),
 capture_mode_(mode),
@@ -47,7 +47,7 @@ capture_interval_(interval)
  */
 ScreenCapture::~ScreenCapture() {
     if (capture_mode_ == CaptureMode::BackgroundThread && capture_thread_.joinable()) {
-        stop_capture_thread_.store(true, std::memory_order_relaxed);
+        stop_capture_thread_.store(true, std::memory_order_release);
         capture_thread_.join();
     }
 }
@@ -142,7 +142,7 @@ FrameInfo ScreenCapture::get_frame(cv::Mat& dst) {
     }
 
     if (capture_mode_ == CaptureMode::BackgroundThread) {
-        std::lock_guard<std::mutex> lock(frame_mutex_);
+        lock_guard<mutex> lock(frame_mutex_);
         if (latest_frame_.empty()) {
             return FrameInfo{false, 0, 0.0};
         }
@@ -408,21 +408,21 @@ void ScreenCapture::start_capture_thread() {
         return;
     }
 
-    stop_capture_thread_.store(false, std::memory_order_relaxed);
-    capture_thread_ = std::thread([this]() {
+    stop_capture_thread_.store(false, std::memory_order_release);
+    capture_thread_ = thread([this]() {
         cv::Mat local_frame;
-        while (!stop_capture_thread_.load(std::memory_order_relaxed)) {
+        while (!stop_capture_thread_.load(std::memory_order_acquire)) {
             FrameInfo info = capture_frame_internal(local_frame);
             if (info.success && !local_frame.empty()) {
-                std::lock_guard<std::mutex> lock(frame_mutex_);
+                lock_guard<mutex> lock(frame_mutex_);
                 local_frame.copyTo(latest_frame_);
                 latest_frame_info_ = info;
             }
 
             if (capture_interval_.count() > 0) {
-                std::this_thread::sleep_for(capture_interval_);
+                this_thread::sleep_for(capture_interval_);
             } else {
-                std::this_thread::yield();
+                this_thread::yield();
             }
         }
     });

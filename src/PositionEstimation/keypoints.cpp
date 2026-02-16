@@ -3,7 +3,7 @@
 using namespace std;
 
 
-inline int bias_towards_center(const double x, const double gamma, const double center) {
+static inline int bias_towards_center(const double x, const double gamma, const double center) {
     double d = x - center;
     double sign = (d >= 0.0) ? 1.0 : -1.0;
     double dnorm = abs(d) / center;

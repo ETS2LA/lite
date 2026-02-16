@@ -28,7 +28,7 @@ utils::Coordinates triangulate_position(
     const int window_width,
     const int window_height
 ) {
-    const utils::CameraCoordinates& cam0 = object.camera_coords;
+    const utils::CameraCoordinates& cam0 = object.first_camera_coords;
     const utils::Angles& ang0 = object.angles;
     const utils::Angles ang1 = utils::convert_to_angles(
         {object.x, object.y, 0.0f},
@@ -180,9 +180,9 @@ void PositionEstimation::run(AR& ar) {
             cv::Point(static_cast<int>((camera_coords.z - position.z) * 3.0f + display_frame.cols / 2.0), static_cast<int>(display_frame.rows / 2.0 - (camera_coords.x - position.x) * 3.0f)),
             2,
             cv::Scalar(
-                abs(position.y - camera_coords.y) <= 1.0f ? 127 + (position.y - camera_coords.y) * 15.0f : 0,
-                abs(position.y - camera_coords.y) > 1.0f ? 127 + (position.y - camera_coords.y) * 15.0f : 0,
-                abs(position.y - camera_coords.y) <= 1.0f ? 127 + (position.y - camera_coords.y) * 15.0f : 0
+                abs(camera_coords.y - position.y - 1.0) <= 1.0f ? max(30.0, 255.0f - abs(camera_coords.y - position.y) * 15.0f) : 0,
+                abs(camera_coords.y - position.y - 1.0) > 1.0f ? max(30.0, 255.0f - abs(camera_coords.y - position.y) * 15.0f) : 0,
+                abs(camera_coords.y - position.y - 1.0) <= 1.0f ? max(30.0, 255.0f - abs(camera_coords.y - position.y) * 15.0f) : 0
             ),
             -1
         );

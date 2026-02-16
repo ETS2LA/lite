@@ -79,9 +79,9 @@ void SCSController::pid_loop() {
     steering_pid.set_integral_limit(1.0f);
 
     auto acceleration_pid = utils::PIDController(1.0f, 0.05f, 0.3f);
-    acceleration_pid.set_integral_limit(1.0f);
+    acceleration_pid.set_integral_limit(5.0f);
 
-    auto brake_pid = utils::PIDController(0.03f, 0.00f, 0.01f);
+    auto brake_pid = utils::PIDController(0.03f, 0.0f, 0.01f);
     brake_pid.set_integral_limit(1.0f);
 
     SCSTelemetry telemetry;
@@ -92,7 +92,7 @@ void SCSController::pid_loop() {
 
         // only update PID when telemetry data changed
         if (telemetry_data->simulatedTime == last_simulated_time) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            this_thread::sleep_for(chrono::milliseconds(1));
             continue;
         }
         last_simulated_time = telemetry_data->simulatedTime;
@@ -172,7 +172,6 @@ void SCSController::update() {
             speed_target_.store(target_speed.value(), std::memory_order_release);
             aforward = acceleration_output_.load(std::memory_order_acquire);
             abackward = brake_output_.load(std::memory_order_acquire);
-            printf("Acceleration: %06.2f, Brake: %06.2f, Target Speed: %.2f\n", aforward, abackward, speed_target_.load(std::memory_order_acquire)*3.6f);
         }
     } else if (pid_running_.load(std::memory_order_acquire)) {
         pid_running_.store(false, std::memory_order_release);

@@ -14,7 +14,8 @@ public:
         float x;
         float y;
         utils::Angles angles;
-        utils::CameraCoordinates camera_coords;
+        utils::CameraCoordinates first_camera_coords;
+        utils::CameraCoordinates previous_camera_coords;
         int id;
         int unseen_count;
         float accuracy = 0.0f;
@@ -29,6 +30,13 @@ public:
     );
 
 private:
+    void apply_camera_rotation(
+        std::vector<Object>& objects,
+        utils::CameraCoordinates camera_coords,
+        const int window_width,
+        const int window_height
+    );
+
     int max_unseen_count_;
     float distance_threshold_;
 

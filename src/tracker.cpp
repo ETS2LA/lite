@@ -11,21 +11,94 @@ max_unseen_count_(max_unseen_count), distance_threshold_(distance_threshold) {}
 
 
 /**
+ * This function updates the position of the tracked objects based on the new camera rotation.
+ * It uses the change in camera angles to adjust the positions of the tracked objects accordingly.
+ * @param objects The vector of currently tracked objects to be updated with the new camera rotation.
+ */
+void Tracker::apply_camera_rotation(
+    vector<Object>& objects,
+    utils::CameraCoordinates camera_coords,
+    const int window_width,
+    const int window_height
+) {
+    for (auto& obj : objects) {
+        const utils::Angles angles = utils::convert_to_angles(
+            {obj.x, obj.y, 0.0},
+            window_width,
+            window_height
+        );
+
+        const double azimuth_rad = utils::degrees_to_radians(static_cast<double>(angles.azimuth));
+        const double elevation_rad = utils::degrees_to_radians(static_cast<double>(angles.elevation));
+
+        const utils::Coordinates ray_prev_cam{
+            tan(azimuth_rad),
+            -tan(elevation_rad),
+            -1.0
+        };
+
+        const utils::Coordinates ray_world = utils::rotate_vector(
+            ray_prev_cam,
+            {
+                -obj.previous_camera_coords.pitch,
+                -obj.previous_camera_coords.yaw,
+                -obj.previous_camera_coords.roll
+            }
+        );
+
+        utils::CameraCoordinates current_rotation_only = camera_coords;
+        current_rotation_only.x = 0.0;
+        current_rotation_only.y = 0.0;
+        current_rotation_only.z = 0.0;
+
+        const utils::ScreenCoordinates projected = utils::convert_to_screen_coordinate(
+            ray_world,
+            current_rotation_only,
+            window_width,
+            window_height
+        );
+
+        if (projected.distance < 0.0) {
+            obj.previous_camera_coords = camera_coords;
+            continue;
+        }
+
+        obj.x = static_cast<float>(projected.x);
+        obj.y = static_cast<float>(projected.y);
+        obj.previous_camera_coords = camera_coords;
+    }
+}
+
+
+/**
  * Update the tracker with new detections.
  * @param detections A vector of detected object positions.
  * @return A reference to the vector of tracked objects.
  */
-std::vector<Tracker::Object>& Tracker::update(
-    const std::vector<std::pair<float, float>>& detections,
+vector<Tracker::Object>& Tracker::update(
+    const vector<pair<float, float>>& detections,
     const utils::CameraCoordinates& camera_coords,
     const int window_width,
     const int window_height
 ) {
+    // move all objects based on how the camera rotated since the last update
+    // this gives more stable tracking when the camera is rotating fast
+    apply_camera_rotation(objects_, camera_coords, window_width, window_height);
+
+    // erase all objects that are out of screen bounds
+    objects_.erase(remove_if(objects_.begin(), objects_.end(), [&](const Object& obj) {
+        if (obj.x < 0 || obj.x >= window_width || obj.y < 0 || obj.y >= window_height) {
+            free_ids_.push_back(obj.id);
+            return true;
+        }
+        return false;
+    }), objects_.end());
+
     if (detections.empty()) {
         for (auto& obj : objects_) {
             obj.unseen_count++;
         }
-        objects_.erase(std::remove_if(objects_.begin(), objects_.end(), [&](const Object& obj) {
+        objects_.erase(remove_if(objects_.begin(), objects_.end(), [&](const Object& obj) {
             if (obj.unseen_count > max_unseen_count_) {
                 free_ids_.push_back(obj.id);
                 return true;
@@ -53,7 +126,8 @@ std::vector<Tracker::Object>& Tracker::update(
                 window_width,
                 window_height
             );
-            obj.camera_coords = camera_coords;
+            obj.first_camera_coords = camera_coords;
+            obj.previous_camera_coords = camera_coords;
             obj.id = new_id;
             obj.unseen_count = 0;
             objects_.push_back(obj);
@@ -70,7 +144,7 @@ std::vector<Tracker::Object>& Tracker::update(
     };
 
     auto cell_coord = [inv_cell_size](float v) -> int {
-        return static_cast<int>(std::floor(v * inv_cell_size));
+        return static_cast<int>(floor(v * inv_cell_size));
     };
 
     keyed_detections_.clear();
@@ -82,7 +156,7 @@ std::vector<Tracker::Object>& Tracker::update(
         keyed_detections_.emplace_back(cell_key(cx, cy), i);
     }
 
-    std::sort(keyed_detections_.begin(), keyed_detections_.end(), [](const auto& a, const auto& b) {
+    sort(keyed_detections_.begin(), keyed_detections_.end(), [](const auto& a, const auto& b) {
         return a.first < b.first;
     });
 
@@ -101,7 +175,7 @@ std::vector<Tracker::Object>& Tracker::update(
     if (detection_used_.size() != detections.size()) {
         detection_used_.assign(detections.size(), 0);
     } else {
-        std::fill(detection_used_.begin(), detection_used_.end(), 0);
+        fill(detection_used_.begin(), detection_used_.end(), 0);
     }
 
     key_to_pos_.clear();
@@ -114,7 +188,7 @@ std::vector<Tracker::Object>& Tracker::update(
         const int ocx = cell_coord(obj.x);
         const int ocy = cell_coord(obj.y);
 
-        float best_dist_sq = std::numeric_limits<float>::max();
+        float best_dist_sq = numeric_limits<float>::max();
         int best_idx = -1;
 
         for (int dx = -1; dx <= 1; ++dx) {
@@ -156,7 +230,7 @@ std::vector<Tracker::Object>& Tracker::update(
         }
     }
 
-    objects_.erase(std::remove_if(objects_.begin(), objects_.end(), [&](const Object& obj) {
+    objects_.erase(remove_if(objects_.begin(), objects_.end(), [&](const Object& obj) {
         if (obj.unseen_count > max_unseen_count_) {
             free_ids_.push_back(obj.id);
             return true;
@@ -183,7 +257,8 @@ std::vector<Tracker::Object>& Tracker::update(
             window_width,
             window_height
         );
-        obj.camera_coords = camera_coords;
+        obj.first_camera_coords = camera_coords;
+        obj.previous_camera_coords = camera_coords;
         obj.id = new_id;
         obj.unseen_count = 0;
         objects_.push_back(obj);

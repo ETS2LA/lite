@@ -328,8 +328,8 @@ void run() {
         lane_change_start_offset = lane_change_offset;
     }
 
-    lane_change_target_offset = static_cast<float>(frame.cols / 31.0f) * static_cast<float>(lane_change_current_lane);
     lane_change_progress = static_cast<float>(clamp((current_time - lane_change_start_time) / 3.0, 0.0, 1.0));
+    lane_change_target_offset = static_cast<float>(frame.cols / 24.5f) * static_cast<float>(lane_change_current_lane);
     lane_change_offset = lane_change_start_offset + (lane_change_target_offset - lane_change_start_offset) * lane_change_progress;
 
 

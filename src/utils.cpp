@@ -104,6 +104,57 @@ void PIDController::reset() {
 
 
 /**
+ * Timer class.
+ */
+Timer::Timer() : last_fps_update_(0.0) {}
+
+/**
+ * Start the timer.
+ */
+void Timer::start() {
+    start_time_ = chrono::high_resolution_clock::now();
+}
+
+/**
+ * Get the elapsed time in seconds since the timer was started.
+ * @return Elapsed time in seconds.
+ */
+double Timer::get_seconds() {
+    auto now = chrono::high_resolution_clock::now();
+    return chrono::duration<double>(now - start_time_).count();
+}
+
+/**
+ * Get the elapsed time in milliseconds since the timer was started.
+ * @return Elapsed time in milliseconds.
+ */
+double Timer::get_milliseconds() {
+    auto now = chrono::high_resolution_clock::now();
+    return chrono::duration<double, milli>(now - start_time_).count();
+}
+
+/**
+ * Get the elapsed time in microseconds since the timer was started.
+ * @return Elapsed time in microseconds.
+ */
+double Timer::get_microseconds() {
+    auto now = chrono::high_resolution_clock::now();
+    return chrono::duration<double, micro>(now - start_time_).count();
+}
+
+/**
+ * Get the frames per second based on the time since the last get_fps() call.
+ * @return The calculated FPS.
+ */
+double Timer::get_fps() {
+    double current_time = get_seconds();
+    double fps = 1.0 / (current_time - last_fps_update_);
+    last_fps_update_ = current_time;
+    return fps;
+}
+
+
+/**
  * Finds a window whose title contains window_name but does not include any blacklist terms.
  * @param window_name The name (or part of the name) of the window to find.
  * @param blacklist A list of terms that should not be present in the window title.

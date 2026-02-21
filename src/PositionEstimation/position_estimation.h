@@ -18,7 +18,7 @@ class PositionEstimation {
 public:
     PositionEstimation(ScreenCapture* capture);
     PositionEstimation(std::function<HWND()> target_window_handle_function);
-    void run(AR& ar);
+    void run();
 
     std::vector<std::pair<float, float>> get_keypoints(cv::Mat& frame);
     std::vector<std::pair<float, float>> get_keypoints();

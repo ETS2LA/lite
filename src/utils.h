@@ -128,6 +128,20 @@ private:
 };
 
 
+class Timer {
+public:
+    Timer();
+    void start();
+    double get_seconds();
+    double get_milliseconds();
+    double get_microseconds();
+    double get_fps();
+private:
+    std::chrono::high_resolution_clock::time_point start_time_;
+    double last_fps_update_;
+};
+
+
 HWND find_window(
     const std::wstring& window_name,
     const std::vector<std::wstring>& blacklist

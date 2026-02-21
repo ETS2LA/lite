@@ -58,9 +58,20 @@ void AR::window_state_update_thread() {
     }
 }
 
-
-AR::AR(function<HWND()> target_window_handle_function, int msaa_samples):
-target_window_handle_function_(target_window_handle_function) {
+AR::AR(
+    function<HWND()> target_window_handle_function,
+    const bool hide_from_capture,
+    const int msaa_samples
+):
+window_(nullptr),
+target_window_handle_function_(target_window_handle_function),
+telemetry_data_(nullptr),
+window_width_(0),
+window_height_(0),
+freetype_library_(nullptr),
+freetype_face_(nullptr),
+text_font_pixel_size_(48),
+text_ready_(false) {
     glfwInit();
 
     // make black pixels transparent
@@ -81,6 +92,8 @@ target_window_handle_function_(target_window_handle_function) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
+    initialize_text_renderer();
+
     HWND hwnd = glfwGetWin32Window(window_);
     utils::set_icon(hwnd, L"assets/ar_icon.ico");
 
@@ -97,10 +110,12 @@ target_window_handle_function_(target_window_handle_function) {
         GetWindowLongW(hwnd, GWL_EXSTYLE) | WS_EX_LAYERED | WS_EX_TRANSPARENT
     );
 
-    // make window invisible to screen captures
-    BOOL success = SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
-    if (!success) {
-        fprintf(stderr, "Failed to hide AR window from screen capture.\n");
+    if (hide_from_capture) {
+        // make window invisible to screen captures
+        BOOL success = SetWindowDisplayAffinity(hwnd, WDA_EXCLUDEFROMCAPTURE);
+        if (!success) {
+            fprintf(stderr, "Failed to hide AR window from screen capture.\n");
+        }
     }
 
     // start a thread to update window position
@@ -120,6 +135,10 @@ target_window_handle_function_(target_window_handle_function) {
 
 
 AR::~AR() {
+    if (window_) {
+        glfwMakeContextCurrent(window_);
+        cleanup_text_renderer();
+    }
     glfwDestroyWindow(window_);
     glfwTerminate();
 }

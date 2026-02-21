@@ -9,6 +9,9 @@
 - Get [GLFW](https://github.com/glfw/glfw) (source, not precompiled)
   - Extract it
   - Create an environment variable named `glfw3_DIR` and set its value to the path of the GLFW folder, which contains folders like `CMake`, `docs`, `include`, etc.
+- Get [FreeType](https://sourceforge.net/projects/freetype)
+  - Extract it
+  - Create an environment variable named `freetype_DIR` and set its value to the path of the FreeType folder, which contains folders like `builds`, `docs`, `include`, etc.
 - Get [CMake](https://cmake.org/)
   - Install it (select the option to add it to the system PATH)
 - Build the app in release mode

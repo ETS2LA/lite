@@ -18,7 +18,7 @@ int main() {
 
     navigation_detection::initialize(capture);
 
-    std::thread ar_thread([capture]() {
+    std::thread ar_thread([]() {
         AR ar(
             std::bind(
                 utils::find_window,
@@ -27,12 +27,8 @@ int main() {
             )
         );
 
-        PositionEstimation position_estimation(capture);
-
         while (true) {
             auto start = utils::get_time_seconds();
-
-            position_estimation.run(ar);
 
             ar.draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
 
@@ -48,6 +44,15 @@ int main() {
         }
     });
     ar_thread.detach();
+
+    std::thread position_estimation_thread([capture]() {
+        PositionEstimation position_estimation(capture);
+
+        while (true) {
+            position_estimation.run();
+        }
+    });
+    position_estimation_thread.detach();
 
     while (true) {
         auto start = utils::get_time_seconds();

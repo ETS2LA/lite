@@ -16,6 +16,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /MT")
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
 add_subdirectory($ENV{glfw3_DIR} glfw)
+add_subdirectory($ENV{freetype_DIR} freetype)
 
 file(GLOB_RECURSE SRC_FILES "src/*.cpp" "src/*.h")
 
@@ -24,6 +25,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     ${OpenCV_LIBS}
     OpenGL::GL
     glfw
+    freetype
     windowsapp
 )
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

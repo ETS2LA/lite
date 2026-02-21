@@ -135,7 +135,7 @@ utils::Coordinates triangulate_position(
 }
 
 
-void PositionEstimation::run(AR& ar) {
+void PositionEstimation::run() {
     window_width_ = capture_->get_capture_region().x2 - capture_->get_capture_region().x1;
     window_height_ = capture_->get_capture_region().y2 - capture_->get_capture_region().y1;
 
@@ -145,18 +145,6 @@ void PositionEstimation::run(AR& ar) {
     auto objects = tracker_.update(keypoints, camera_coords, window_width_, window_height_);
 
     cv::Mat display_frame(500, 500, CV_8UC3, cv::Scalar(0, 0, 0));
-
-    for (const auto& kp : keypoints) {
-        ar.rectangle(
-            kp.first - 2.0f,
-            kp.second - 2.0f,
-            kp.first + 2.0f,
-            kp.second + 2.0f,
-            0.0f,
-            1.0f,
-            utils::ColorFloat{1.0f, 0.0f, 0.0f, 1.0f}
-        );
-    }
 
     for (auto& obj : objects) {
         auto position = triangulate_position(

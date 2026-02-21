@@ -4,19 +4,53 @@
 #include "camera.h"
 
 #include <GLFW/glfw3.h>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
 #include <string>
+#include <unordered_map>
 #include <windows.h>
 #include <thread>
+
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
 
 class AR {
 public:
     // MARK: public
-    AR(const std::function<HWND()> target_window_handle_function, const int msaa_samples = 8);
+    AR(const std::function<HWND()> target_window_handle_function, const bool hide_from_capture = true, const int msaa_samples = 8);
     ~AR();
     void draw_wheel_trajectory(const utils::ColorFloat& color);
     void run();
+
+    // MARK: text
+    void text(
+        const std::wstring& text,
+        float x,
+        float y,
+        float font_size,
+        const utils::ColorFloat& color
+    );
+    void text(
+        const std::wstring& text,
+        const utils::ScreenCoordinates& position,
+        float font_size,
+        const utils::ColorFloat& color
+    );
+    void text(
+        const std::wstring& text,
+        const utils::Coordinates& position,
+        float font_size,
+        const utils::ColorFloat& color
+    );
+    void text(
+        const std::wstring& text,
+        const utils::Coordinates& position,
+        const utils::CameraCoordinates& camera_coords,
+        float font_size,
+        const utils::ColorFloat& color
+    );
 
     // MARK: line
     void line(
@@ -146,6 +180,19 @@ public:
 private:
     // MARK: private
     void window_state_update_thread();
+    bool initialize_text_renderer();
+    void cleanup_text_renderer();
+    bool load_glyph(std::uint32_t codepoint);
+    std::uint32_t read_codepoint(const std::wstring& text, std::size_t& index) const;
+
+    struct Glyph {
+        unsigned int texture_id;
+        int width;
+        int height;
+        int bearing_x;
+        int bearing_y;
+        unsigned int advance;
+    };
 
     GLFWwindow* window_;
     std::function<HWND()> target_window_handle_function_;
@@ -156,4 +203,10 @@ private:
 
     int window_width_;
     int window_height_;
+
+    FT_Library freetype_library_;
+    FT_Face freetype_face_;
+    std::unordered_map<std::uint32_t, Glyph> glyphs_;
+    int text_font_pixel_size_;
+    bool text_ready_;
 };

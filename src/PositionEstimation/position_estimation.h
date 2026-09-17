@@ -1,5 +1,6 @@
 #pragma once
 
+#include "object_detection.h"
 #include "telemetry.h"
 #include "capture.h"
 #include "tracker.h"
@@ -16,22 +17,15 @@
 
 class PositionEstimation {
 public:
-    PositionEstimation(ScreenCapture* capture);
-    PositionEstimation(std::function<HWND()> target_window_handle_function);
-    void run();
-
-    std::vector<std::pair<float, float>> get_keypoints(cv::Mat& frame);
-    std::vector<std::pair<float, float>> get_keypoints();
+    PositionEstimation();
+    void run(std::vector<ObjectDetection> detections, int window_width, int window_height);
 
 private:
     ScreenCapture* capture_;
     SCSTelemetry telemetry_;
     TelemetryData* telemetry_data_;
-    cv::Ptr<cv::FastFeatureDetector> feature_detector_ = cv::FastFeatureDetector::create(10, true, cv::FastFeatureDetector::TYPE_9_16);
 
     cv::Mat frame_;
     cv::Mat frame_gray_;
-    int window_width_;
-    int window_height_;
     Tracker tracker_{0, 10.0f};
 };

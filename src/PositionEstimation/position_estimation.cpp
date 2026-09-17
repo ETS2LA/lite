@@ -4,21 +4,8 @@
 using namespace std;
 
 
-PositionEstimation::PositionEstimation(std::function<HWND()> target_window_handle_function) {
-    capture_ = new ScreenCapture(target_window_handle_function);
-    capture_->initialize();
-
+PositionEstimation::PositionEstimation() {
     telemetry_data_ = telemetry_.data();
-    window_width_ = capture_->get_capture_region().x2 - capture_->get_capture_region().x1;
-    window_height_ = capture_->get_capture_region().y2 - capture_->get_capture_region().y1;
-}
-
-PositionEstimation::PositionEstimation(ScreenCapture* capture)
-    : capture_(capture) {
-
-    telemetry_data_ = telemetry_.data();
-    window_width_ = capture_->get_capture_region().x2 - capture_->get_capture_region().x1;
-    window_height_ = capture_->get_capture_region().y2 - capture_->get_capture_region().y1;
 }
 
 
@@ -135,14 +122,18 @@ utils::Coordinates triangulate_position(
 }
 
 
-void PositionEstimation::run() {
-    window_width_ = capture_->get_capture_region().x2 - capture_->get_capture_region().x1;
-    window_height_ = capture_->get_capture_region().y2 - capture_->get_capture_region().y1;
-
+void PositionEstimation::run(std::vector<ObjectDetection> detections, int window_width, int window_height) {
     auto camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
 
-    auto keypoints = get_keypoints();
-    auto objects = tracker_.update(keypoints, camera_coords, window_width_, window_height_);
+    std::vector<std::pair<float, float>> keypoints;
+    for (const auto& detection : detections) {
+        keypoints.emplace_back(
+            static_cast<float>(detection.box.x + detection.box.width * 0.5f),
+            static_cast<float>(detection.box.y + detection.box.height)
+        );
+    }
+
+    auto objects = tracker_.update(keypoints, camera_coords, window_width, window_height);
 
     cv::Mat display_frame(500, 500, CV_8UC3, cv::Scalar(0, 0, 0));
 
@@ -150,11 +141,11 @@ void PositionEstimation::run() {
         auto position = triangulate_position(
             camera_coords,
             obj,
-            window_width_,
-            window_height_
+            window_width,
+            window_height
         );
 
-        if (obj.accuracy < 0.1f) {
+        if (obj.accuracy < 0.05f) {
             continue;
         }
 
@@ -163,9 +154,20 @@ void PositionEstimation::run() {
             (position.y - camera_coords.y) * (position.y - camera_coords.y) +
             (position.z - camera_coords.z) * (position.z - camera_coords.z)
         );
+
+        float dx = camera_coords.z - position.z;
+        float dy = camera_coords.x - position.x;
+        float rotated_x = dx * cos(utils::degrees_to_radians(camera_coords.yaw)) - dy * sin(utils::degrees_to_radians(camera_coords.yaw));
+        float rotated_y = dx * sin(utils::degrees_to_radians(camera_coords.yaw)) + dy * cos(utils::degrees_to_radians(camera_coords.yaw));
+        float y = -(rotated_x * (display_frame.cols / 2.0)) / 50.0f + display_frame.cols;
+        float x = -(rotated_y * (display_frame.rows / 2.0)) / 50.0f + display_frame.rows / 2.0;
+
         cv::circle(
             display_frame,
-            cv::Point(static_cast<int>((camera_coords.z - position.z) * 3.0f + display_frame.cols / 2.0), static_cast<int>(display_frame.rows / 2.0 - (camera_coords.x - position.x) * 3.0f)),
+            cv::Point(
+                static_cast<int>(x),
+                static_cast<int>(y)
+            ),
             2,
             cv::Scalar(
                 abs(camera_coords.y - position.y - 1.0) <= 1.0f ? max(30.0, 255.0f - abs(camera_coords.y - position.y) * 15.0f) : 0,
@@ -177,7 +179,7 @@ void PositionEstimation::run() {
     }
     cv::circle(
         display_frame,
-        cv::Point(static_cast<int>(display_frame.cols / 2.0), static_cast<int>(display_frame.rows / 2.0)),
+        cv::Point(static_cast<int>(display_frame.cols / 2.0), static_cast<int>(display_frame.rows)),
         3,
         cv::Scalar(0, 0, 255),
         -1

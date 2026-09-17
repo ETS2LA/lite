@@ -12,6 +12,9 @@
 - Get [FreeType](https://sourceforge.net/projects/freetype)
   - Extract it
   - Create an environment variable named `freetype_DIR` and set its value to the path of the FreeType folder, which contains folders like `builds`, `docs`, `include`, etc.
+- Get [ONNX Runtime](https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime.DirectML)
+  - Extract it
+  - Create an environment variable named `OnnxRuntime_DIR` and set its value to the path of the ONNX Runtime folder, which contains folders like `build`, `package`, `runtimes`, etc.
 - Get [CMake](https://cmake.org/)
   - Install it (select the option to add it to the system PATH)
 - Build the app in release mode

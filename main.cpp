@@ -1,38 +1,46 @@
 ﻿#include "PositionEstimation/position_estimation.h"
+#include "TrafficLights/traffic_lights.h"
 #include "navigation_detection.h"
 #include "utils.h"
 #include "AR/ar.h"
+#include "object_detection.h"
+#include <future>
+#include <memory>
 #include <thread>
 
 
 int main() {
-    ScreenCapture* capture = new ScreenCapture(
-        std::bind(
-            utils::find_window,
-            std::wstring(L"Truck Simulator"),
-            std::vector<std::wstring>{L"Discord"}
-        ),
-        CaptureMode::BackgroundThread
-    );
-    capture->initialize();
+    //ScreenCapture* capture = new ScreenCapture(
+    //    std::bind(
+    //        utils::find_window,
+    //        std::wstring(L"Truck Simulator"),
+    //        std::vector<std::wstring>{L"Discord"}
+    //    ),
+    //    CaptureMode::BackgroundThread
+    //);
+    //capture->initialize();
 
-    navigation_detection::initialize(capture);
+    navigation_detection::initialize();
 
-    std::thread ar_thread([]() {
-        AR ar(
+    std::promise<std::shared_ptr<AR>> ar_ready;
+    auto ar_future = ar_ready.get_future();
+
+    std::thread ar_thread([ar_ready = std::move(ar_ready)]() mutable {
+        auto ar = std::make_shared<AR>(
             std::bind(
                 utils::find_window,
                 std::wstring(L"Truck Simulator"),
                 std::vector<std::wstring>{L"Discord"}
             )
         );
+        ar_ready.set_value(ar);
 
         while (true) {
             auto start = utils::get_time_seconds();
 
-            ar.draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
+            ar->draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
 
-            ar.run();
+            ar->run();
 
             auto end = utils::get_time_seconds();
             double elapsed = end - start;
@@ -45,14 +53,30 @@ int main() {
     });
     ar_thread.detach();
 
-    std::thread position_estimation_thread([capture]() {
-        PositionEstimation position_estimation(capture);
+    auto ar = ar_future.get();
+    std::thread position_estimation_thread([ar]() {
+        PositionEstimation position_estimation;
+        ObjectDetector object_detector(ar.get(), ObjectDetectionDevice::DirectML, 0);
 
         while (true) {
-            position_estimation.run();
+            auto detections = object_detector.run();
+            position_estimation.run(
+                detections,
+                object_detector.window_width,
+                object_detector.window_height
+            );
         }
     });
     position_estimation_thread.detach();
+
+    //std::thread traffic_lights_thread([capture]() {
+    //    traffic_lights::initialize(capture);
+//
+    //    while (true) {
+    //        traffic_lights::run();
+    //    }
+    //});
+    //traffic_lights_thread.detach();
 
     while (true) {
         auto start = utils::get_time_seconds();

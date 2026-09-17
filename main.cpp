@@ -1,5 +1,4 @@
 ﻿#include "PositionEstimation/position_estimation.h"
-#include "TrafficLights/traffic_lights.h"
 #include "navigation_detection.h"
 #include "utils.h"
 #include "AR/ar.h"
@@ -68,15 +67,6 @@ int main() {
         }
     });
     position_estimation_thread.detach();
-
-    //std::thread traffic_lights_thread([capture]() {
-    //    traffic_lights::initialize(capture);
-//
-    //    while (true) {
-    //        traffic_lights::run();
-    //    }
-    //});
-    //traffic_lights_thread.detach();
 
     while (true) {
         auto start = utils::get_time_seconds();

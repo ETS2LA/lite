@@ -1,4 +1,5 @@
 #include "navigation_detection.h"
+#include "ets2la_capture/frame_reader.h"
 
 #define TURN_NONE 0
 #define TURN_LEFT 1
@@ -7,7 +8,11 @@
 
 using namespace std;
 
-ScreenCapture* capture;
+namespace navigation_detection {
+
+ets2la_capture::Frame capture_frame;
+ets2la_capture::FrameReader reader;
+
 SCSController controller;
 SCSTelemetry telemetry;
 InputHandler input_handler;
@@ -17,10 +22,10 @@ static cv::Mat mask_red_green;
 static cv::Mat mask_red;
 static cv::Mat mask_green;
 
-static cv::Scalar lower_red(0, 0, 160, 0);
-static cv::Scalar upper_red(110, 110, 255, 255);
-static cv::Scalar lower_green(0, 200, 0, 0);
-static cv::Scalar upper_green(230, 255, 150, 255);
+static cv::Scalar lower_red(02, 56, 213, 0);
+static cv::Scalar upper_red(119, 133, 238, 255);
+static cv::Scalar lower_green(0, 241, 07, 0);
+static cv::Scalar upper_green(119, 255, 120, 255);
 
 bool control_enabled = true;
 float last_correction = 0.0f;
@@ -122,10 +127,7 @@ pair<float, float> get_lane_position(const vector<int>& lane_edges, int y_coordi
 }
 
 
-namespace navigation_detection {
-
-void initialize(ScreenCapture* screen_capture) {
-    capture = screen_capture;
+void initialize() {
     controller.gamepad_mode = true;
 
     input_handler.register_key_binding(
@@ -147,10 +149,15 @@ void initialize(ScreenCapture* screen_capture) {
 void run() {
     double current_time = utils::get_time_seconds();
 
-    FrameInfo info = capture->get_frame(frame);
-    if (!info.success || frame.empty()) {
+    if (!reader.ok()) {
+        this_thread::sleep_for(std::chrono::milliseconds(1000));
+        reader.init();
         return;
     }
+    if (!reader.get_latest_frame(capture_frame)) {
+        return;
+    }
+    cv::Mat frame(capture_frame.height, capture_frame.width, CV_8UC4, capture_frame.data.data());
 
     TelemetryData* telemetry_data = telemetry.data();
 
@@ -335,14 +342,13 @@ void run() {
 
     float correction = 0.0f;
     if (width_lane != 0) {
-        if (turn_ahead_detected == false) {
-            correction = frame.cols / 2.0f - center_x_lane;
-        } else if (turn_ahead_direction == TURN_LEFT) {
-            correction = frame.cols / 2.0f - center_x_lane - width_lane / 40.0f;
+        correction = (frame.cols / 2.0f - center_x_lane) / frame.cols * 7.0f;
+        if (turn_ahead_direction == TURN_LEFT) {
+            correction -= width_lane / 1200.0f;
         } else if (turn_ahead_direction == TURN_RIGHT) {
-            correction = frame.cols / 2.0f - center_x_lane + width_lane / 40.0f;
+            correction += width_lane / 1200.0f;
         }
-        correction += lane_change_offset;
+        correction += lane_change_offset / frame.cols * 7.0f;
     }
 
 
@@ -354,9 +360,9 @@ void run() {
         last_correction = correction;
 
         if (telemetry_data->truck_f.speed > -0.1f) {
-            controller.steering = -correction / 30.0f;
+            controller.steering = -correction;
         } else {
-            controller.steering = correction / 30.0f;
+            controller.steering = correction;
         }
 
         // handle indicators for turns

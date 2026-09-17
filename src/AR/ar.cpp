@@ -144,6 +144,25 @@ AR::~AR() {
 }
 
 
+shared_ptr<DrawList> AR::get_draw_list(const string& plugin_id) {
+    lock_guard lock(draw_lists_mutex_);
+    auto it = draw_lists_.find(plugin_id);
+    if (it != draw_lists_.end()) {
+        return it->second;
+    }
+
+    auto draw_list = make_shared<DrawList>(plugin_id);
+    draw_lists_.emplace(plugin_id, draw_list);
+    return draw_list;
+}
+
+
+void AR::remove_draw_list(const string& plugin_id) {
+    lock_guard lock(draw_lists_mutex_);
+    draw_lists_.erase(plugin_id);
+}
+
+
 void AR::run() {
     if (!window_) return;
     glfwPollEvents();
@@ -153,6 +172,22 @@ void AR::run() {
         glClear(GL_COLOR_BUFFER_BIT);
         glfwSwapBuffers(window_);
         return;
+    }
+
+    vector<shared_ptr<DrawList>> draw_lists;
+    {
+        lock_guard lock(draw_lists_mutex_);
+        draw_lists.reserve(draw_lists_.size());
+        for (const auto& [_, draw_list] : draw_lists_) {
+            draw_lists.push_back(draw_list);
+        }
+    }
+
+    for (const auto& draw_list : draw_lists) {
+        const auto commands = draw_list->snapshot();
+        for (const auto& command : *commands) {
+            command(*this);
+        }
     }
 
     glfwSwapBuffers(window_);

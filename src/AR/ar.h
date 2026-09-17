@@ -2,11 +2,14 @@
 
 #include "telemetry.h"
 #include "camera.h"
+#include "draw_list.h"
 
 #include <GLFW/glfw3.h>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
+#include <memory>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include <windows.h>
@@ -21,6 +24,8 @@ public:
     // MARK: public
     AR(const std::function<HWND()> target_window_handle_function, const bool hide_from_capture = true, const int msaa_samples = 8);
     ~AR();
+    std::shared_ptr<DrawList> get_draw_list(const std::string& plugin_id);
+    void remove_draw_list(const std::string& plugin_id);
     void draw_wheel_trajectory(const utils::ColorFloat& color);
     void run();
 
@@ -180,6 +185,7 @@ public:
 private:
     // MARK: private
     void window_state_update_thread();
+    void update_window_state();
     bool initialize_text_renderer();
     void cleanup_text_renderer();
     bool load_glyph(std::uint32_t codepoint);
@@ -197,6 +203,9 @@ private:
     GLFWwindow* window_;
     std::function<HWND()> target_window_handle_function_;
     std::thread position_thread_;
+
+    std::mutex draw_lists_mutex_;
+    std::unordered_map<std::string, std::shared_ptr<DrawList>> draw_lists_;
 
     SCSTelemetry telemetry_;
     TelemetryData* telemetry_data_;

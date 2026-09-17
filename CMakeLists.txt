@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.20)
+﻿cmake_minimum_required(VERSION 3.25)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_compile_definitions(BUILD_TYPE_DEBUG)
@@ -31,12 +31,6 @@ set(ORT_DIR "$ENV{OnnxRuntime_DIR}")
 set(ORT_INCLUDE "${ORT_DIR}/build/native/include")
 set(ORT_LIB "${ORT_DIR}/runtimes/win-x64/native")
 set(ORT_BIN "${ORT_DIR}/runtimes/win-x64/native")
-set(ORT_DLL "${ORT_BIN}/onnxruntime.dll")
-set(ORT_PROVIDER_DLL "${ORT_BIN}/onnxruntime_providers_shared.dll")
-
-if (NOT EXISTS "${ORT_INCLUDE}/onnxruntime_cxx_api.h" OR NOT EXISTS "${ORT_LIB}/onnxruntime.lib" OR NOT EXISTS "${ORT_DLL}")
-    message(FATAL_ERROR "OnnxRuntime_DIR does not contain the expected x64 ONNX Runtime files: ${ORT_DIR}")
-endif()
 
 add_library(onnxruntime SHARED IMPORTED)
 set_target_properties(onnxruntime PROPERTIES
@@ -62,26 +56,10 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_RUNTIME_DLLS:${PROJECT_NAME}>
+        $<TARGET_FILE_DIR:${PROJECT_NAME}>
+    COMMAND_EXPAND_LISTS
+
     COMMAND robocopy "${CMAKE_SOURCE_DIR}/assets" "$<TARGET_FILE_DIR:${PROJECT_NAME}>/assets" /MIR /FFT /Z /R:0 /W:0 >nul || (exit 0)
 )
-
-if (MSVC)
-    file(GLOB OPENCV_DLLS "${OpenCV_DIR}/x64/*/bin/*.dll")
-    add_custom_command(
-        TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${OPENCV_DLLS}
-        $<TARGET_FILE_DIR:${PROJECT_NAME}>
-    )
-    add_custom_command(
-        TARGET ${PROJECT_NAME}
-        POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ORT_DLL}"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/onnxruntime.dll"
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${ORT_PROVIDER_DLL}"
-        "$<TARGET_FILE_DIR:${PROJECT_NAME}>/onnxruntime_providers_shared.dll"
-    )
-endif (MSVC)

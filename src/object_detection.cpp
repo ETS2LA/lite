@@ -17,7 +17,7 @@ ets2la_capture::Frame capture_frame;
 ets2la_capture::FrameReader reader;
 cv::Mat frame;
 float confidence_threshold = 0.25f;
-float nms_threshold = 0.15f;
+float nms_threshold = 0.75f;
 
 
 Ort::SessionOptions make_session_options(
@@ -175,11 +175,23 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
     }
 
     std::vector<int> kept;
-    if (nms_output) {
-        kept.resize(boxes.size());
-        std::iota(kept.begin(), kept.end(), 0);
-    } else {
-        cv::dnn::NMSBoxes(boxes, scores, confidence_threshold, nms_threshold, kept);
+    for (int class_id = 0; class_id < static_cast<int>(class_names_.size()); ++class_id) {
+        std::vector<cv::Rect> class_boxes;
+        std::vector<float> class_scores;
+        std::vector<int> class_indices;
+        for (size_t index = 0; index < class_ids.size(); ++index) {
+            if (class_ids[index] == class_id) {
+                class_boxes.push_back(boxes[index]);
+                class_scores.push_back(scores[index]);
+                class_indices.push_back(static_cast<int>(index));
+            }
+        }
+
+        std::vector<int> class_kept;
+        cv::dnn::NMSBoxes(class_boxes, class_scores, confidence_threshold, nms_threshold, class_kept);
+        for (const int index : class_kept) {
+            kept.push_back(class_indices[index]);
+        }
     }
     std::vector<ObjectDetection> detections;
     detections.reserve(kept.size());

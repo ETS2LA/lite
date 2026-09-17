@@ -6,3 +6,9 @@
 !.vscode/tasks.json
 
 build
+
+__pycache__
+scripts/dataset_processed.zip
+scripts/*dataset*/
+scripts/models/
+scripts/yolo/

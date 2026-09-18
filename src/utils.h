@@ -132,12 +132,17 @@ class Timer {
 public:
     Timer();
     void start();
+    void limit_fps(float fps);
     double get_seconds();
     double get_milliseconds();
     double get_microseconds();
+    double get_delta_time();
     double get_fps();
 private:
+    HANDLE timer_ = nullptr;
+    std::chrono::high_resolution_clock::time_point last_limit_update_;
     std::chrono::high_resolution_clock::time_point start_time_;
+    double last_delta_update_;
     double last_fps_update_;
 };
 

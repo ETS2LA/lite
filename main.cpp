@@ -68,16 +68,11 @@ int main() {
     });
     position_estimation_thread.detach();
 
+    utils::Timer timer;
     while (true) {
-        auto start = utils::get_time_seconds();
-
         navigation_detection::run();
 
-        auto end = utils::get_time_seconds();
-        double elapsed = end - start;
-        if (elapsed < 0.050) {
-            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((0.050 - elapsed) * 1000)));
-        }
+        timer.limit_fps(20.0f);
     }
 
     return 0;

@@ -106,7 +106,30 @@ void PIDController::reset() {
 /**
  * Timer class.
  */
-Timer::Timer() : last_fps_update_(0.0) {}
+Timer::Timer():
+    timer_(CreateWaitableTimerExW(
+        nullptr,
+        nullptr,
+        CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+        TIMER_MODIFY_STATE | SYNCHRONIZE
+    )), 
+    last_delta_update_(0.0),
+    last_fps_update_() {}
+
+/**
+ * Limit the frame rate to a specified FPS.
+ */
+void Timer::limit_fps(float fps) {
+    double frame_time = 1.0 / static_cast<double>(fps);
+    double remaining = frame_time - chrono::duration<double>(chrono::high_resolution_clock::now() - last_limit_update_).count();
+    if (remaining > 0.0) {
+        LARGE_INTEGER due_time{};
+        due_time.QuadPart = -static_cast<LONGLONG>(ceil(remaining * 10000000.0));
+        SetWaitableTimer(timer_, &due_time, 0, nullptr, nullptr, FALSE);
+        WaitForSingleObject(timer_, INFINITE);
+    }
+    last_limit_update_ = chrono::high_resolution_clock::now();
+}
 
 /**
  * Start the timer.
@@ -143,11 +166,22 @@ double Timer::get_microseconds() {
 }
 
 /**
+ * Get the delta time based on the time since the last get_delta_time() call.
+ * @return The calculated FPS.
+ */
+double Timer::get_delta_time() {
+    double current_time = chrono::duration<double>(chrono::high_resolution_clock::now().time_since_epoch()).count();
+    double delta = current_time - last_delta_update_;
+    last_delta_update_ = current_time;
+    return delta;
+}
+
+/**
  * Get the frames per second based on the time since the last get_fps() call.
  * @return The calculated FPS.
  */
 double Timer::get_fps() {
-    double current_time = get_seconds();
+    double current_time = chrono::duration<double>(chrono::high_resolution_clock::now().time_since_epoch()).count();
     double fps = 1.0 / (current_time - last_fps_update_);
     last_fps_update_ = current_time;
     return fps;

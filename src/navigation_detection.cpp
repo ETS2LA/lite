@@ -22,7 +22,7 @@ static cv::Mat mask_red_green;
 static cv::Mat mask_red;
 static cv::Mat mask_green;
 
-static cv::Scalar lower_red(02, 56, 213, 0);
+static cv::Scalar lower_red(2, 2, 197, 0);
 static cv::Scalar upper_red(119, 133, 238, 255);
 static cv::Scalar lower_green(0, 241, 07, 0);
 static cv::Scalar upper_green(119, 255, 120, 255);
@@ -149,15 +149,17 @@ void initialize() {
 void run() {
     double current_time = utils::get_time_seconds();
 
-    if (!reader.ok()) {
-        this_thread::sleep_for(std::chrono::milliseconds(1000));
-        reader.init();
+    if (!reader.get_frame(capture_frame, 1000)) {
+        std::printf("waiting for frames... (%s)\n", reader.last_error().c_str());
         return;
     }
-    if (!reader.get_latest_frame(capture_frame)) {
-        return;
+
+    cv::Mat native(int(capture_frame.height), int(capture_frame.width), CV_8UC4, capture_frame.data.data(), capture_frame.stride);
+    if (capture_frame.layout() == ets2la_capture::PixelLayout::RGBA8) {
+        cv::cvtColor(native, frame, cv::COLOR_RGBA2BGR);
+    } else {
+        cv::cvtColor(native, frame, cv::COLOR_BGRA2BGR);
     }
-    cv::Mat frame(capture_frame.height, capture_frame.width, CV_8UC4, capture_frame.data.data());
 
     TelemetryData* telemetry_data = telemetry.data();
 

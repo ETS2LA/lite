@@ -17,15 +17,20 @@
 
 class PositionEstimation {
 public:
-    PositionEstimation();
+    PositionEstimation(AR *ar);
     void run(std::vector<ObjectDetection> detections, int window_width, int window_height);
+    std::pair<std::vector<utils::Coordinates>, std::vector<utils::Coordinates>> get_wheel_trajectory();
 
 private:
+    void draw(const std::vector<Tracker::Object>& objects) const;
+
+    std::shared_ptr<DrawList> draw_list_;
     ScreenCapture* capture_;
     SCSTelemetry telemetry_;
     TelemetryData* telemetry_data_;
 
     cv::Mat frame_;
     cv::Mat frame_gray_;
-    Tracker tracker_{0, 10.0f};
+
+    Tracker tracker_{Tracker::Config{}};
 };

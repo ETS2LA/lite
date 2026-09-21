@@ -23,9 +23,9 @@ CLASSES = [
 
 RANDOM_SEED = 42
 
-MODEL = "yolo26s"
+MODEL = "yolo26n"
 EPOCHS = 100
-IMGSZ = 640
+IMGSZ = 960
 BATCH = 8
 DEVICE = 0
 PATIENCE = 10
@@ -50,6 +50,7 @@ if __name__ == "__main__":
         project=PROJECT,
         name=NAME,
         patience=PATIENCE,
+        rect=True,
         exist_ok=True,
     )
 

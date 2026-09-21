@@ -34,36 +34,42 @@ int main() {
         );
         ar_ready.set_value(ar);
 
+        utils::Timer timer;
         while (true) {
-            auto start = utils::get_time_seconds();
-
             ar->draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
 
             ar->run();
 
-            auto end = utils::get_time_seconds();
-            double elapsed = end - start;
-
-            // target 120FPS because its twice the game telemetry update rate
-            if (elapsed < 0.0083) {
-                std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<int>((0.0083 - elapsed) * 1000)));
-            }
+            timer.limit_fps(120.0f);
         }
     });
     ar_thread.detach();
 
     auto ar = ar_future.get();
     std::thread position_estimation_thread([ar]() {
-        PositionEstimation position_estimation;
-        ObjectDetector object_detector(ar.get(), ObjectDetectionDevice::DirectML, 0);
+        PositionEstimation position_estimation(ar.get());
+        ObjectDetector object_detector(ObjectDetectionDevice::DirectML, 1);
+        utils::Timer timer;
 
         while (true) {
             auto detections = object_detector.run();
+
+            // remove all detections from class 0, 1, 2
+            //std::vector<ObjectDetection> filtered_detections;
+            //for (const auto& detection : detections) {
+            //    if (detection.class_id != 0 && detection.class_id != 1 && detection.class_id != 2) {
+            //        filtered_detections.push_back(detection);
+            //    }
+            //}
+
             position_estimation.run(
                 detections,
                 object_detector.window_width,
                 object_detector.window_height
             );
+            //timer.limit_fps(10.0f);
+            auto fps = timer.get_fps();
+            printf("PositionEstimation FPS: %.2f\n", fps);
         }
     });
     position_estimation_thread.detach();

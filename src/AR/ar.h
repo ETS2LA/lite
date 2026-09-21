@@ -22,7 +22,7 @@
 class AR {
 public:
     // MARK: public
-    AR(const std::function<HWND()> target_window_handle_function, const bool hide_from_capture = true, const int msaa_samples = 8);
+    AR(const std::function<HWND()> target_window_handle_function, const bool hide_from_capture = false, const int msaa_samples = 8);
     ~AR();
     std::shared_ptr<DrawList> get_draw_list(const std::string& plugin_id);
     void remove_draw_list(const std::string& plugin_id);

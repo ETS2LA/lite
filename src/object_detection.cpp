@@ -5,7 +5,6 @@
 #include <algorithm>
 #include <array>
 #include <filesystem>
-#include <numeric>
 #include <stdexcept>
 
 
@@ -16,7 +15,8 @@ namespace {
 ets2la_capture::Frame capture_frame;
 ets2la_capture::FrameReader reader;
 cv::Mat frame;
-float confidence_threshold = 0.25f;
+
+float confidence_threshold = 0.01f;
 float nms_threshold = 0.75f;
 
 
@@ -38,22 +38,19 @@ std::filesystem::path model_path() {
     if (length == 0 || length == MAX_PATH) {
         throw std::runtime_error("Could not determine the executable path.");
     }
-    return std::filesystem::path(executable_path).parent_path() / "assets" / "yolo26n_2026-09-10-22-00-00.onnx";
+    return std::filesystem::path(executable_path).parent_path() / "assets" / "yolo26n_2026-09-20_18-29-19-960x540.onnx";
 }
 
-} // namespace
+}
 
 
 ObjectDetector::ObjectDetector(
-    AR *ar,
     const ObjectDetectionDevice device,
     const int directml_adapter
 )
     : environment_(ORT_LOGGING_LEVEL_WARNING, "ETS2LA-Lite object detection"),
             session_options_(make_session_options(device, directml_adapter)),
             session_(environment_, model_path().wstring().c_str(), session_options_) {
-    draw_list_ = ar->get_draw_list("object_detection");
-
     Ort::AllocatorWithDefaultOptions allocator;
     input_name_ = session_.GetInputNameAllocated(0, allocator).get();
     output_name_ = session_.GetOutputNameAllocated(0, allocator).get();
@@ -127,7 +124,7 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
     const bool channels_first = !nms_output && output_shape[1] < output_shape[2];
     const size_t attributes = static_cast<size_t>(nms_output ? 6 : (channels_first ? output_shape[1] : output_shape[2]));
     const size_t candidates = static_cast<size_t>(channels_first ? output_shape[2] : output_shape[1]);
-    if (attributes < 5 || (!nms_output && attributes > class_names_.size() + 5)) {
+    if (attributes < 5 || (!nms_output && attributes > kObjectClassNames.size() + 5)) {
         throw std::runtime_error("Unsupported YOLO ONNX output attributes.");
     }
 
@@ -152,7 +149,7 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
                 }
             }
         }
-        if (best_score < confidence_threshold || best_class < 0 || best_class >= static_cast<int>(class_names_.size())) {
+        if (best_score < confidence_threshold || best_class < 0 || best_class >= static_cast<int>(kObjectClassNames.size())) {
             continue;
         }
 
@@ -175,24 +172,7 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
     }
 
     std::vector<int> kept;
-    for (int class_id = 0; class_id < static_cast<int>(class_names_.size()); ++class_id) {
-        std::vector<cv::Rect> class_boxes;
-        std::vector<float> class_scores;
-        std::vector<int> class_indices;
-        for (size_t index = 0; index < class_ids.size(); ++index) {
-            if (class_ids[index] == class_id) {
-                class_boxes.push_back(boxes[index]);
-                class_scores.push_back(scores[index]);
-                class_indices.push_back(static_cast<int>(index));
-            }
-        }
-
-        std::vector<int> class_kept;
-        cv::dnn::NMSBoxes(class_boxes, class_scores, confidence_threshold, nms_threshold, class_kept);
-        for (const int index : class_kept) {
-            kept.push_back(class_indices[index]);
-        }
-    }
+    cv::dnn::NMSBoxes(boxes, scores, confidence_threshold, nms_threshold, kept);
     std::vector<ObjectDetection> detections;
     detections.reserve(kept.size());
     for (const int index : kept) {
@@ -202,48 +182,21 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
 }
 
 
-void ObjectDetector::draw(const std::vector<ObjectDetection>& detections) const {
-    draw_list_->clear();
-    for (const auto& detection : detections) {
-        draw_list_->rectangle(
-            static_cast<float>(detection.box.x),
-            static_cast<float>(detection.box.y),
-            static_cast<float>(detection.box.x + detection.box.width),
-            static_cast<float>(detection.box.y + detection.box.height),
-            3.0f,
-            1.0f,
-            utils::ColorFloat(0.0f, 1.0f, 0.0f, 1.0f)
-        );
-        const std::string label = format("{} {:.2f}", class_names_[detection.class_id], detection.confidence);
-        const std::wstring wide_label(label.begin(), label.end());
-        draw_list_->text(
-            wide_label,
-            static_cast<float>(detection.box.x),
-            static_cast<float>(detection.box.y) - 14,
-            13.0f,
-            utils::ColorFloat(0.0f, 1.0f, 0.0f, 1.0f)
-        );
-    }
-    draw_list_->publish();
-}
-
-
 vector<ObjectDetection> ObjectDetector::run() {
-    if (!reader.ok()) {
-        this_thread::sleep_for(std::chrono::milliseconds(1000));
-        reader.init();
+    if (!reader.get_frame(capture_frame, 1000)) {
+        std::printf("waiting for frames... (%s)\n", reader.last_error().c_str());
         return {};
     }
-    if (!reader.get_latest_frame(capture_frame)) {
-        return {};
+
+    cv::Mat native(int(capture_frame.height), int(capture_frame.width), CV_8UC4, capture_frame.data.data(), capture_frame.stride);
+    if (capture_frame.layout() == ets2la_capture::PixelLayout::RGBA8) {
+        cv::cvtColor(native, frame, cv::COLOR_RGBA2BGR);
+    } else {
+        cv::cvtColor(native, frame, cv::COLOR_BGRA2BGR);
     }
-    cv::Mat frame(capture_frame.height, capture_frame.width, CV_8UC4, capture_frame.data.data());
 
     window_width = frame.cols;
     window_height = frame.rows;
 
-    const auto detections = infer(frame);
-    draw(detections);
-
-    return detections;
+    return infer(frame);
 }

@@ -118,6 +118,7 @@ Timer::Timer():
 
 /**
  * Limit the frame rate to a specified FPS.
+ * @param fps The maximum frames per second to limit to.
  */
 void Timer::limit_fps(float fps) {
     double frame_time = 1.0 / static_cast<double>(fps);
@@ -397,8 +398,20 @@ void set_window_outline_color(HWND hwnd, COLORREF color) {
 
 
 /**
+ * Calculate the dot product of two 3D vectors.
+ * @param a The first vector.
+ * @param b The second vector.
+ * @return The dot product of the two vectors.
+ */
+double dot_product(const Coordinates& a, const Coordinates& b) {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}
+
+
+/**
  * Convert degrees to radians.
  * @param degrees The angle in degrees.
+ * @return The angle in radians.
  */
 float degrees_to_radians(float degrees) {
     return degrees * static_cast<float>(numbers::pi) / 180.0f;
@@ -408,6 +421,7 @@ float degrees_to_radians(float degrees) {
 /**
  * Convert radians to degrees.
  * @param radians The angle in radians.
+ * @return The angle in degrees.
  */
 float radians_to_degrees(float radians) {
     return radians * 180.0f / static_cast<float>(numbers::pi);
@@ -417,6 +431,7 @@ float radians_to_degrees(float radians) {
 /**
  * Convert degrees to radians.
  * @param degrees The angle in degrees.
+ * @return The angle in radians.
  */
 double degrees_to_radians(double degrees) {
     return degrees * numbers::pi / 180.0;
@@ -426,6 +441,7 @@ double degrees_to_radians(double degrees) {
 /**
  * Convert radians to degrees.
  * @param radians The angle in radians.
+ * @return The angle in degrees.
  */
 double radians_to_degrees(double radians) {
     return radians * 180.0 / numbers::pi;
@@ -438,6 +454,7 @@ double radians_to_degrees(double radians) {
  * @param camera_coords The camera coordinates.
  * @param window_width The width of the window.
  * @param window_height The height of the window.
+ * @return The screen coordinates.
  */
 ScreenCoordinates convert_to_screen_coordinate(const Coordinates& world_coords, const CameraCoordinates& camera_coords, const int window_width, const int window_height) {
     ScreenCoordinates screen_coord;
@@ -509,7 +526,8 @@ Angles convert_to_angles(const ScreenCoordinates screen_coord, const int window_
 /**
  * Rotate a vector by given rotation angles.
  * @param vector The vector to rotate.
- * @param rotation The rotation angles in degrees.
+ * @param rotations The rotation angles in degrees.
+ * @return The rotated vector.
  */
 Coordinates rotate_vector(const Coordinates& vector, const Rotations& rotations) {
     float pitch = degrees_to_radians(rotations.pitch);
@@ -550,6 +568,7 @@ Coordinates rotate_vector(const Coordinates& vector, const Rotations& rotations)
 /**
  * Get the coordinates of the 6th camera from telemetry data.
  * @param telemetry_data The telemetry data.
+ * @return The coordinates of the 6th camera.
  */
 CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data) {
     // vector from the truck center to the 6th camera
@@ -577,6 +596,54 @@ CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data) {
     };
 
     return camera_coords;
+}
+
+
+/**
+ * Convert a camera-relative screen angle into a world-space ray direction.
+ * @param angles The camera-relative screen angles.
+ * @param cam The camera coordinates.
+ * @return The world-space ray direction.
+ */
+Coordinates camera_ray_direction(const Angles& angles, const CameraCoordinates& cam) {
+    const double az = degrees_to_radians(static_cast<double>(angles.azimuth));
+    const double el = degrees_to_radians(static_cast<double>(angles.elevation));
+
+    const double t_az = tan(az);
+    const double t_el = -tan(el);
+    const double len_inv = 1.0 / sqrt(t_az * t_az + t_el * t_el + 1.0);
+
+    double x = t_az * len_inv;
+    double y = t_el * len_inv;
+    double z = -1.0 * len_inv;
+
+    const double roll = degrees_to_radians(static_cast<double>(cam.roll));
+    const double c_r = cos(roll);
+    const double s_r = sin(roll);
+
+    // rot_z(-roll)
+    double nx = x * c_r + y * s_r;
+    double ny = y * c_r - x * s_r;
+    x = nx; y = ny;
+
+    const double pitch = degrees_to_radians(static_cast<double>(cam.pitch));
+    const double c_p = cos(pitch);
+    const double s_p = sin(pitch);
+
+    // rot_x(-pitch)
+    ny = y * c_p + z * s_p;
+    double nz = z * c_p - y * s_p;
+    y = ny; z = nz;
+
+    const double yaw = degrees_to_radians(static_cast<double>(cam.yaw));
+    const double c_y = cos(yaw);
+    const double s_y = sin(yaw);
+
+    // rot_y(-yaw)
+    nx = x * c_y - z * s_y;
+    nz = z * c_y + x * s_y;
+
+    return Coordinates{nx, y, nz};
 }
 
 

@@ -3,8 +3,7 @@
 #include "PositionEstimation/ground_projection.h"
 #include "PositionEstimation/triangulation.h"
 #include "object_detection.h"
-#include "telemetry.h"
-#include "capture.h"
+#include <ets2la_telemetry/telemetry_reader.h>
 #include "tracker.h"
 #include "camera.h"
 #include "AR/ar.h"
@@ -36,9 +35,8 @@ private:
     static bool is_ground_projected_class(int class_id);
 
     std::shared_ptr<DrawList> draw_list_;
-    ScreenCapture* capture_;
-    SCSTelemetry telemetry_;
-    TelemetryData* telemetry_data_;
+    ets2la_telemetry::TelemetryReader telemetry_reader_;
+    ets2la_telemetry::Telemetry telemetry_;
 
     cv::Mat frame_;
     cv::Mat frame_gray_;

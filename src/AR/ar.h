@@ -1,7 +1,6 @@
 #pragma once
 
-#include "telemetry.h"
-#include "camera.h"
+#include <ets2la_telemetry/telemetry_reader.h>
 #include "draw_list.h"
 
 #include <GLFW/glfw3.h>
@@ -207,8 +206,8 @@ private:
     std::mutex draw_lists_mutex_;
     std::unordered_map<std::string, std::shared_ptr<DrawList>> draw_lists_;
 
-    SCSTelemetry telemetry_;
-    TelemetryData* telemetry_data_;
+    ets2la_telemetry::TelemetryReader telemetry_reader_;
+    ets2la_telemetry::Telemetry telemetry_;
 
     int window_width_;
     int window_height_;

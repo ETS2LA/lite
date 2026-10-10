@@ -6,17 +6,17 @@
 using namespace std;
 
 
-void GroundProjection::update(TelemetryData* telemetry_data) {
+void GroundProjection::update(const ets2la_telemetry::Telemetry& telemetry) {
     const utils::Rotations truck_rotation{
-        static_cast<float>(telemetry_data->truck_dp.rotationY * 360.0),
-        static_cast<float>(telemetry_data->truck_dp.rotationX * 360.0),
-        static_cast<float>(telemetry_data->truck_dp.rotationZ * 360.0)
+        telemetry.truck.world.orientation.pitch * 360.0f,
+        telemetry.truck.world.orientation.heading * 360.0f,
+        telemetry.truck.world.orientation.roll * 360.0f
     };
 
     plane_.point = utils::Coordinates{
-        telemetry_data->truck_dp.coordinateX,
-        telemetry_data->truck_dp.coordinateY,
-        telemetry_data->truck_dp.coordinateZ
+        telemetry.truck.world.position.x,
+        telemetry.truck.world.position.y,
+        telemetry.truck.world.position.z
     };
     plane_.normal = utils::rotate_vector(utils::Coordinates{0.0, 1.0, 0.0}, truck_rotation);
     plane_.pitch_degrees = truck_rotation.pitch;

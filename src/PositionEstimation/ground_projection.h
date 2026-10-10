@@ -1,6 +1,6 @@
 #pragma once
 
-#include "telemetry.h"
+#include <ets2la_telemetry/telemetry_reader.h>
 #include "utils.h"
 
 #include <opencv2/opencv.hpp>
@@ -16,7 +16,7 @@ public:
         bool valid = false;
     };
 
-    void update(TelemetryData* telemetry_data);
+    void update(const ets2la_telemetry::Telemetry& telemetry);
 
     utils::Coordinates project_to_ground(
         const utils::Angles& angles,

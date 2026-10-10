@@ -570,7 +570,7 @@ Coordinates rotate_vector(const Coordinates& vector, const Rotations& rotations)
  * @param telemetry_data The telemetry data.
  * @return The coordinates of the 6th camera.
  */
-CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data) {
+CameraCoordinates get_6th_camera_coordinate(const ets2la_telemetry::Telemetry& telemetry) {
     // vector from the truck center to the 6th camera
     Coordinates offset_vector{
         0.0,
@@ -579,20 +579,20 @@ CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data) {
     };
     // only truck rotation
     Rotations truck_rotation{
-        static_cast<float>(telemetry_data->truck_dp.rotationY * 360.0),
-        static_cast<float>(telemetry_data->truck_dp.rotationX * 360.0),
-        static_cast<float>(telemetry_data->truck_dp.rotationZ * 360.0)
+        telemetry.truck.world.orientation.pitch * 360.0f,
+        telemetry.truck.world.orientation.heading * 360.0f,
+        telemetry.truck.world.orientation.roll * 360.0f
     };
     Coordinates rotated_offset = rotate_vector(offset_vector, truck_rotation);
 
     // truck position with rotated offset and with cabin rotation applied
     CameraCoordinates camera_coords{
-        telemetry_data->truck_dp.coordinateX + rotated_offset.x,
-        telemetry_data->truck_dp.coordinateY + rotated_offset.y,
-        telemetry_data->truck_dp.coordinateZ + rotated_offset.z,
-        static_cast<float>(360.0 - telemetry_data->truck_dp.rotationY * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationY * 360.0),
-        static_cast<float>(360.0 - telemetry_data->truck_dp.rotationX * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationX * 360.0),
-        static_cast<float>(360.0 - telemetry_data->truck_dp.rotationZ * 360.0 + 360.0 - telemetry_data->truck_fp.cabinOffsetrotationZ * 360.0)
+        telemetry.truck.world.position.x + rotated_offset.x,
+        telemetry.truck.world.position.y + rotated_offset.y,
+        telemetry.truck.world.position.z + rotated_offset.z,
+        360.0f - telemetry.truck.world.orientation.pitch * 360.0f + 360.0f - telemetry.truck.cabin_offset.orientation.pitch * 360.0f,
+        360.0f - telemetry.truck.world.orientation.heading * 360.0f + 360.0f - telemetry.truck.cabin_offset.orientation.heading * 360.0f,
+        360.0f - telemetry.truck.world.orientation.roll * 360.0f + 360.0f - telemetry.truck.cabin_offset.orientation.roll * 360.0f,
     };
 
     return camera_coords;

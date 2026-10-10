@@ -7,7 +7,7 @@ using namespace std;
 
 PositionEstimation::PositionEstimation(AR *ar) {
     draw_list_ = ar->get_draw_list("position_estimation");
-    telemetry_data_ = telemetry_.data();
+    telemetry_reader_.get_latest_telemetry(telemetry_);
 }
 
 
@@ -84,31 +84,31 @@ double calculate_back_wheel_radius_(double steering_angle, double wheelbase) {
 
 pair<vector<utils::Coordinates>, vector<utils::Coordinates>> PositionEstimation::get_wheel_trajectory() {
     utils::Rotations truck_rotation{
-        static_cast<float>(telemetry_data_->truck_dp.rotationY * 360.0),
-        static_cast<float>(telemetry_data_->truck_dp.rotationX * 360.0),
-        static_cast<float>(telemetry_data_->truck_dp.rotationZ * 360.0)
+        telemetry_.truck.world.orientation.pitch * 360.0f,
+        telemetry_.truck.world.orientation.heading * 360.0f,
+        telemetry_.truck.world.orientation.roll * 360.0f
     };
 
     vector<utils::Coordinates> wheel_coords;
     vector<double> wheel_angles;
-    for (int i = 0; i < telemetry_data_->config_ui.truckWheelCount; ++i) {
-        if (telemetry_data_->config_b.truckWheelSimulated[i]) {
+    for (uint32_t i = 0; i < telemetry_.truck.wheel_count; ++i) {
+        if (telemetry_.truck.wheels[i].simulated) {
             utils::Coordinates wheel_vector{
-                telemetry_data_->config_fv.truckWheelPositionX[i],
-                telemetry_data_->config_fv.truckWheelPositionY[i],
-                telemetry_data_->config_fv.truckWheelPositionZ[i]
+                telemetry_.truck.wheels[i].position.x,
+                telemetry_.truck.wheels[i].position.y,
+                telemetry_.truck.wheels[i].position.z
             };
             wheel_vector = utils::rotate_vector(wheel_vector, truck_rotation);
             utils::Coordinates coord{
-                telemetry_data_->truck_dp.coordinateX + wheel_vector.x,
-                telemetry_data_->truck_dp.coordinateY + wheel_vector.y,
-                telemetry_data_->truck_dp.coordinateZ + wheel_vector.z
+                telemetry_.truck.world.position.x + wheel_vector.x,
+                telemetry_.truck.world.position.y + wheel_vector.y,
+                telemetry_.truck.world.position.z + wheel_vector.z
             };
             wheel_coords.push_back(coord);
 
-            if (telemetry_data_->config_b.truckWheelSteerable[i]) {
+            if (telemetry_.truck.wheels[i].steerable) {
                 wheel_angles.push_back(
-                    telemetry_data_->truck_f.truck_wheelSteering[i] * 360.0f
+                    telemetry_.truck.wheels[i].steering * 360.0f
                 );
             }
         }
@@ -184,7 +184,7 @@ pair<vector<utils::Coordinates>, vector<utils::Coordinates>> PositionEstimation:
     utils::Coordinates left_offset_world = utils::rotate_vector(left_offset_local, truck_rotation);
     utils::Coordinates left_circle_center{
         back_left_wheel.x + left_offset_world.x,
-        telemetry_data_->truck_dp.coordinateY + left_offset_world.y,
+        telemetry_.truck.world.position.y + left_offset_world.y,
         back_left_wheel.z + left_offset_world.z
     };
 
@@ -196,7 +196,7 @@ pair<vector<utils::Coordinates>, vector<utils::Coordinates>> PositionEstimation:
     utils::Coordinates right_offset_world = utils::rotate_vector(right_offset_local, truck_rotation);
     utils::Coordinates right_circle_center{
         back_right_wheel.x + right_offset_world.x,
-        telemetry_data_->truck_dp.coordinateY + right_offset_world.y,
+        telemetry_.truck.world.position.y + right_offset_world.y,
         back_right_wheel.z + right_offset_world.z
     };
 
@@ -265,9 +265,9 @@ cv::Point top_down_view_point(
 
 void PositionEstimation::run(std::vector<ObjectDetection> detections, int window_width, int window_height) {
     draw_list_->clear();
-    auto camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
-    ground_projection_.update(telemetry_data_);
+    ground_projection_.update(telemetry_);
 
     auto objects = tracker_.update(detections, camera_coords, window_width, window_height);
     draw(objects);

@@ -269,7 +269,7 @@ void AR::text(
     float font_size,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     utils::ScreenCoordinates screen_position = utils::convert_to_screen_coordinate(
         position,

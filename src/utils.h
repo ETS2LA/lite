@@ -1,12 +1,10 @@
 #pragma once
 
+#include <ets2la_telemetry/telemetry_reader.h>
 #include <opencv2/opencv.hpp>
 #include <windows.h>
 #include <string>
 #include <vector>
-
-#include "telemetry.h"
-#include "capture.h"
 
 
 namespace utils {
@@ -186,7 +184,7 @@ Coordinates rotate_vector(
     const Rotations& rotation
 );
 
-CameraCoordinates get_6th_camera_coordinate(TelemetryData* telemetry_data);
+CameraCoordinates get_6th_camera_coordinate(const ets2la_telemetry::Telemetry& telemetry);
 
 Coordinates camera_ray_direction(const Angles& angles, const CameraCoordinates& cam);
 

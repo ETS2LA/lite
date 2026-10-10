@@ -233,7 +233,7 @@ void AR::rectangle(
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     utils::ScreenCoordinates top_left_screen = utils::convert_to_screen_coordinate(
         top_left,

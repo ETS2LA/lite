@@ -105,7 +105,7 @@ void AR::circle(
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_data_);
+    utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
         center,

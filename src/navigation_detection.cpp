@@ -13,9 +13,10 @@ namespace navigation_detection {
 ets2la_capture::Frame capture_frame;
 ets2la_capture::FrameReader reader;
 
-SCSController controller;
-SCSTelemetry telemetry;
+ets2la_telemetry::TelemetryReader telemetry_reader;
+ets2la_telemetry::Telemetry telemetry;
 InputHandler input_handler;
+Controller controller;
 
 static cv::Mat frame;
 static cv::Mat mask_red_green;
@@ -161,10 +162,12 @@ void run() {
         cv::cvtColor(native, frame, cv::COLOR_BGRA2BGR);
     }
 
-    TelemetryData* telemetry_data = telemetry.data();
+    if (!telemetry_reader.get_latest_telemetry(telemetry)) {
+        return;
+    }
 
-    indicator_left = telemetry_data->truck_b.blinkerLeftActive;
-    indicator_right = telemetry_data->truck_b.blinkerRightActive;
+    indicator_left = telemetry.truck.left_blinker;
+    indicator_right = telemetry.truck.right_blinker;
 
     utils::apply_route_advisor_crop(frame, true);
 
@@ -361,7 +364,7 @@ void run() {
         correction = last_correction + (correction - last_correction) / 1.5f;
         last_correction = correction;
 
-        if (telemetry_data->truck_f.speed > -0.1f) {
+        if (telemetry.truck.speed > -0.1f) {
             controller.steering = -correction;
         } else {
             controller.steering = correction;
@@ -369,24 +372,24 @@ void run() {
 
         // handle indicators for turns
         if (turn_ahead_direction == TURN_LEFT && !indicator_left && !indicator_left_wait_for_response) {
-            controller.lblinker = true;
+            controller.set(ets2la_controller::Button::blinker_left, true);
             indicator_left_wait_for_response = true;
             indicator_left_response_timer = current_time;
         }
         if (turn_ahead_direction == TURN_RIGHT && !indicator_right && !indicator_right_wait_for_response) {
-            controller.rblinker = true;
+            controller.set(ets2la_controller::Button::blinker_right, true);
             indicator_right_wait_for_response = true;
             indicator_right_response_timer = current_time;
         }
 
         // handle indicators for lane changes
         if (lane_change_progress == 1.0f && indicator_left && !indicator_left_wait_for_response && !indicator_changed_by_code) {
-            controller.lblinker = true;
+            controller.set(ets2la_controller::Button::blinker_left, true);
             indicator_left_wait_for_response = true;
             indicator_left_response_timer = current_time;
         }
         if (lane_change_progress == 1.0f && indicator_right && !indicator_right_wait_for_response && !indicator_changed_by_code) {
-            controller.rblinker = true;
+            controller.set(ets2la_controller::Button::blinker_right, true);
             indicator_right_wait_for_response = true;
             indicator_right_response_timer = current_time;
         }

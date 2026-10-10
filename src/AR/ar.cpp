@@ -65,7 +65,6 @@ AR::AR(
 ):
 window_(nullptr),
 target_window_handle_function_(target_window_handle_function),
-telemetry_data_(nullptr),
 window_width_(0),
 window_height_(0),
 freetype_library_(nullptr),
@@ -126,7 +125,7 @@ text_ready_(false) {
     position_thread_.detach();
 
     // run one initial window update
-    telemetry_data_ = telemetry_.data();
+    telemetry_reader_.get_latest_telemetry(telemetry_);
     glfwPollEvents();
     glClear(GL_COLOR_BUFFER_BIT);
     glfwSwapBuffers(window_);
@@ -167,8 +166,8 @@ void AR::run() {
     if (!window_) return;
     glfwPollEvents();
 
-    telemetry_data_ = telemetry_.data();
-    if (!telemetry_data_->sdkActive || telemetry_data_->paused) {
+    telemetry_reader_.get_latest_telemetry(telemetry_);
+    if (telemetry_.game.id == 0 || telemetry_.game.paused) {
         glClear(GL_COLOR_BUFFER_BIT);
         glfwSwapBuffers(window_);
         return;

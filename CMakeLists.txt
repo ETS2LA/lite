@@ -1,4 +1,4 @@
-﻿cmake_minimum_required(VERSION 3.25)
+cmake_minimum_required(VERSION 3.25)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
     add_compile_definitions(BUILD_TYPE_DEBUG)
@@ -19,8 +19,20 @@ FetchContent_Declare(
     GIT_REPOSITORY https://github.com/ETS2LA/capture.git
     GIT_TAG main
 )
+FetchContent_Declare(
+    ets2la_controller
+    GIT_REPOSITORY https://github.com/ETS2LA/controller.git
+    GIT_TAG main
+)
+FetchContent_Declare(
+    ets2la_telemetry
+    GIT_REPOSITORY https://github.com/ETS2LA/telemetry.git
+    GIT_TAG main
+)
 cmake_policy(SET CMP0169 OLD)
 FetchContent_Populate(ets2la_capture)
+FetchContent_Populate(ets2la_controller)
+FetchContent_Populate(ets2la_telemetry)
 
 find_package(OpenCV REQUIRED)
 find_package(OpenGL REQUIRED)
@@ -53,6 +65,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${ets2la_capture_SOURCE_DIR}/include
+    ${ets2la_controller_SOURCE_DIR}/include
+    ${ets2la_telemetry_SOURCE_DIR}/include
 )
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD

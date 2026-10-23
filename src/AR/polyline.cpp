@@ -138,7 +138,7 @@ void AR::polyline(
                 pair<float, float> left_corner;
                 pair<float, float> right_corner;
 
-                if (fabs(det) < 1e-6f) {
+                if (fabs(det) < 1e-4f) {
                     left_corner = {p.first + (nx1 + nx2) * 0.5f * half_thickness, p.second + (ny1 + ny2) * 0.5f * half_thickness};
                     right_corner = {p.first - (nx1 + nx2) * 0.5f * half_thickness, p.second - (ny1 + ny2) * 0.5f * half_thickness};
                 } else {

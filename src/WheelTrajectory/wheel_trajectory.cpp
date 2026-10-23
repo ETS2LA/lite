@@ -11,15 +11,6 @@ WheelTrajectory::WheelTrajectory(AR *ar) {
 }
 
 
-double calculate_front_wheel_radius(double steering_angle, double wheelbase) {
-    if (abs(steering_angle) < 0.001) {
-        return INFINITY;
-    }
-    steering_angle = utils::degrees_to_radians(steering_angle);
-    return wheelbase / sin(steering_angle);
-}
-
-
 double calculate_back_wheel_radius(double steering_angle, double wheelbase) {
     if (abs(steering_angle) < 0.001) {
         return INFINITY;
@@ -85,11 +76,11 @@ Trajectories WheelTrajectory::calculate_front(
 
     for (int i = wheel_angles.size(); i < wheel_coords.size(); ++i) {
         if (i % 2 == 0) {
-            back_left_wheel.x += wheel_coords[i].x;;
+            back_left_wheel.x += wheel_coords[i].x;
             back_left_wheel.y += wheel_coords[i].y;
             back_left_wheel.z += wheel_coords[i].z;
         } else {
-            back_right_wheel.x += wheel_coords[i].x;;
+            back_right_wheel.x += wheel_coords[i].x;
             back_right_wheel.y += wheel_coords[i].y;
             back_right_wheel.z += wheel_coords[i].z;
         }
@@ -125,10 +116,25 @@ Trajectories WheelTrajectory::calculate_front(
         const double back_radius = calculate_back_wheel_radius(steering_angle, wheelbase);
         const double center_offset = isinf(back_radius) ? 0.0 : -back_radius;
 
+        utils::Coordinates direction_back_wheel = back_wheel;
+        if (wheel_angles[side] < 0.001) {
+            const utils::Coordinates lateral = utils::rotate_vector(
+                {1.0, 0.0, 0.0},
+                truck_rotation
+            );
+            const double side_offset = (
+                lateral.x * (front_wheel.x - back_wheel.x) +
+                lateral.y * (front_wheel.y - back_wheel.y) +
+                lateral.z * (front_wheel.z - back_wheel.z)
+            );
+            direction_back_wheel.x += side_offset * lateral.x;
+            direction_back_wheel.y += side_offset * lateral.y;
+            direction_back_wheel.z += side_offset * lateral.z;
+        }
         forwards[side] = {
-            front_wheel.x - back_wheel.x,
-            front_wheel.y - back_wheel.y,
-            front_wheel.z - back_wheel.z
+            front_wheel.x - direction_back_wheel.x,
+            front_wheel.y - direction_back_wheel.y,
+            front_wheel.z - direction_back_wheel.z
         };
         utils::Coordinates lateral = utils::rotate_vector({1.0, 0.0, 0.0}, truck_rotation);
         forward_lengths[side] = sqrt(
@@ -318,7 +324,7 @@ Trajectories WheelTrajectory::calculate_front(
     }
 
     front_trajectories_ = {};
-     for (int side = 0; side < 2; ++side) {
+    for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& start = front_wheels[side];
         const double radius = front_radii[side];
         const double direction = forward ? -copysign(1.0, back_radii[side]) : copysign(1.0, back_radii[side]);
@@ -433,11 +439,11 @@ Trajectories WheelTrajectory::calculate_back(
 
     for (int i = wheel_angles.size(); i < wheel_coords.size(); ++i) {
         if (i % 2 == 0) {
-            back_left_wheel.x += wheel_coords[i].x;;
+            back_left_wheel.x += wheel_coords[i].x;
             back_left_wheel.y += wheel_coords[i].y;
             back_left_wheel.z += wheel_coords[i].z;
         } else {
-            back_right_wheel.x += wheel_coords[i].x;;
+            back_right_wheel.x += wheel_coords[i].x;
             back_right_wheel.y += wheel_coords[i].y;
             back_right_wheel.z += wheel_coords[i].z;
         }
@@ -473,10 +479,25 @@ Trajectories WheelTrajectory::calculate_back(
         const double back_radius = calculate_back_wheel_radius(steering_angle, wheelbase);
         const double center_offset = isinf(back_radius) ? 0.0 : -back_radius;
 
+        utils::Coordinates direction_back_wheel = back_wheel;
+        if (wheel_angles[side] < 0.001) {
+            const utils::Coordinates lateral = utils::rotate_vector(
+                {1.0, 0.0, 0.0},
+                truck_rotation
+            );
+            const double side_offset = (
+                lateral.x * (front_wheel.x - back_wheel.x) +
+                lateral.y * (front_wheel.y - back_wheel.y) +
+                lateral.z * (front_wheel.z - back_wheel.z)
+            );
+            direction_back_wheel.x += side_offset * lateral.x;
+            direction_back_wheel.y += side_offset * lateral.y;
+            direction_back_wheel.z += side_offset * lateral.z;
+        }
         forwards[side] = {
-            front_wheel.x - back_wheel.x,
-            front_wheel.y - back_wheel.y,
-            front_wheel.z - back_wheel.z
+            front_wheel.x - direction_back_wheel.x,
+            front_wheel.y - direction_back_wheel.y,
+            front_wheel.z - direction_back_wheel.z
         };
         utils::Coordinates lateral = utils::rotate_vector({1.0, 0.0, 0.0}, truck_rotation);
         forward_lengths[side] = sqrt(
@@ -666,7 +687,7 @@ Trajectories WheelTrajectory::calculate_back(
     }
 
     back_trajectories_ = {};
-     for (int side = 0; side < 2; ++side) {
+    for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& start = back_wheels[side];
         const double radius = rear_radii[side];
         const double direction = forward ? -copysign(1.0, back_radii[side]) : copysign(1.0, back_radii[side]);

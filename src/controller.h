@@ -39,11 +39,14 @@ public:
     float steering = 0.0f;
 
 private:
-    void pid_loop();
+    void steering_pid_loop();
+    void speed_pid_loop();
 
     ets2la_controller::Controller controller_;
-    std::thread pid_thread_;
-    std::atomic<bool> pid_running_{false};
+    std::thread steering_pid_thread_;
+    std::thread speed_pid_thread_;
+    std::atomic<bool> steering_pid_running_{false};
+    std::atomic<bool> speed_pid_running_{false};
     std::atomic<bool> enabled_{true};
     std::atomic<float> steering_target_{0.0f};
     std::atomic<float> steering_output_{0.0f};

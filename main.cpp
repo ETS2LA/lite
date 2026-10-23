@@ -42,20 +42,12 @@ int main() {
         while (true) {
             auto detections = object_detector.run();
 
-            // remove all detections from class 0, 1, 2
-            //std::vector<ObjectDetection> filtered_detections;
-            //for (const auto& detection : detections) {
-            //    if (detection.class_id != 0 && detection.class_id != 1 && detection.class_id != 2) {
-            //        filtered_detections.push_back(detection);
-            //    }
-            //}
-
             position_estimation.run(
                 detections,
                 object_detector.window_width,
                 object_detector.window_height
             );
-            //timer.limit_fps(10.0f);
+
             auto fps = timer.get_fps();
             printf("PositionEstimation FPS: %.2f\n", fps);
         }

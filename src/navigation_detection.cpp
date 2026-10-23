@@ -5,8 +5,8 @@
 #define TURN_LEFT 1
 #define TURN_RIGHT 2
 
-
 using namespace std;
+
 
 namespace navigation_detection {
 

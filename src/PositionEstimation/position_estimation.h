@@ -1,9 +1,9 @@
 #pragma once
 
 #include "PositionEstimation/ground_projection.h"
+#include "ObjectDetection/object_detection.h"
 #include "PositionEstimation/triangulation.h"
 #include "WheelTrajectory/wheel_trajectory.h"
-#include "object_detection.h"
 #include "tracker.h"
 #include "camera.h"
 #include "AR/ar.h"

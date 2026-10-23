@@ -1,14 +1,13 @@
-#include "object_detection.h"
-#include "ets2la_capture/frame_reader.h"
+#include "ObjectDetection/object_detection.h"
+#include <ets2la_capture/frame_reader.h>
 #include <dml_provider_factory.h>
-
 #include <algorithm>
 #include <array>
 #include <filesystem>
 #include <stdexcept>
 
-
 using namespace std;
+
 
 namespace {
 

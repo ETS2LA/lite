@@ -1,8 +1,8 @@
 ﻿#include "PositionEstimation/position_estimation.h"
+#include "ObjectDetection/object_detection.h"
 #include "navigation_detection.h"
 #include "utils.h"
 #include "AR/ar.h"
-#include "object_detection.h"
 #include <future>
 #include <memory>
 #include <thread>

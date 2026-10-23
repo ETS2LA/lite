@@ -2,8 +2,8 @@
 
 #define NOMINMAX
 
+#include "ObjectDetection/object_detection.h"
 #include "utils.h"
-#include "object_detection.h"
 
 #include <unordered_map>
 #include <vector>

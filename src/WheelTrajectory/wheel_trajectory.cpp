@@ -11,7 +11,7 @@ WheelTrajectory::WheelTrajectory(AR *ar) {
 }
 
 
-double calculate_back_wheel_radius(double steering_angle, double wheelbase) {
+double calculate_rear_wheel_radius(double steering_angle, double wheelbase) {
     if (abs(steering_angle) < 0.001) {
         return INFINITY;
     }
@@ -71,70 +71,69 @@ Trajectories WheelTrajectory::calculate_front(
     utils::Coordinates front_left_wheel = wheel_coords[0];
     utils::Coordinates front_right_wheel = wheel_coords[1];
 
-    utils::Coordinates back_left_wheel{0, 0, 0};
-    utils::Coordinates back_right_wheel{0, 0, 0};
+    utils::Coordinates rear_left_wheel{0, 0, 0};
+    utils::Coordinates rear_right_wheel{0, 0, 0};
 
     for (int i = wheel_angles.size(); i < wheel_coords.size(); ++i) {
         if (i % 2 == 0) {
-            back_left_wheel.x += wheel_coords[i].x;
-            back_left_wheel.y += wheel_coords[i].y;
-            back_left_wheel.z += wheel_coords[i].z;
+            rear_left_wheel.x += wheel_coords[i].x;
+            rear_left_wheel.y += wheel_coords[i].y;
+            rear_left_wheel.z += wheel_coords[i].z;
         } else {
-            back_right_wheel.x += wheel_coords[i].x;
-            back_right_wheel.y += wheel_coords[i].y;
-            back_right_wheel.z += wheel_coords[i].z;
+            rear_right_wheel.x += wheel_coords[i].x;
+            rear_right_wheel.y += wheel_coords[i].y;
+            rear_right_wheel.z += wheel_coords[i].z;
         }
     }
 
-    back_left_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_left_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_left_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_left_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_left_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_left_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_right_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_right_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_right_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
 
     const array<utils::Coordinates, 2> front_wheels{front_left_wheel, front_right_wheel};
-    const array<utils::Coordinates, 2> back_wheels{back_left_wheel, back_right_wheel};
+    const array<utils::Coordinates, 2> rear_wheels{rear_left_wheel, rear_right_wheel};
 
     array<utils::Coordinates, 2> circle_centers;
     array<utils::Coordinates, 2> trajectory_normals;
     array<utils::Coordinates, 2> forwards;
     array<double, 2> forward_lengths;
-    array<double, 2> back_radii;
+    array<double, 2> turn_radii;
     array<double, 2> front_radii;
-    array<double, 2> rear_radii;
 
     for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& front_wheel = front_wheels[side];
-        const utils::Coordinates& back_wheel = back_wheels[side];
+        const utils::Coordinates& rear_wheel = rear_wheels[side];
         const double wheelbase = sqrt(
-            pow(front_wheel.x - back_wheel.x, 2) +
-            pow(front_wheel.y - back_wheel.y, 2) +
-            pow(front_wheel.z - back_wheel.z, 2)
+            pow(front_wheel.x - rear_wheel.x, 2) +
+            pow(front_wheel.y - rear_wheel.y, 2) +
+            pow(front_wheel.z - rear_wheel.z, 2)
         );
         const double steering_angle = wheel_angles[side];
-        const double back_radius = calculate_back_wheel_radius(steering_angle, wheelbase);
-        const double center_offset = isinf(back_radius) ? 0.0 : -back_radius;
+        const double turn_radius = calculate_rear_wheel_radius(steering_angle, wheelbase);
+        const double center_offset = isinf(turn_radius) ? 0.0 : -turn_radius;
 
-        utils::Coordinates direction_back_wheel = back_wheel;
+        utils::Coordinates direction_rear_wheel = rear_wheel;
         if (wheel_angles[side] < 0.001) {
             const utils::Coordinates lateral = utils::rotate_vector(
                 {1.0, 0.0, 0.0},
                 truck_rotation
             );
             const double side_offset = (
-                lateral.x * (front_wheel.x - back_wheel.x) +
-                lateral.y * (front_wheel.y - back_wheel.y) +
-                lateral.z * (front_wheel.z - back_wheel.z)
+                lateral.x * (front_wheel.x - rear_wheel.x) +
+                lateral.y * (front_wheel.y - rear_wheel.y) +
+                lateral.z * (front_wheel.z - rear_wheel.z)
             );
-            direction_back_wheel.x += side_offset * lateral.x;
-            direction_back_wheel.y += side_offset * lateral.y;
-            direction_back_wheel.z += side_offset * lateral.z;
+            direction_rear_wheel.x += side_offset * lateral.x;
+            direction_rear_wheel.y += side_offset * lateral.y;
+            direction_rear_wheel.z += side_offset * lateral.z;
         }
         forwards[side] = {
-            front_wheel.x - direction_back_wheel.x,
-            front_wheel.y - direction_back_wheel.y,
-            front_wheel.z - direction_back_wheel.z
+            front_wheel.x - direction_rear_wheel.x,
+            front_wheel.y - direction_rear_wheel.y,
+            front_wheel.z - direction_rear_wheel.z
         };
         utils::Coordinates lateral = utils::rotate_vector({1.0, 0.0, 0.0}, truck_rotation);
         forward_lengths[side] = sqrt(
@@ -160,9 +159,9 @@ Trajectories WheelTrajectory::calculate_front(
         lateral.z /= lateral_length;
 
         circle_centers[side] = {
-            back_wheel.x + center_offset * lateral.x,
-            back_wheel.y + center_offset * lateral.y,
-            back_wheel.z + center_offset * lateral.z
+            rear_wheel.x + center_offset * lateral.x,
+            rear_wheel.y + center_offset * lateral.y,
+            rear_wheel.z + center_offset * lateral.z
         };
         trajectory_normals[side] = {
             forwards[side].y * lateral.z - forwards[side].z * lateral.y,
@@ -177,7 +176,7 @@ Trajectories WheelTrajectory::calculate_front(
         trajectory_normals[side].x /= normal_length;
         trajectory_normals[side].y /= normal_length;
         trajectory_normals[side].z /= normal_length;
-        back_radii[side] = back_radius;
+        turn_radii[side] = turn_radius;
     }
 
     circle_centers[0].x = (circle_centers[0].x + circle_centers[1].x) * 0.5;
@@ -186,33 +185,23 @@ Trajectories WheelTrajectory::calculate_front(
     circle_centers[1] = circle_centers[0];
     for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& front_wheel = front_wheels[side];
-        const utils::Coordinates& back_wheel = back_wheels[side];
         front_radii[side] = sqrt(
             pow(front_wheel.x - circle_centers[side].x, 2) +
             pow(front_wheel.y - circle_centers[side].y, 2) +
             pow(front_wheel.z - circle_centers[side].z, 2)
         );
-        rear_radii[side] = sqrt(
-            pow(back_wheel.x - circle_centers[side].x, 2) +
-            pow(back_wheel.y - circle_centers[side].y, 2) +
-            pow(back_wheel.z - circle_centers[side].z, 2)
-        );
     }
 
     array<double, 2> front_lengths{length, length};
-    array<double, 2> rear_lengths{length, length};
     const int outer_side = front_radii[0] >= front_radii[1] ? 0 : 1;
     const int inner_side = 1 - outer_side;
 
-    for (int wheel = 0; wheel < 2; ++wheel) {
-        if (isinf(back_radii[0]) || isinf(back_radii[1])) {
-            continue;
-        }
-        const double outer_radius = wheel == 0 ? front_radii[outer_side] : rear_radii[outer_side];
-        const double inner_radius = wheel == 0 ? front_radii[inner_side] : rear_radii[inner_side];
-        const utils::Coordinates& outer_start = wheel == 0 ? front_wheels[outer_side] : back_wheels[outer_side];
-        const utils::Coordinates& inner_start = wheel == 0 ? front_wheels[inner_side] : back_wheels[inner_side];
-        const double direction = wheel == 0 ? -copysign(1.0, back_radii[outer_side]) : copysign(1.0, back_radii[outer_side]);
+    if (!isinf(turn_radii[0]) && !isinf(turn_radii[1])) {
+        const double outer_radius = front_radii[outer_side];
+        const double inner_radius = front_radii[inner_side];
+        const utils::Coordinates& outer_start = front_wheels[outer_side];
+        const utils::Coordinates& inner_start = front_wheels[inner_side];
+        const double direction = -copysign(1.0, turn_radii[outer_side]);
         utils::Coordinates outer_radial{
             outer_start.x - circle_centers[outer_side].x,
             outer_start.y - circle_centers[outer_side].y,
@@ -256,70 +245,64 @@ Trajectories WheelTrajectory::calculate_front(
             center_delta.z * center_delta.z -
             inner_radius * inner_radius;
         const double discriminant = quadratic_b * quadratic_b - 4.0 * ray_length_squared * quadratic_c;
-        if (discriminant < 0.0) {
-            continue;
-        }
-        const double root_a = (-quadratic_b - sqrt(discriminant)) / (2.0 * ray_length_squared);
-        const double root_b = (-quadratic_b + sqrt(discriminant)) / (2.0 * ray_length_squared);
-        utils::Coordinates inner_radial{
-            inner_start.x - circle_centers[inner_side].x,
-            inner_start.y - circle_centers[inner_side].y,
-            inner_start.z - circle_centers[inner_side].z
-        };
-        inner_radial.x /= inner_radius;
-        inner_radial.y /= inner_radius;
-        inner_radial.z /= inner_radius;
-        const utils::Coordinates inner_tangent{
-            trajectory_normals[inner_side].y * inner_radial.z -
-            trajectory_normals[inner_side].z * inner_radial.y,
-            trajectory_normals[inner_side].z * inner_radial.x -
-            trajectory_normals[inner_side].x * inner_radial.z,
-            trajectory_normals[inner_side].x * inner_radial.y -
-            trajectory_normals[inner_side].y * inner_radial.x
-        };
-        double inner_length = INFINITY;
-        const array<double, 2> roots{root_a, root_b};
-        for (double root : roots) {
-            if (root <= 0.0) {
-                continue;
-            }
-            const utils::Coordinates candidate{
-                circle_centers[outer_side].x + root * ray.x,
-                circle_centers[outer_side].y + root * ray.y,
-                circle_centers[outer_side].z + root * ray.z
+        if (discriminant >= 0.0) {
+            const double root_a = (-quadratic_b - sqrt(discriminant)) / (2.0 * ray_length_squared);
+            const double root_b = (-quadratic_b + sqrt(discriminant)) / (2.0 * ray_length_squared);
+            utils::Coordinates inner_radial{
+                inner_start.x - circle_centers[inner_side].x,
+                inner_start.y - circle_centers[inner_side].y,
+                inner_start.z - circle_centers[inner_side].z
             };
-            utils::Coordinates candidate_radial{
-                candidate.x - circle_centers[inner_side].x,
-                candidate.y - circle_centers[inner_side].y,
-                candidate.z - circle_centers[inner_side].z
+            inner_radial.x /= inner_radius;
+            inner_radial.y /= inner_radius;
+            inner_radial.z /= inner_radius;
+            const utils::Coordinates inner_tangent{
+                trajectory_normals[inner_side].y * inner_radial.z -
+                trajectory_normals[inner_side].z * inner_radial.y,
+                trajectory_normals[inner_side].z * inner_radial.x -
+                trajectory_normals[inner_side].x * inner_radial.z,
+                trajectory_normals[inner_side].x * inner_radial.y -
+                trajectory_normals[inner_side].y * inner_radial.x
             };
-            candidate_radial.x /= inner_radius;
-            candidate_radial.y /= inner_radius;
-            candidate_radial.z /= inner_radius;
-            const double candidate_angle = atan2(
-                candidate_radial.x * inner_tangent.x +
-                candidate_radial.y * inner_tangent.y +
-                candidate_radial.z * inner_tangent.z,
-                candidate_radial.x * inner_radial.x +
-                candidate_radial.y * inner_radial.y +
-                candidate_radial.z * inner_radial.z
-            );
-            double candidate_length = direction * candidate_angle;
-            while (candidate_length < 0.0) {
-                candidate_length += 2.0 * numbers::pi;
+            double inner_length = INFINITY;
+            const array<double, 2> roots{root_a, root_b};
+            for (double root : roots) {
+                if (root <= 0.0) {
+                    continue;
+                }
+                const utils::Coordinates candidate{
+                    circle_centers[outer_side].x + root * ray.x,
+                    circle_centers[outer_side].y + root * ray.y,
+                    circle_centers[outer_side].z + root * ray.z
+                };
+                utils::Coordinates candidate_radial{
+                    candidate.x - circle_centers[inner_side].x,
+                    candidate.y - circle_centers[inner_side].y,
+                    candidate.z - circle_centers[inner_side].z
+                };
+                candidate_radial.x /= inner_radius;
+                candidate_radial.y /= inner_radius;
+                candidate_radial.z /= inner_radius;
+                const double candidate_angle = atan2(
+                    candidate_radial.x * inner_tangent.x +
+                    candidate_radial.y * inner_tangent.y +
+                    candidate_radial.z * inner_tangent.z,
+                    candidate_radial.x * inner_radial.x +
+                    candidate_radial.y * inner_radial.y +
+                    candidate_radial.z * inner_radial.z
+                );
+                double candidate_length = direction * candidate_angle;
+                while (candidate_length < 0.0) {
+                    candidate_length += 2.0 * numbers::pi;
+                }
+                candidate_length *= inner_radius;
+                if (candidate_length < inner_length) {
+                    inner_length = candidate_length;
+                }
             }
-            candidate_length *= inner_radius;
-            if (candidate_length < inner_length) {
-                inner_length = candidate_length;
+            if (isfinite(inner_length)) {
+                front_lengths[inner_side] = inner_length;
             }
-        }
-        if (!isfinite(inner_length)) {
-            continue;
-        }
-        if (wheel == 0) {
-            front_lengths[inner_side] = inner_length;
-        } else {
-            rear_lengths[inner_side] = inner_length;
         }
     }
 
@@ -327,12 +310,12 @@ Trajectories WheelTrajectory::calculate_front(
     for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& start = front_wheels[side];
         const double radius = front_radii[side];
-        const double direction = forward ? -copysign(1.0, back_radii[side]) : copysign(1.0, back_radii[side]);
+        const double direction = forward ? -copysign(1.0, turn_radii[side]) : copysign(1.0, turn_radii[side]);
         const double length = front_lengths[side];
 
         for (int i = 0; i <= int(length * resolution); ++i) {
             utils::Coordinates point;
-            if (isinf(back_radii[side])) {
+            if (isinf(turn_radii[side])) {
                 const double distance = i / resolution;
                 point = {
                     start.x + distance * forwards[side].x / forward_lengths[side],
@@ -383,16 +366,16 @@ Trajectories WheelTrajectory::calculate_front(
 }
 
 
-Trajectories WheelTrajectory::calculate_back(
+Trajectories WheelTrajectory::calculate_rear(
     const bool forward,
     const float length,
     const float resolution
 ) {
     telemetry_reader_.get_latest_telemetry(telemetry_);
-    if (!telemetry_.valid || telemetry_.frame_index == last_back_trajectories_index_) {
-        return back_trajectories_;
+    if (!telemetry_.valid || telemetry_.frame_index == last_rear_trajectories_index_) {
+        return rear_trajectories_;
     }
-    last_back_trajectories_index_ = telemetry_.frame_index;
+    last_rear_trajectories_index_ = telemetry_.frame_index;
 
     utils::Rotations truck_rotation{
         telemetry_.truck.world.orientation.pitch * 360.0f,
@@ -428,76 +411,76 @@ Trajectories WheelTrajectory::calculate_back(
     }
 
     if (wheel_coords.size() < 4 || wheel_angles.size() < 2) {
-        return back_trajectories_;
+        return rear_trajectories_;
     }
 
     utils::Coordinates front_left_wheel = wheel_coords[0];
     utils::Coordinates front_right_wheel = wheel_coords[1];
 
-    utils::Coordinates back_left_wheel{0, 0, 0};
-    utils::Coordinates back_right_wheel{0, 0, 0};
+    utils::Coordinates rear_left_wheel{0, 0, 0};
+    utils::Coordinates rear_right_wheel{0, 0, 0};
 
     for (int i = wheel_angles.size(); i < wheel_coords.size(); ++i) {
         if (i % 2 == 0) {
-            back_left_wheel.x += wheel_coords[i].x;
-            back_left_wheel.y += wheel_coords[i].y;
-            back_left_wheel.z += wheel_coords[i].z;
+            rear_left_wheel.x += wheel_coords[i].x;
+            rear_left_wheel.y += wheel_coords[i].y;
+            rear_left_wheel.z += wheel_coords[i].z;
         } else {
-            back_right_wheel.x += wheel_coords[i].x;
-            back_right_wheel.y += wheel_coords[i].y;
-            back_right_wheel.z += wheel_coords[i].z;
+            rear_right_wheel.x += wheel_coords[i].x;
+            rear_right_wheel.y += wheel_coords[i].y;
+            rear_right_wheel.z += wheel_coords[i].z;
         }
     }
 
-    back_left_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_left_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_left_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_left_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_left_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_left_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_right_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_right_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
+    rear_right_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
 
     const array<utils::Coordinates, 2> front_wheels{front_left_wheel, front_right_wheel};
-    const array<utils::Coordinates, 2> back_wheels{back_left_wheel, back_right_wheel};
+    const array<utils::Coordinates, 2> rear_wheels{rear_left_wheel, rear_right_wheel};
 
     array<utils::Coordinates, 2> circle_centers;
     array<utils::Coordinates, 2> trajectory_normals;
     array<utils::Coordinates, 2> forwards;
     array<double, 2> forward_lengths;
-    array<double, 2> back_radii;
+    array<double, 2> turn_radii;
     array<double, 2> front_radii;
     array<double, 2> rear_radii;
 
     for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& front_wheel = front_wheels[side];
-        const utils::Coordinates& back_wheel = back_wheels[side];
+        const utils::Coordinates& rear_wheel = rear_wheels[side];
         const double wheelbase = sqrt(
-            pow(front_wheel.x - back_wheel.x, 2) +
-            pow(front_wheel.y - back_wheel.y, 2) +
-            pow(front_wheel.z - back_wheel.z, 2)
+            pow(front_wheel.x - rear_wheel.x, 2) +
+            pow(front_wheel.y - rear_wheel.y, 2) +
+            pow(front_wheel.z - rear_wheel.z, 2)
         );
         const double steering_angle = wheel_angles[side];
-        const double back_radius = calculate_back_wheel_radius(steering_angle, wheelbase);
-        const double center_offset = isinf(back_radius) ? 0.0 : -back_radius;
+        const double turn_radius = calculate_rear_wheel_radius(steering_angle, wheelbase);
+        const double center_offset = isinf(turn_radius) ? 0.0 : -turn_radius;
 
-        utils::Coordinates direction_back_wheel = back_wheel;
+        utils::Coordinates direction_rear_wheel = rear_wheel;
         if (wheel_angles[side] < 0.001) {
             const utils::Coordinates lateral = utils::rotate_vector(
                 {1.0, 0.0, 0.0},
                 truck_rotation
             );
             const double side_offset = (
-                lateral.x * (front_wheel.x - back_wheel.x) +
-                lateral.y * (front_wheel.y - back_wheel.y) +
-                lateral.z * (front_wheel.z - back_wheel.z)
+                lateral.x * (front_wheel.x - rear_wheel.x) +
+                lateral.y * (front_wheel.y - rear_wheel.y) +
+                lateral.z * (front_wheel.z - rear_wheel.z)
             );
-            direction_back_wheel.x += side_offset * lateral.x;
-            direction_back_wheel.y += side_offset * lateral.y;
-            direction_back_wheel.z += side_offset * lateral.z;
+            direction_rear_wheel.x += side_offset * lateral.x;
+            direction_rear_wheel.y += side_offset * lateral.y;
+            direction_rear_wheel.z += side_offset * lateral.z;
         }
         forwards[side] = {
-            front_wheel.x - direction_back_wheel.x,
-            front_wheel.y - direction_back_wheel.y,
-            front_wheel.z - direction_back_wheel.z
+            front_wheel.x - direction_rear_wheel.x,
+            front_wheel.y - direction_rear_wheel.y,
+            front_wheel.z - direction_rear_wheel.z
         };
         utils::Coordinates lateral = utils::rotate_vector({1.0, 0.0, 0.0}, truck_rotation);
         forward_lengths[side] = sqrt(
@@ -523,9 +506,9 @@ Trajectories WheelTrajectory::calculate_back(
         lateral.z /= lateral_length;
 
         circle_centers[side] = {
-            back_wheel.x + center_offset * lateral.x,
-            back_wheel.y + center_offset * lateral.y,
-            back_wheel.z + center_offset * lateral.z
+            rear_wheel.x + center_offset * lateral.x,
+            rear_wheel.y + center_offset * lateral.y,
+            rear_wheel.z + center_offset * lateral.z
         };
         trajectory_normals[side] = {
             forwards[side].y * lateral.z - forwards[side].z * lateral.y,
@@ -540,7 +523,7 @@ Trajectories WheelTrajectory::calculate_back(
         trajectory_normals[side].x /= normal_length;
         trajectory_normals[side].y /= normal_length;
         trajectory_normals[side].z /= normal_length;
-        back_radii[side] = back_radius;
+        turn_radii[side] = turn_radius;
     }
 
     circle_centers[0].x = (circle_centers[0].x + circle_centers[1].x) * 0.5;
@@ -549,33 +532,29 @@ Trajectories WheelTrajectory::calculate_back(
     circle_centers[1] = circle_centers[0];
     for (int side = 0; side < 2; ++side) {
         const utils::Coordinates& front_wheel = front_wheels[side];
-        const utils::Coordinates& back_wheel = back_wheels[side];
+        const utils::Coordinates& rear_wheel = rear_wheels[side];
         front_radii[side] = sqrt(
             pow(front_wheel.x - circle_centers[side].x, 2) +
             pow(front_wheel.y - circle_centers[side].y, 2) +
             pow(front_wheel.z - circle_centers[side].z, 2)
         );
         rear_radii[side] = sqrt(
-            pow(back_wheel.x - circle_centers[side].x, 2) +
-            pow(back_wheel.y - circle_centers[side].y, 2) +
-            pow(back_wheel.z - circle_centers[side].z, 2)
+            pow(rear_wheel.x - circle_centers[side].x, 2) +
+            pow(rear_wheel.y - circle_centers[side].y, 2) +
+            pow(rear_wheel.z - circle_centers[side].z, 2)
         );
     }
 
-    array<double, 2> front_lengths{length, length};
     array<double, 2> rear_lengths{length, length};
     const int outer_side = front_radii[0] >= front_radii[1] ? 0 : 1;
     const int inner_side = 1 - outer_side;
 
-    for (int wheel = 0; wheel < 2; ++wheel) {
-        if (isinf(back_radii[0]) || isinf(back_radii[1])) {
-            continue;
-        }
-        const double outer_radius = wheel == 0 ? front_radii[outer_side] : rear_radii[outer_side];
-        const double inner_radius = wheel == 0 ? front_radii[inner_side] : rear_radii[inner_side];
-        const utils::Coordinates& outer_start = wheel == 0 ? front_wheels[outer_side] : back_wheels[outer_side];
-        const utils::Coordinates& inner_start = wheel == 0 ? front_wheels[inner_side] : back_wheels[inner_side];
-        const double direction = wheel == 0 ? -copysign(1.0, back_radii[outer_side]) : copysign(1.0, back_radii[outer_side]);
+    if (!isinf(turn_radii[0]) && !isinf(turn_radii[1])) {
+        const double outer_radius = rear_radii[outer_side];
+        const double inner_radius = rear_radii[inner_side];
+        const utils::Coordinates& outer_start = rear_wheels[outer_side];
+        const utils::Coordinates& inner_start = rear_wheels[inner_side];
+        const double direction = copysign(1.0, turn_radii[outer_side]);
         utils::Coordinates outer_radial{
             outer_start.x - circle_centers[outer_side].x,
             outer_start.y - circle_centers[outer_side].y,
@@ -619,83 +598,77 @@ Trajectories WheelTrajectory::calculate_back(
             center_delta.z * center_delta.z -
             inner_radius * inner_radius;
         const double discriminant = quadratic_b * quadratic_b - 4.0 * ray_length_squared * quadratic_c;
-        if (discriminant < 0.0) {
-            continue;
-        }
-        const double root_a = (-quadratic_b - sqrt(discriminant)) / (2.0 * ray_length_squared);
-        const double root_b = (-quadratic_b + sqrt(discriminant)) / (2.0 * ray_length_squared);
-        utils::Coordinates inner_radial{
-            inner_start.x - circle_centers[inner_side].x,
-            inner_start.y - circle_centers[inner_side].y,
-            inner_start.z - circle_centers[inner_side].z
-        };
-        inner_radial.x /= inner_radius;
-        inner_radial.y /= inner_radius;
-        inner_radial.z /= inner_radius;
-        const utils::Coordinates inner_tangent{
-            trajectory_normals[inner_side].y * inner_radial.z -
-            trajectory_normals[inner_side].z * inner_radial.y,
-            trajectory_normals[inner_side].z * inner_radial.x -
-            trajectory_normals[inner_side].x * inner_radial.z,
-            trajectory_normals[inner_side].x * inner_radial.y -
-            trajectory_normals[inner_side].y * inner_radial.x
-        };
-        double inner_length = INFINITY;
-        const array<double, 2> roots{root_a, root_b};
-        for (double root : roots) {
-            if (root <= 0.0) {
-                continue;
-            }
-            const utils::Coordinates candidate{
-                circle_centers[outer_side].x + root * ray.x,
-                circle_centers[outer_side].y + root * ray.y,
-                circle_centers[outer_side].z + root * ray.z
+        if (discriminant >= 0.0) {
+            const double root_a = (-quadratic_b - sqrt(discriminant)) / (2.0 * ray_length_squared);
+            const double root_b = (-quadratic_b + sqrt(discriminant)) / (2.0 * ray_length_squared);
+            utils::Coordinates inner_radial{
+                inner_start.x - circle_centers[inner_side].x,
+                inner_start.y - circle_centers[inner_side].y,
+                inner_start.z - circle_centers[inner_side].z
             };
-            utils::Coordinates candidate_radial{
-                candidate.x - circle_centers[inner_side].x,
-                candidate.y - circle_centers[inner_side].y,
-                candidate.z - circle_centers[inner_side].z
+            inner_radial.x /= inner_radius;
+            inner_radial.y /= inner_radius;
+            inner_radial.z /= inner_radius;
+            const utils::Coordinates inner_tangent{
+                trajectory_normals[inner_side].y * inner_radial.z -
+                trajectory_normals[inner_side].z * inner_radial.y,
+                trajectory_normals[inner_side].z * inner_radial.x -
+                trajectory_normals[inner_side].x * inner_radial.z,
+                trajectory_normals[inner_side].x * inner_radial.y -
+                trajectory_normals[inner_side].y * inner_radial.x
             };
-            candidate_radial.x /= inner_radius;
-            candidate_radial.y /= inner_radius;
-            candidate_radial.z /= inner_radius;
-            const double candidate_angle = atan2(
-                candidate_radial.x * inner_tangent.x +
-                candidate_radial.y * inner_tangent.y +
-                candidate_radial.z * inner_tangent.z,
-                candidate_radial.x * inner_radial.x +
-                candidate_radial.y * inner_radial.y +
-                candidate_radial.z * inner_radial.z
-            );
-            double candidate_length = direction * candidate_angle;
-            while (candidate_length < 0.0) {
-                candidate_length += 2.0 * numbers::pi;
+            double inner_length = INFINITY;
+            const array<double, 2> roots{root_a, root_b};
+            for (double root : roots) {
+                if (root <= 0.0) {
+                    continue;
+                }
+                const utils::Coordinates candidate{
+                    circle_centers[outer_side].x + root * ray.x,
+                    circle_centers[outer_side].y + root * ray.y,
+                    circle_centers[outer_side].z + root * ray.z
+                };
+                utils::Coordinates candidate_radial{
+                    candidate.x - circle_centers[inner_side].x,
+                    candidate.y - circle_centers[inner_side].y,
+                    candidate.z - circle_centers[inner_side].z
+                };
+                candidate_radial.x /= inner_radius;
+                candidate_radial.y /= inner_radius;
+                candidate_radial.z /= inner_radius;
+                const double candidate_angle = atan2(
+                    candidate_radial.x * inner_tangent.x +
+                    candidate_radial.y * inner_tangent.y +
+                    candidate_radial.z * inner_tangent.z,
+                    candidate_radial.x * inner_radial.x +
+                    candidate_radial.y * inner_radial.y +
+                    candidate_radial.z * inner_radial.z
+                );
+                double candidate_length = direction * candidate_angle;
+                while (candidate_length < 0.0) {
+                    candidate_length += 2.0 * numbers::pi;
+                }
+                candidate_length *= inner_radius;
+                if (candidate_length < inner_length) {
+                    inner_length = candidate_length;
+                }
             }
-            candidate_length *= inner_radius;
-            if (candidate_length < inner_length) {
-                inner_length = candidate_length;
+            if (isfinite(inner_length)) {
+                rear_lengths[inner_side] = inner_length;
             }
-        }
-        if (!isfinite(inner_length)) {
-            continue;
-        }
-        if (wheel == 0) {
-            front_lengths[inner_side] = inner_length;
-        } else {
-            rear_lengths[inner_side] = inner_length;
         }
     }
 
-    back_trajectories_ = {};
+    rear_trajectories_ = {};
     for (int side = 0; side < 2; ++side) {
-        const utils::Coordinates& start = back_wheels[side];
+        const utils::Coordinates& start = rear_wheels[side];
         const double radius = rear_radii[side];
-        const double direction = forward ? -copysign(1.0, back_radii[side]) : copysign(1.0, back_radii[side]);
+        const double direction = forward ? -copysign(1.0, turn_radii[side]) : copysign(1.0, turn_radii[side]);
         const double length = rear_lengths[side];
 
         for (int i = 0; i <= int(length * resolution); ++i) {
             utils::Coordinates point;
-            if (isinf(back_radii[side])) {
+            if (isinf(turn_radii[side])) {
                 const double distance = -i / resolution;
                 point = {
                     start.x + distance * forwards[side].x / forward_lengths[side],
@@ -735,14 +708,14 @@ Trajectories WheelTrajectory::calculate_back(
                 }
             }
             if (side == 0) {
-                back_trajectories_.left_trajectory.push_back(point);
+                rear_trajectories_.left_trajectory.push_back(point);
             } else {
-                back_trajectories_.right_trajectory.push_back(point);
+                rear_trajectories_.right_trajectory.push_back(point);
             }
         }
     }
 
-    return back_trajectories_;
+    return rear_trajectories_;
 }
 
 
@@ -783,24 +756,24 @@ void WheelTrajectory::draw_front(
 }
 
 
-// Draw the back wheel trajectories
-void WheelTrajectory::draw_back(
+// Draw the rear wheel trajectories
+void WheelTrajectory::draw_rear(
     const bool forward,
     const float length,
     const float resolution,
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    get_back(forward, length, resolution);
+    get_rear(forward, length, resolution);
     draw_list_->polyline(
-        back_trajectories_.left_trajectory,
+        rear_trajectories_.left_trajectory,
         false,
         false,
         thickness,
         color
     );
     draw_list_->polyline(
-        back_trajectories_.right_trajectory,
+        rear_trajectories_.right_trajectory,
         false,
         false,
         thickness,
@@ -819,11 +792,11 @@ Trajectories WheelTrajectory::get_front(
 }
 
 
-// Get the back wheel trajectories
-Trajectories WheelTrajectory::get_back(
+// Get the rear wheel trajectories
+Trajectories WheelTrajectory::get_rear(
     const bool forward,
     const float length,
     const float resolution
 ) {
-    return calculate_back(forward, length, resolution);
+    return calculate_rear(forward, length, resolution);
 }

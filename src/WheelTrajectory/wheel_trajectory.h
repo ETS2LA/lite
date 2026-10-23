@@ -24,7 +24,7 @@ public:
         const float thickness = 3.0f,
         const utils::ColorFloat& color = {1.0f, 0.75f, 0.0f, 1.0f}
     );
-    void draw_back(
+    void draw_rear(
         const bool forward = false,
         const float length = 25.0f,
         const float resolution = 2.0f,
@@ -36,7 +36,7 @@ public:
         const float length = 25.0f,
         const float resolution = 2.0f
     );
-    Trajectories get_back(
+    Trajectories get_rear(
         const bool forward = false,
         const float length = 25.0f,
         const float resolution = 2.0f
@@ -48,7 +48,7 @@ private:
         const float length,
         const float resolution
     );
-    Trajectories calculate_back(
+    Trajectories calculate_rear(
         const bool forward,
         const float length,
         const float resolution
@@ -57,8 +57,8 @@ private:
     uint32_t last_front_trajectories_index_;
     Trajectories front_trajectories_;
 
-    uint32_t last_back_trajectories_index_;
-    Trajectories back_trajectories_;
+    uint32_t last_rear_trajectories_index_;
+    Trajectories rear_trajectories_;
 
     ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;

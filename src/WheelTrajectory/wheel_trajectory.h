@@ -14,7 +14,7 @@ struct Trajectories {
 
 class WheelTrajectory {
 public:
-    WheelTrajectory(AR *ar);
+    WheelTrajectory(AR *ar = nullptr);
     void draw_clear();
     void draw_publish();
     void draw_front(

@@ -7,7 +7,9 @@ using namespace std;
 
 
 WheelTrajectory::WheelTrajectory(AR *ar) {
-    draw_list_ = ar->get_draw_list("wheel_trajectory");
+    if (ar) {
+        draw_list_ = ar->get_draw_list("wheel_trajectory");
+    }
 }
 
 

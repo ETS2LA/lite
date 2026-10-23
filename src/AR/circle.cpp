@@ -113,6 +113,9 @@ void AR::circle(
         window_width_,
         window_height_
     );
+    if (screen_coords.distance < 0) {
+        return;
+    }
 
     AR::circle(
         static_cast<float>(screen_coords.x),
@@ -137,6 +140,9 @@ void AR::circle(
         window_width_,
         window_height_
     );
+    if (screen_coords.distance < 0) {
+        return;
+    }
 
     AR::circle(
         static_cast<float>(screen_coords.x),

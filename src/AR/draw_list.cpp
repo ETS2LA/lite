@@ -34,10 +34,6 @@ shared_ptr<const vector<DrawList::Command>> DrawList::snapshot() const {
     return atomic_load_explicit(&published_commands_, memory_order_acquire);
 }
 
-void DrawList::draw_wheel_trajectory(const utils::ColorFloat& color) {
-    add([color](AR& ar) { ar.draw_wheel_trajectory(color); });
-}
-
 void DrawList::text(const wstring& value, float x, float y, float size, const utils::ColorFloat& color) {
     add([value, x, y, size, color](AR& ar) { ar.text(value, x, y, size, color); });
 }

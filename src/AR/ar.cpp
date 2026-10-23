@@ -167,7 +167,7 @@ void AR::run() {
     glfwPollEvents();
 
     telemetry_reader_.get_latest_telemetry(telemetry_);
-    if (telemetry_.game.id == 0 || telemetry_.game.paused) {
+    if (!telemetry_.valid || telemetry_.game.id == 0 || telemetry_.game.paused) {
         glClear(GL_COLOR_BUFFER_BIT);
         glfwSwapBuffers(window_);
         return;

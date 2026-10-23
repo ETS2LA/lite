@@ -2,14 +2,15 @@
 
 #include "PositionEstimation/ground_projection.h"
 #include "PositionEstimation/triangulation.h"
+#include "WheelTrajectory/wheel_trajectory.h"
 #include "object_detection.h"
-#include <ets2la_telemetry/telemetry_reader.h>
 #include "tracker.h"
 #include "camera.h"
 #include "AR/ar.h"
 #include "input.h"
 #include "utils.h"
 
+#include <ets2la_telemetry/telemetry_reader.h>
 #include <opencv2/opencv.hpp>
 #include <functional>
 #include <windows.h>
@@ -20,7 +21,6 @@ class PositionEstimation {
 public:
     PositionEstimation(AR *ar);
     void run(std::vector<ObjectDetection> detections, int window_width, int window_height);
-    std::pair<std::vector<utils::Coordinates>, std::vector<utils::Coordinates>> get_wheel_trajectory();
 
 private:
     void draw(const std::vector<Tracker::Object>& objects) const;
@@ -35,8 +35,11 @@ private:
     static bool is_ground_projected_class(int class_id);
 
     std::shared_ptr<DrawList> draw_list_;
+    AR* ar_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;
+
+    WheelTrajectory wheel_trajectory_;
 
     cv::Mat frame_;
     cv::Mat frame_gray_;

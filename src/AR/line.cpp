@@ -175,12 +175,19 @@ void AR::line(
         window_width_,
         window_height_
     );
+    if (screen_start.distance < 0) {
+        return;
+    }
+
     utils::ScreenCoordinates screen_end = utils::convert_to_screen_coordinate(
         end,
         camera_coords,
         window_width_,
         window_height_
     );
+    if (screen_end.distance < 0) {
+        return;
+    }
 
     AR::line(
         static_cast<float>(screen_start.x),
@@ -208,12 +215,19 @@ void AR::line(
         window_width_,
         window_height_
     );
+    if (screen_start.distance < 0) {
+        return;
+    }
+
     utils::ScreenCoordinates screen_end = utils::convert_to_screen_coordinate(
         end,
         camera_coords,
         window_width_,
         window_height_
     );
+    if (screen_end.distance < 0) {
+        return;
+    }
 
     AR::line(
         static_cast<float>(screen_start.x),

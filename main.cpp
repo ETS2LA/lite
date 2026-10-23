@@ -9,16 +9,6 @@
 
 
 int main() {
-    //ScreenCapture* capture = new ScreenCapture(
-    //    std::bind(
-    //        utils::find_window,
-    //        std::wstring(L"Truck Simulator"),
-    //        std::vector<std::wstring>{L"Discord"}
-    //    ),
-    //    CaptureMode::BackgroundThread
-    //);
-    //capture->initialize();
-
     navigation_detection::initialize();
 
     std::promise<std::shared_ptr<AR>> ar_ready;
@@ -36,8 +26,6 @@ int main() {
 
         utils::Timer timer;
         while (true) {
-            ar->draw_wheel_trajectory({1.0f, 0.75f, 0.0f, 1.0f});
-
             ar->run();
 
             timer.limit_fps(120.0f);

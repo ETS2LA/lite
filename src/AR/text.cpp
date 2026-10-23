@@ -277,6 +277,9 @@ void AR::text(
         window_width_,
         window_height_
     );
+    if (screen_position.distance < 0) {
+        return;
+    }
 
     AR::text(
         text,
@@ -301,6 +304,9 @@ void AR::text(
         window_width_,
         window_height_
     );
+    if (screen_position.distance < 0) {
+        return;
+    }
 
     AR::text(
         text,

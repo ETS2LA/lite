@@ -1,11 +1,13 @@
 #include "PositionEstimation/position_estimation.h"
-#include <cmath>
 #include <format>
+#include <cmath>
 
 using namespace std;
 
 
-PositionEstimation::PositionEstimation(AR *ar) {
+PositionEstimation::PositionEstimation(AR *ar):
+wheel_trajectory_(ar)
+{
     draw_list_ = ar->get_draw_list("position_estimation");
     telemetry_reader_.get_latest_telemetry(telemetry_);
 }
@@ -64,186 +66,6 @@ void PositionEstimation::draw(const std::vector<Tracker::Object>& objects) const
 }
 
 
-double calculate_front_wheel_radius_(double steering_angle, double wheelbase) {
-    if (abs(steering_angle) < 0.001) {
-        return INFINITY;
-    }
-    steering_angle = utils::degrees_to_radians(steering_angle);
-    return wheelbase / sin(steering_angle);
-}
-
-
-double calculate_back_wheel_radius_(double steering_angle, double wheelbase) {
-    if (abs(steering_angle) < 0.001) {
-        return INFINITY;
-    }
-    steering_angle = utils::degrees_to_radians(steering_angle);
-    return wheelbase / tan(steering_angle);
-}
-
-
-pair<vector<utils::Coordinates>, vector<utils::Coordinates>> PositionEstimation::get_wheel_trajectory() {
-    utils::Rotations truck_rotation{
-        telemetry_.truck.world.orientation.pitch * 360.0f,
-        telemetry_.truck.world.orientation.heading * 360.0f,
-        telemetry_.truck.world.orientation.roll * 360.0f
-    };
-
-    vector<utils::Coordinates> wheel_coords;
-    vector<double> wheel_angles;
-    for (uint32_t i = 0; i < telemetry_.truck.wheel_count; ++i) {
-        if (telemetry_.truck.wheels[i].simulated) {
-            utils::Coordinates wheel_vector{
-                telemetry_.truck.wheels[i].position.x,
-                telemetry_.truck.wheels[i].position.y,
-                telemetry_.truck.wheels[i].position.z
-            };
-            wheel_vector = utils::rotate_vector(wheel_vector, truck_rotation);
-            utils::Coordinates coord{
-                telemetry_.truck.world.position.x + wheel_vector.x,
-                telemetry_.truck.world.position.y + wheel_vector.y,
-                telemetry_.truck.world.position.z + wheel_vector.z
-            };
-            wheel_coords.push_back(coord);
-
-            if (telemetry_.truck.wheels[i].steerable) {
-                wheel_angles.push_back(
-                    telemetry_.truck.wheels[i].steering * 360.0f
-                );
-            }
-        }
-    }
-
-    if (wheel_coords.size() < 4 || wheel_angles.size() < 2) {
-        return make_pair(vector<utils::Coordinates>(), vector<utils::Coordinates>());
-    }
-
-    utils::Coordinates front_left_wheel = wheel_coords[0];
-    utils::Coordinates front_right_wheel = wheel_coords[1];
-
-    utils::Coordinates back_left_wheel{0, 0, 0};
-    utils::Coordinates back_right_wheel{0, 0, 0};
-
-    for (int i = wheel_angles.size(); i < wheel_coords.size(); ++i) {
-        if (i % 2 == 0) {
-            back_left_wheel.x += wheel_coords[i].x;;
-            back_left_wheel.y += wheel_coords[i].y;
-            back_left_wheel.z += wheel_coords[i].z;
-        } else {
-            back_right_wheel.x += wheel_coords[i].x;;
-            back_right_wheel.y += wheel_coords[i].y;
-            back_right_wheel.z += wheel_coords[i].z;
-        }
-    }
-
-    back_left_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_left_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_left_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.x /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.y /= (wheel_coords.size() - wheel_angles.size()) / 2;
-    back_right_wheel.z /= (wheel_coords.size() - wheel_angles.size()) / 2;
-
-    double wheel_base_left = sqrt(
-        pow(front_left_wheel.x - back_left_wheel.x, 2) +
-        pow(front_left_wheel.y - back_left_wheel.y, 2) +
-        pow(front_left_wheel.z - back_left_wheel.z, 2)
-    );
-    double wheel_base_right = sqrt(
-        pow(front_right_wheel.x - back_right_wheel.x, 2) +
-        pow(front_right_wheel.y - back_right_wheel.y, 2) +
-        pow(front_right_wheel.z - back_right_wheel.z, 2)
-    );
-
-    double front_left_wheel_radius = calculate_front_wheel_radius_(
-        wheel_angles[0],
-        wheel_base_left
-    );
-    double front_right_wheel_radius = calculate_front_wheel_radius_(
-        wheel_angles[1],
-        wheel_base_right
-    );
-    double back_left_wheel_radius = calculate_back_wheel_radius_(
-        wheel_angles[0],
-        wheel_base_left
-    );
-    double back_right_wheel_radius = calculate_back_wheel_radius_(
-        wheel_angles[1],
-        wheel_base_right
-    );
-
-    if (front_left_wheel_radius == INFINITY) front_left_wheel_radius = 1000000.0;
-    if (front_right_wheel_radius == INFINITY) front_right_wheel_radius = 1000000.0;
-    if (back_left_wheel_radius == INFINITY) back_left_wheel_radius = 1000000.0;
-    if (back_right_wheel_radius == INFINITY) back_right_wheel_radius = 1000000.0;
-
-    utils::Coordinates left_offset_local{
-        -back_left_wheel_radius - 0.3,
-        0.0,
-        0.0
-    };
-    utils::Coordinates left_offset_world = utils::rotate_vector(left_offset_local, truck_rotation);
-    utils::Coordinates left_circle_center{
-        back_left_wheel.x + left_offset_world.x,
-        telemetry_.truck.world.position.y + left_offset_world.y,
-        back_left_wheel.z + left_offset_world.z
-    };
-
-    utils::Coordinates right_offset_local{
-        -back_right_wheel_radius + 0.3,
-        0.0,
-        0.0
-    };
-    utils::Coordinates right_offset_world = utils::rotate_vector(right_offset_local, truck_rotation);
-    utils::Coordinates right_circle_center{
-        back_right_wheel.x + right_offset_world.x,
-        telemetry_.truck.world.position.y + right_offset_world.y,
-        back_right_wheel.z + right_offset_world.z
-    };
-
-    vector<utils::Coordinates> wheel_trajectory_left;
-    for (int i = 0; i <= 45; ++i) {
-        double angle = utils::degrees_to_radians(
-            i * (1.0 / -front_left_wheel_radius) * 30.0 - utils::radians_to_degrees(atan(wheel_base_left / front_left_wheel_radius))
-        );
-
-        utils::Coordinates local_point{
-            front_left_wheel_radius * cos(angle),
-            0.0,
-            front_left_wheel_radius * sin(angle)
-        };
-        utils::Coordinates world_point = utils::rotate_vector(local_point, truck_rotation);
-
-        double x = left_circle_center.x + world_point.x;
-        double y = left_circle_center.y + world_point.y;
-        double z = left_circle_center.z + world_point.z;
-
-        wheel_trajectory_left.push_back({x, y, z});
-    }
-
-    vector<utils::Coordinates> wheel_trajectory_right;
-    for (int i = 0; i <= 45; ++i) {
-        double angle = utils::degrees_to_radians(
-            i * (1.0 / -front_right_wheel_radius) * 30.0 - utils::radians_to_degrees(atan(wheel_base_right / front_right_wheel_radius))
-        );
-
-        utils::Coordinates local_point{
-            front_right_wheel_radius * cos(angle),
-            0.0,
-            front_right_wheel_radius * sin(angle)
-        };
-        utils::Coordinates world_point = utils::rotate_vector(local_point, truck_rotation);
-
-        double x = right_circle_center.x + world_point.x;
-        double y = right_circle_center.y + world_point.y;
-        double z = right_circle_center.z + world_point.z;
-
-        wheel_trajectory_right.push_back({x, y, z});
-    }
-
-    return {wheel_trajectory_left, wheel_trajectory_right};
-}
-
-
 cv::Point top_down_view_point(
     const utils::Coordinates& world_point,
     const utils::CameraCoordinates& camera_coords,
@@ -264,6 +86,10 @@ cv::Point top_down_view_point(
 
 
 void PositionEstimation::run(std::vector<ObjectDetection> detections, int window_width, int window_height) {
+    if (!telemetry_reader_.get_latest_telemetry(telemetry_)) {
+        return;
+    }
+
     draw_list_->clear();
     auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
@@ -311,14 +137,18 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
         );
     }
 
-    auto wheel_trajectories = get_wheel_trajectory();
+    wheel_trajectory_.draw_clear();
+    wheel_trajectory_.draw_front();
+    wheel_trajectory_.draw_publish();
+    auto wheel_trajectories = wheel_trajectory_.get_front();
+
     vector<cv::Point> poly_line_left;
-    for (const auto& point : wheel_trajectories.first) {
+    for (const auto& point : wheel_trajectories.left_trajectory) {
         poly_line_left.push_back(top_down_view_point(point, camera_coords, display_frame.size(), 25));
     }
 
     vector<cv::Point> poly_line_right;
-    for (const auto& point : wheel_trajectories.second) {
+    for (const auto& point : wheel_trajectories.right_trajectory) {
         poly_line_right.push_back(top_down_view_point(point, camera_coords, display_frame.size(), 25));
     }
 

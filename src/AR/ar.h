@@ -1,18 +1,19 @@
 #pragma once
 
-#include <ets2la_telemetry/telemetry_reader.h>
 #include "draw_list.h"
+#include "camera.h"
 
+#include <ets2la_telemetry/telemetry_reader.h>
+#include <unordered_map>
 #include <GLFW/glfw3.h>
+#include <functional>
+#include <windows.h>
 #include <cstddef>
 #include <cstdint>
-#include <functional>
 #include <memory>
-#include <mutex>
 #include <string>
-#include <unordered_map>
-#include <windows.h>
 #include <thread>
+#include <mutex>
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -25,7 +26,6 @@ public:
     ~AR();
     std::shared_ptr<DrawList> get_draw_list(const std::string& plugin_id);
     void remove_draw_list(const std::string& plugin_id);
-    void draw_wheel_trajectory(const utils::ColorFloat& color);
     void run();
 
     // MARK: text

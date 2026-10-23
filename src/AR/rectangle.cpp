@@ -241,12 +241,19 @@ void AR::rectangle(
         window_width_,
         window_height_
     );
+    if (top_left_screen.distance < 0) {
+        return;
+    }
+
     utils::ScreenCoordinates bottom_right_screen = utils::convert_to_screen_coordinate(
         bottom_right,
         camera_coords,
         window_width_,
         window_height_
     );
+    if (bottom_right_screen.distance < 0) {
+        return;
+    }
 
     AR::rectangle(
         static_cast<float>(top_left_screen.x),
@@ -274,12 +281,19 @@ void AR::rectangle(
         window_width_,
         window_height_
     );
+    if (top_left_screen.distance < 0) {
+        return;
+    }
+
     utils::ScreenCoordinates bottom_right_screen = utils::convert_to_screen_coordinate(
         bottom_right,
         camera_coords,
         window_width_,
         window_height_
     );
+    if (bottom_right_screen.distance < 0) {
+        return;
+    }
 
     AR::rectangle(
         static_cast<float>(top_left_screen.x),

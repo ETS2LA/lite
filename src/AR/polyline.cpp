@@ -271,6 +271,9 @@ void AR::polyline(
             window_width_,
             window_height_
         );
+        if (screen_p.distance < 0) {
+            continue;
+        }
         pts.emplace_back(static_cast<float>(screen_p.x), static_cast<float>(screen_p.y));
     }
 
@@ -301,6 +304,9 @@ void AR::polyline(
             window_width_,
             window_height_
         );
+        if (screen_p.distance < 0) {
+            continue;
+        }
         pts.emplace_back(static_cast<float>(screen_p.x), static_cast<float>(screen_p.y));
     }
 

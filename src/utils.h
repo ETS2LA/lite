@@ -3,6 +3,7 @@
 #include <ets2la_telemetry/telemetry_reader.h>
 #include <opencv2/opencv.hpp>
 #include <windows.h>
+#include <chrono>
 #include <string>
 #include <vector>
 

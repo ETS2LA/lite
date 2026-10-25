@@ -5,8 +5,9 @@
 using namespace std;
 
 
-PositionEstimation::PositionEstimation(AR *ar):
-wheel_trajectory_(ar)
+PositionEstimation::PositionEstimation(AR *ar, SharedData& shared_data):
+wheel_trajectory_(ar),
+shared_data_(shared_data)
 {
     draw_list_ = ar->get_draw_list("position_estimation");
     telemetry_reader_.get_latest_telemetry(telemetry_);
@@ -117,10 +118,21 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
         cv::Scalar{0, 75, 255},  // traffic delineator
     };
 
+    PositionSnapshot snapshot;
+    snapshot.objects.reserve(objects.size());
+
     for (auto& obj : objects) {
         auto position = estimate_position(camera_coords, obj, window_width, window_height);
 
-        if (obj.accuracy < 0.1f) {
+        const bool position_valid = obj.accuracy >= 0.1f;
+
+        snapshot.objects.push_back(PositionedObject{
+            .tracking = obj,
+            .position = position,
+            .position_valid = position_valid
+        });
+
+        if (!position_valid) {
             continue;
         }
 
@@ -136,6 +148,8 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
             -1
         );
     }
+
+    shared_data_.set("positions", move(snapshot));
 
     wheel_trajectory_.draw_clear();
     wheel_trajectory_.draw_front();

@@ -20,8 +20,7 @@ Controller::~Controller() {
 }
 
 void Controller::steering_pid_loop() {
-    auto steering_pid = utils::PIDController(10.0f, 0.5f, 0.05f);
-    steering_pid.set_integral_limit(1.0f);
+    auto steering_pid = utils::PIDController(10.0f, 0.0f, 0.05f);
 
     ets2la_telemetry::TelemetryReader telemetry_reader;
     ets2la_telemetry::Telemetry telemetry;

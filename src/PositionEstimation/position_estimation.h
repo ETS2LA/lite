@@ -4,6 +4,7 @@
 #include "ObjectDetection/object_detection.h"
 #include "PositionEstimation/triangulation.h"
 #include "WheelTrajectory/wheel_trajectory.h"
+#include "shared_data.h"
 #include "tracker.h"
 #include "camera.h"
 #include "AR/ar.h"
@@ -19,7 +20,7 @@
 
 class PositionEstimation {
 public:
-    PositionEstimation(AR *ar);
+    PositionEstimation(AR *ar, SharedData& shared_data);
     void run(std::vector<ObjectDetection> detections, int window_width, int window_height);
 
 private:
@@ -34,8 +35,9 @@ private:
 
     static bool is_ground_projected_class(int class_id);
 
-    std::shared_ptr<DrawList> draw_list_;
     AR* ar_;
+    SharedData& shared_data_;
+    std::shared_ptr<DrawList> draw_list_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;
 

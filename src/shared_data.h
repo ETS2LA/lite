@@ -1,5 +1,6 @@
 #pragma once
 
+#include "NavigationDetection/navigation_detection.h"
 #include "ObjectDetection/object_detection.h"
 #include "tracker.h"
 #include "utils.h"
@@ -12,14 +13,18 @@
 #include <any>
 
 
-struct PositionedObject {
+struct PositionEstimationObject {
     Tracker::Object tracking;
     utils::Coordinates position{};
     bool position_valid = false;
 };
 
-struct PositionSnapshot {
-    std::vector<PositionedObject> objects;
+struct PositionEstimationData {
+    std::vector<PositionEstimationObject> objects;
+};
+
+struct NavigationDetectionData {
+    int turn;
 };
 
 

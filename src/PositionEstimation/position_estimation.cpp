@@ -118,15 +118,15 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
         cv::Scalar{0, 75, 255},  // traffic delineator
     };
 
-    PositionSnapshot snapshot;
-    snapshot.objects.reserve(objects.size());
+    PositionEstimationData position_estimation_data;
+    position_estimation_data.objects.reserve(objects.size());
 
     for (auto& obj : objects) {
         auto position = estimate_position(camera_coords, obj, window_width, window_height);
 
         const bool position_valid = obj.accuracy >= 0.1f;
 
-        snapshot.objects.push_back(PositionedObject{
+        position_estimation_data.objects.push_back(PositionEstimationObject{
             .tracking = obj,
             .position = position,
             .position_valid = position_valid
@@ -149,7 +149,7 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
         );
     }
 
-    shared_data_.set("positions", move(snapshot));
+    shared_data_.set("position_estimation", move(position_estimation_data));
 
     wheel_trajectory_.draw_clear();
     wheel_trajectory_.draw_front();

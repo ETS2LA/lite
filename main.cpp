@@ -1,6 +1,6 @@
-﻿#include "PositionEstimation/position_estimation.h"
+﻿#include "NavigationDetection/navigation_detection.h"
+#include "PositionEstimation/position_estimation.h"
 #include "ObjectDetection/object_detection.h"
-#include "navigation_detection.h"
 #include "shared_data.h"
 #include "ACC/acc.h"
 #include "utils.h"
@@ -12,9 +12,8 @@
 
 
 int main() {
-    navigation_detection::initialize();
-
     SharedData shared_data;
+    NavigationDetection navigation_detection(shared_data);
 
     std::promise<std::shared_ptr<AR>> ar_ready;
     auto ar_future = ar_ready.get_future();
@@ -62,7 +61,7 @@ int main() {
     ACC acc(shared_data);
     utils::Timer timer;
     while (true) {
-        navigation_detection::run();
+        navigation_detection.update();
         acc.update();
 
         timer.limit_fps(20.0f);

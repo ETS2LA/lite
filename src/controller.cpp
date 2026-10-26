@@ -75,7 +75,12 @@ void Controller::speed_pid_loop() {
 
         if (speed_control_.load(memory_order_acquire)) {
             const float target = speed_target_.load(memory_order_acquire);
-            if (target - telemetry.truck.speed > -0.1f) {
+            if (target < 3) {
+                acceleration_output_.store(0.0f, memory_order_release);
+                acceleration_pid.reset();
+                brake_output_.store(0.2f, memory_order_release);
+                brake_pid.reset();
+            } else if (target - telemetry.truck.speed > -0.1f) {
                 acceleration_output_.store(
                     clamp(
                         acceleration_pid.update(

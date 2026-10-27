@@ -2,22 +2,8 @@
     "configurations": [
         {
             "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "${workspaceFolder}/build/**",
-                "${env:OpenCV_DIR}/include",
-                "${env:glfw3_DIR}/include",
-                "${env:freetype_DIR}/include",
-                "${env:OnnxRuntime_DIR}/build/native/include"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.22621.0",
+            "configurationProvider": "ms-vscode.cmake-tools",
             "compilerPath": "cl.exe",
-            "cStandard": "c23",
             "cppStandard": "c++23",
             "intelliSenseMode": "windows-msvc-x64"
         }

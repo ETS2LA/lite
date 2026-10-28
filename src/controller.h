@@ -13,6 +13,9 @@ public:
     Controller() = default;
     ~Controller();
 
+    void distance_speed(float distance, float target_speed);
+    bool distance_speed_enabled();
+    void disable_distance_speed();
     void update();
     void enabled(bool enabled);
     bool is_enabled() const;
@@ -43,6 +46,8 @@ private:
     void steering_pid_loop();
     void speed_pid_loop();
 
+    ets2la_telemetry::TelemetryReader telemetry_reader_;
+    ets2la_telemetry::Telemetry telemetry_;
     ets2la_controller::Controller controller_;
     std::thread steering_pid_thread_;
     std::thread speed_pid_thread_;
@@ -56,4 +61,12 @@ private:
     std::atomic<float> brake_output_{0.0f};
     std::atomic<bool> gamepad_mode_{false};
     std::atomic<bool> speed_control_{false};
+
+    bool ds_enabled_ = false;
+    float ds_target_distance_;
+    float ds_target_speed_;
+    float ds_start_speed_;
+    float ds_current_distance_;
+    float ds_current_time_;
+    uint64_t ds_last_frame_index_;
 };

@@ -99,8 +99,7 @@ bool ACC::update() {
         return false;
     }
 
-    ets2la_telemetry::Telemetry telemetry;
-    if (!telemetry_reader_.get_telemetry(telemetry, 0)) {
+    if (!telemetry_reader_.get_telemetry(telemetry_, 0)) {
         controller_.target_speed.reset();
         controller_.update();
         return false;
@@ -111,10 +110,29 @@ bool ACC::update() {
 
     LeadVehicle lead;
     const auto trajectories = wheel_trajectory_.get_front(true, max_distance, 1.0f);
-    float speed_limit = navigation_detection->turn == 0 ? telemetry.truck.navigation_speed_limit : 25.0f/3.6f;
-    if (speed_limit <= 0.0f) speed_limit = 30.0f/3.6f;
 
-    if (position_estimation && !telemetry.game.paused) {
+    const bool turning = navigation_detection->turn != 0;
+
+    if (telemetry_.truck.navigation_speed_limit > 0.0f) {
+        speed_limit_ = telemetry_.truck.navigation_speed_limit;
+    }
+
+    float target_speed = turning ? 25.0f / 3.6f : speed_limit_;
+
+    if (target_speed > 0.0f) {
+        if (std::abs(previous_target_speed_ - target_speed) > 0.01f) {
+            controller_.distance_speed(30, target_speed);
+
+            if (controller_.distance_speed_enabled()) {
+                previous_target_speed_ = target_speed;
+            }
+        }
+    } else {
+        controller_.disable_distance_speed();
+        previous_target_speed_ = 0.0f;
+    }
+
+    if (position_estimation && !telemetry_.game.paused) {
         for (const auto& object : position_estimation->objects) {
             if (!object.position_valid || object.tracking.is_coasting || !is_vehicle(object)) {
                 continue;
@@ -137,13 +155,12 @@ bool ACC::update() {
         }
     }
 
-    if (telemetry.game.paused) {
+    if (telemetry_.game.paused) {
         controller_.target_speed.reset();
     } else {
-        float target_speed = speed_limit;
-        if (std::isfinite(lead.distance) && !telemetry.game.paused) {
+        if (std::isfinite(lead.distance) && !telemetry_.game.paused) {
             const float desired_distance = std::clamp(
-                min_distance + telemetry.truck.speed * following_time,
+                min_distance + telemetry_.truck.speed * following_time,
                 min_distance,
                 max_distance
             );
@@ -154,7 +171,7 @@ bool ACC::update() {
                     : 0.0f;
                 target_speed = std::min(
                     target_speed,
-                    std::max(0.0f, telemetry.truck.speed * distance_ratio)
+                    std::max(0.0f, telemetry_.truck.speed * distance_ratio)
                 );
             }
         }

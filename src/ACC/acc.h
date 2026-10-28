@@ -22,8 +22,12 @@ public:
 private:
     const SharedData& shared_data_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;
+    ets2la_telemetry::Telemetry telemetry_;
     WheelTrajectory wheel_trajectory_;
     InputHandler input_;
     Controller controller_;
     bool enabled_ = true;
+
+    float speed_limit_;
+    float previous_target_speed_;
 };

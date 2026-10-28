@@ -183,7 +183,6 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
 
 vector<ObjectDetection> ObjectDetector::run() {
     if (!reader.get_frame(capture_frame, 1000)) {
-        std::printf("waiting for frames... (%s)\n", reader.last_error().c_str());
         return {};
     }
 

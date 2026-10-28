@@ -75,7 +75,7 @@ void Controller::speed_pid_loop() {
 
         if (speed_control_.load(memory_order_acquire)) {
             const float target = speed_target_.load(memory_order_acquire);
-            if (target < 3) {
+            if (target < 0.75) {
                 acceleration_output_.store(0.0f, memory_order_release);
                 acceleration_pid.reset();
                 brake_output_.store(0.2f, memory_order_release);
@@ -113,6 +113,27 @@ void Controller::speed_pid_loop() {
     }
 }
 
+void Controller::distance_speed(float distance, float target_speed) {
+    if (!telemetry_reader_.get_latest_telemetry(telemetry_)) {
+        return;
+    } else {
+        ds_start_speed_ = telemetry_.truck.speed;
+        ds_current_time_ = telemetry_.game.paused_simulation_time_us;
+    }
+    ds_enabled_ = true;
+    ds_target_distance_ = distance;
+    ds_target_speed_ = target_speed;
+    ds_current_distance_ = 0;
+}
+
+bool Controller::distance_speed_enabled() {
+    return ds_enabled_;
+}
+
+void Controller::disable_distance_speed() {
+    ds_enabled_ = false;
+}
+
 void Controller::update() {
     float throttle = 0.0f;
     float brake = 0.0f;
@@ -133,6 +154,41 @@ void Controller::update() {
         steering_pid_running_.store(false, memory_order_release);
         if (steering_pid_thread_.joinable()) {
             steering_pid_thread_.join();
+        }
+    }
+
+    if (ds_enabled_ &&
+        telemetry_reader_.get_latest_telemetry(telemetry_) &&
+        telemetry_.frame_index != ds_last_frame_index_
+    ) {
+        ds_last_frame_index_ = telemetry_.frame_index;
+
+        ds_current_distance_ += telemetry_.truck.speed * ((
+            telemetry_.game.paused_simulation_time_us -
+            ds_current_time_
+        ) / 1000000.0);
+        ds_current_time_ = telemetry_.game.paused_simulation_time_us;
+
+        float progress = clamp(
+            ds_current_distance_ / ds_target_distance_,
+            0.0f,
+            1.0f
+        );
+
+        // 6x^5 - 15x^4 + 10x^3 D=[0; 1] W=[0; 1]
+        float ratio = 6 * pow(progress, 5) - 15 * pow(progress, 4) + 10 * pow(progress, 3);
+
+        target_speed = ratio * ds_target_speed_ + (1 - ratio) * ds_start_speed_;
+
+        if (target_speed < 0.75f && progress < 0.95f) {
+            target_speed = 0.75f;
+        } else if (target_speed < 0.75f) {
+            target_speed = 0.0f;
+        }
+
+        if (progress >= 1.0f) {
+            target_speed = ds_target_speed_;
+            disable_distance_speed();
         }
     }
 

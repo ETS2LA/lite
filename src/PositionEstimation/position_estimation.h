@@ -26,7 +26,7 @@ public:
 private:
     void draw(const std::vector<Tracker::Object>& objects) const;
 
-    utils::Coordinates estimate_position(
+    utils::PositionEstimationCoordinates estimate_position(
         const utils::CameraCoordinates& camera_coords,
         Tracker::Object& object,
         int window_width,

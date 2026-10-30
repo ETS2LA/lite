@@ -6,16 +6,17 @@
 using namespace std;
 
 
-utils::Coordinates triangulate_position(
+pair<utils::Coordinates, float> triangulate(
     const utils::CameraCoordinates& camera_coords,
-    Tracker::Object& object,
+    const utils::CameraCoordinates& cam0,
+    const utils::Angles ang0,
+    const float x,
+    const float y,
     const int window_width,
     const int window_height
 ) {
-    const utils::CameraCoordinates& cam0 = object.first_camera_coords;
-    const utils::Angles& ang0 = object.angles;
     const utils::Angles ang1 = utils::convert_to_angles(
-        {object.ground_anchor_x(), object.ground_anchor_y(), 0.0f},
+        {x, y, 0.0f},
         window_width,
         window_height
     );
@@ -55,9 +56,9 @@ utils::Coordinates triangulate_position(
 
     const double baseline = std::sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
     const double sin_angle = std::sqrt(std::max(0.0, 1.0 - b * b));
-    object.accuracy = baseline * sin_angle;
+    float accuracy = baseline * sin_angle;
 
-    const utils::Coordinates mid{
+    utils::Coordinates mid{
         (c0.x + c1.x) * 0.5,
         (c0.y + c1.y) * 0.5,
         (c0.z + c1.z) * 0.5
@@ -65,8 +66,69 @@ utils::Coordinates triangulate_position(
 
     const utils::Coordinates v1{mid.x - p1.x, mid.y - p1.y, mid.z - p1.z};
     if (utils::dot_product(d1, v1) < 0.0) {
-        object.accuracy = 0.0f;
+        accuracy = 0.0f;
+        mid.x = 0.0;
+        mid.y = 0.0;
+        mid.z = 0.0;
     }
 
-    return mid;
+    return make_pair(mid, accuracy);
+}
+
+
+utils::PositionEstimationCoordinates triangulate_position(
+    const utils::CameraCoordinates& camera_coords,
+    Tracker::Object& object,
+    const int window_width,
+    const int window_height
+) {
+    const utils::CameraCoordinates& cam0 = object.first_camera_coords;
+
+    if (is_vehicle(object.class_id)) {
+        auto coord_left = triangulate(
+            camera_coords,
+            cam0,
+            object.angles_left,
+            object.left_x(),
+            object.bottom_y(),
+            window_width,
+            window_height
+        );
+
+        auto coord_right = triangulate(
+            camera_coords,
+            cam0,
+            object.angles_right,
+            object.right_x(),
+            object.bottom_y(),
+            window_width,
+            window_height
+        );
+
+        object.accuracy += coord_left.second;
+        object.accuracy += coord_right.second;
+        object.accuracy /= 2;
+        return utils::PositionEstimationCoordinates{
+            coord_left.first,
+            coord_right.first,
+            {0.0, 0.0, 0.0}
+        };
+    } else {
+        auto coord_center = triangulate(
+            camera_coords,
+            cam0,
+            object.angles_center,
+            object.center_x(),
+            object.bottom_y(),
+            window_width,
+            window_height
+        );
+        object.accuracy = coord_center.second;
+        return utils::PositionEstimationCoordinates{
+            {0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0},
+            coord_center.first
+        };
+    }
+
 }

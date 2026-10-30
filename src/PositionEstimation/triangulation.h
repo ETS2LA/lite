@@ -4,7 +4,7 @@
 #include "utils.h"
 
 
-utils::Coordinates triangulate_position(
+utils::PositionEstimationCoordinates triangulate_position(
     const utils::CameraCoordinates& camera_coords,
     Tracker::Object& object,
     const int window_width,

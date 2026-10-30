@@ -15,7 +15,7 @@
 
 struct PositionEstimationObject {
     Tracker::Object tracking;
-    utils::Coordinates position{};
+    utils::PositionEstimationCoordinates position{};
     bool position_valid = false;
 };
 

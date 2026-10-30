@@ -75,6 +75,23 @@ struct CameraCoordinates {
     float roll;
 };
 
+
+/**
+ * PositionEstimation coordinate structure.
+ * @param x X coordinate of the camera.
+ * @param y Y coordinate of the camera.
+ * @param z Z coordinate of the camera.
+ * @param pitch Pitch angle of the camera in degrees.
+ * @param yaw Yaw angle of the camera in degrees.
+ * @param roll Roll angle of the camera in degrees.
+ */
+struct PositionEstimationCoordinates {
+    utils::Coordinates left;
+    utils::Coordinates right;
+    utils::Coordinates center;
+};
+
+
 /**
  * Float RGBA color structure.
  * @param r Red (0.0 - 1.0)

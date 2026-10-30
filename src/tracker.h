@@ -37,7 +37,9 @@ public:
         float vwidth = 0.0f;
         float vheight = 0.0f;
 
-        utils::Angles angles;
+        utils::Angles angles_left;
+        utils::Angles angles_right;
+        utils::Angles angles_center;
         utils::CameraCoordinates first_camera_coords;
         utils::CameraCoordinates previous_camera_coords;
 
@@ -60,8 +62,10 @@ public:
 
         float accuracy = 0.0f;
 
-        float ground_anchor_x() const { return x; }
-        float ground_anchor_y() const { return y + height * 0.5f; }
+        float center_x() const { return x; }
+        float left_x() const { return x - width * 0.5f; }
+        float right_x() const { return x + width * 0.5f; }
+        float bottom_y() const { return y + height * 0.5f; }
     };
 
     struct Config {

@@ -112,7 +112,7 @@ Timer::Timer():
         nullptr,
         CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
         TIMER_MODIFY_STATE | SYNCHRONIZE
-    )), 
+    )),
     last_delta_update_(0.0),
     last_fps_update_() {}
 

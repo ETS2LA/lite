@@ -14,10 +14,6 @@ struct LeadVehicle {
     int id = -1;
 };
 
-bool is_vehicle(const PositionEstimationObject& object) {
-    return object.tracking.class_id >= 0 && object.tracking.class_id <= 2;
-}
-
 float cross_product(
     const utils::Coordinates& a,
     const utils::Coordinates& b,
@@ -134,14 +130,28 @@ bool ACC::update() {
 
     if (position_estimation && !telemetry_.game.paused) {
         for (const auto& object : position_estimation->objects) {
-            if (!object.position_valid || object.tracking.is_coasting || !is_vehicle(object)) {
+            if (!object.position_valid || object.tracking.is_coasting || !is_vehicle(object.tracking.class_id)) {
                 continue;
             }
             LeadVehicle candidate;
             update_lead(
                 trajectories.left_trajectory,
                 trajectories.right_trajectory,
-                object.position,
+                object.position.left,
+                object.tracking.id,
+                candidate
+            );
+            update_lead(
+                trajectories.left_trajectory,
+                trajectories.right_trajectory,
+                object.position.right,
+                object.tracking.id,
+                candidate
+            );
+            update_lead(
+                trajectories.left_trajectory,
+                trajectories.right_trajectory,
+                object.position.center,
                 object.tracking.id,
                 candidate
             );

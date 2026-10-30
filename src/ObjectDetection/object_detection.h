@@ -19,7 +19,7 @@ enum class ObjectDetectionDevice {
 };
 
 inline const std::vector<std::string> kObjectClassNames = {
-    "car", 
+    "car",
     "bus",
     "truck",
     "stoplight",
@@ -34,6 +34,16 @@ inline const std::vector<std::string> kObjectClassNames = {
     "traffic cone",
     "traffic delineator"
 };
+
+
+/**
+ * Check if the class is a vehicle.
+ * @param class_id The class ID to check.
+ * @return True if the class is a vehicle, false otherwise.
+ */
+inline bool is_vehicle(const int class_id) {
+    return class_id >= 0 && class_id <= 2;
+}
 
 
 class ObjectDetector {

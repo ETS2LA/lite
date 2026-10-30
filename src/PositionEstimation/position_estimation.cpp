@@ -19,23 +19,47 @@ bool PositionEstimation::is_ground_projected_class(int class_id) {
 }
 
 
-utils::Coordinates PositionEstimation::estimate_position(
+utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
     const utils::CameraCoordinates& camera_coords,
     Tracker::Object& object,
     int window_width,
     int window_height
 ) {
     if (is_ground_projected_class(object.class_id)) {
-        const utils::Angles angles = utils::convert_to_angles(
-            {object.ground_anchor_x(), object.ground_anchor_y(), 0.0f},
-            window_width,
-            window_height
-        );
-
         bool ok = false;
-        const utils::Coordinates position = ground_projection_.project_to_ground(angles, camera_coords, ok);
-        object.accuracy = ok ? 1.0f : 0.0f;
-        return position;
+        if (is_vehicle(object.class_id)) {
+            const utils::Angles angles_left = utils::convert_to_angles(
+                {object.left_x(), object.bottom_y(), 0.0f},
+                window_width,
+                window_height
+            );
+            const utils::Angles angles_right = utils::convert_to_angles(
+                {object.right_x(), object.bottom_y(), 0.0f},
+                window_width,
+                window_height
+            );
+            const utils::Coordinates position_left = ground_projection_.project_to_ground(angles_left, camera_coords, ok);
+            const utils::Coordinates position_right = ground_projection_.project_to_ground(angles_right, camera_coords, ok);
+            object.accuracy = ok ? 1.0f : 0.0f;
+            return utils::PositionEstimationCoordinates{
+                position_left,
+                position_right,
+                {0.0, 0.0, 0.0}
+            };
+        } else {
+            const utils::Angles angles_center = utils::convert_to_angles(
+                {object.center_x(), object.bottom_y(), 0.0f},
+                window_width,
+                window_height
+            );
+            const utils::Coordinates position_center = ground_projection_.project_to_ground(angles_center, camera_coords, ok);
+            object.accuracy = ok ? 1.0f : 0.0f;
+            return utils::PositionEstimationCoordinates{
+                {0.0, 0.0, 0.0},
+                {0.0, 0.0, 0.0},
+                position_center
+            };
+        }
     }
 
     return triangulate_position(camera_coords, object, window_width, window_height);
@@ -136,17 +160,32 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
             continue;
         }
 
-        const cv::Point pt = top_down_view_point(position, camera_coords, display_frame.size(), 25);
+        if (is_vehicle(obj.class_id)) {
+            const cv::Point pt1 = top_down_view_point(position.left, camera_coords, display_frame.size(), 25);
+            const cv::Point pt2 = top_down_view_point(position.right, camera_coords, display_frame.size(), 25);
 
-        cv::circle(
-            display_frame,
-            pt,
-            2,
-            (obj.class_id >= 0 && obj.class_id < static_cast<int>(class_colors.size()))
-                ? class_colors[obj.class_id]
-                : cv::Scalar{255, 255, 255},
-            -1
-        );
+            cv::line(
+                display_frame,
+                pt1,
+                pt2,
+                (obj.class_id >= 0 && obj.class_id < static_cast<int>(class_colors.size()))
+                    ? class_colors[obj.class_id]
+                    : cv::Scalar{255, 255, 255},
+                2
+            );
+        } else {
+            const cv::Point pt = top_down_view_point(position.center, camera_coords, display_frame.size(), 25);
+
+            cv::circle(
+                display_frame,
+                pt,
+                2,
+                (obj.class_id >= 0 && obj.class_id < static_cast<int>(class_colors.size()))
+                    ? class_colors[obj.class_id]
+                    : cv::Scalar{255, 255, 255},
+                -1
+            );
+        }
     }
 
     shared_data_.set("position_estimation", move(position_estimation_data));

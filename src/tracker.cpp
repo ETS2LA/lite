@@ -218,8 +218,18 @@ vector<Tracker::Object>& Tracker::update(
             obj.y = box_center_y(det.box);
             obj.width = static_cast<float>(det.box.width);
             obj.height = static_cast<float>(det.box.height);
-            obj.angles = utils::convert_to_angles(
-                {obj.ground_anchor_x(), obj.ground_anchor_y(), 0.0f},
+            obj.angles_left = utils::convert_to_angles(
+                {obj.left_x(), obj.bottom_y(), 0.0f},
+                window_width,
+                window_height
+            );
+            obj.angles_right = utils::convert_to_angles(
+                {obj.right_x(), obj.bottom_y(), 0.0f},
+                window_width,
+                window_height
+            );
+            obj.angles_center = utils::convert_to_angles(
+                {obj.center_x(), obj.bottom_y(), 0.0f},
                 window_width,
                 window_height
             );
@@ -478,8 +488,18 @@ vector<Tracker::Object>& Tracker::update(
         obj.y = box_center_y(det.box);
         obj.width = static_cast<float>(det.box.width);
         obj.height = static_cast<float>(det.box.height);
-        obj.angles = utils::convert_to_angles(
-            {obj.ground_anchor_x(), obj.ground_anchor_y(), 0.0f},
+        obj.angles_left = utils::convert_to_angles(
+            {obj.left_x(), obj.bottom_y(), 0.0f},
+            window_width,
+            window_height
+        );
+        obj.angles_right = utils::convert_to_angles(
+            {obj.right_x(), obj.bottom_y(), 0.0f},
+            window_width,
+            window_height
+        );
+        obj.angles_center = utils::convert_to_angles(
+            {obj.center_x(), obj.bottom_y(), 0.0f},
             window_width,
             window_height
         );

@@ -5,6 +5,7 @@
 #include <opencv2/opencv.hpp>
 
 #include "controller.h"
+#include "AR/ar.h"
 #include "input.h"
 #include "utils.h"
 
@@ -17,7 +18,7 @@ class SharedData;
 
 class NavigationDetection {
 public:
-    NavigationDetection(SharedData& shared_data);
+    NavigationDetection(SharedData& shared_data, AR *ar);
     void update();
 
 private:
@@ -30,6 +31,7 @@ private:
     ets2la_capture::FrameReader reader_;
 
     SharedData& shared_data_;
+    std::shared_ptr<DrawList> draw_list_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;
     InputHandler input_;

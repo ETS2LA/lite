@@ -13,7 +13,6 @@
 
 int main() {
     SharedData shared_data;
-    NavigationDetection navigation_detection(shared_data);
 
     std::promise<std::shared_ptr<AR>> ar_ready;
     auto ar_future = ar_ready.get_future();
@@ -38,8 +37,8 @@ int main() {
     ar_thread.detach();
 
     auto ar = ar_future.get();
-    std::thread position_estimation_thread([ar, &shared_data]() {
-        PositionEstimation position_estimation(ar.get(), shared_data);
+    std::thread position_estimation_thread([&shared_data, ar]() {
+        PositionEstimation position_estimation(shared_data, ar.get());
         ObjectDetector object_detector(ObjectDetectionDevice::DirectML, 1);
         utils::Timer timer;
 
@@ -58,8 +57,9 @@ int main() {
     });
     position_estimation_thread.detach();
 
-    ACC acc(shared_data);
     utils::Timer timer;
+    NavigationDetection navigation_detection(shared_data, ar.get());
+    ACC acc(shared_data, ar.get());
     while (true) {
         navigation_detection.update();
         acc.update();

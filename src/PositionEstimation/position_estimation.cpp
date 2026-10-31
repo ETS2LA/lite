@@ -5,7 +5,7 @@
 using namespace std;
 
 
-PositionEstimation::PositionEstimation(AR *ar, SharedData& shared_data):
+PositionEstimation::PositionEstimation(SharedData& shared_data, AR *ar):
 wheel_trajectory_(ar),
 shared_data_(shared_data)
 {
@@ -25,41 +25,40 @@ utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
     int window_width,
     int window_height
 ) {
+    utils::Coordinates position_left{0.0, 0.0, 0.0};
+    utils::Coordinates position_right{0.0, 0.0, 0.0};
+    bool ok = false;
+
     if (is_ground_projected_class(object.class_id)) {
-        bool ok = false;
         if (is_vehicle(object.class_id)) {
             const utils::Angles angles_left = utils::convert_to_angles(
-                {object.left_x(), object.bottom_y(), 0.0f},
+                {object.half_left_x(), object.bottom_y(), 0.0f},
                 window_width,
                 window_height
             );
             const utils::Angles angles_right = utils::convert_to_angles(
-                {object.right_x(), object.bottom_y(), 0.0f},
+                {object.half_right_x(), object.bottom_y(), 0.0f},
                 window_width,
                 window_height
             );
-            const utils::Coordinates position_left = ground_projection_.project_to_ground(angles_left, camera_coords, ok);
-            const utils::Coordinates position_right = ground_projection_.project_to_ground(angles_right, camera_coords, ok);
+            position_left = ground_projection_.project_to_ground(angles_left, camera_coords, ok);
+            position_right = ground_projection_.project_to_ground(angles_right, camera_coords, ok);
             object.accuracy = ok ? 1.0f : 0.0f;
-            return utils::PositionEstimationCoordinates{
-                position_left,
-                position_right,
-                {0.0, 0.0, 0.0}
-            };
-        } else {
-            const utils::Angles angles_center = utils::convert_to_angles(
-                {object.center_x(), object.bottom_y(), 0.0f},
-                window_width,
-                window_height
-            );
-            const utils::Coordinates position_center = ground_projection_.project_to_ground(angles_center, camera_coords, ok);
-            object.accuracy = ok ? 1.0f : 0.0f;
-            return utils::PositionEstimationCoordinates{
-                {0.0, 0.0, 0.0},
-                {0.0, 0.0, 0.0},
-                position_center
-            };
         }
+
+        const utils::Angles angles_center = utils::convert_to_angles(
+            {object.center_x(), object.bottom_y(), 0.0f},
+            window_width,
+            window_height
+        );
+        const utils::Coordinates position_center = ground_projection_.project_to_ground(angles_center, camera_coords, ok);
+        object.accuracy = ok ? 1.0f : 0.0f;
+
+        return utils::PositionEstimationCoordinates{
+            position_left,
+            position_right,
+            position_center
+        };
     }
 
     return triangulate_position(camera_coords, object, window_width, window_height);
@@ -144,6 +143,8 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
 
     PositionEstimationData position_estimation_data;
     position_estimation_data.objects.reserve(objects.size());
+    position_estimation_data.frame_index = telemetry_.frame_index;
+    position_estimation_data.timestamp_qpc = telemetry_.timestamp_qpc;
 
     for (auto& obj : objects) {
         auto position = estimate_position(camera_coords, obj, window_width, window_height);

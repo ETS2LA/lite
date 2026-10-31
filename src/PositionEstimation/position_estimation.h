@@ -20,7 +20,7 @@
 
 class PositionEstimation {
 public:
-    PositionEstimation(AR *ar, SharedData& shared_data);
+    PositionEstimation(SharedData& shared_data, AR *ar);
     void run(std::vector<ObjectDetection> detections, int window_width, int window_height);
 
 private:

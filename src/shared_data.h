@@ -6,6 +6,7 @@
 #include "utils.h"
 
 #include <unordered_map>
+#include <cstdint>
 #include <utility>
 #include <memory>
 #include <string>
@@ -21,6 +22,8 @@ struct PositionEstimationObject {
 
 struct PositionEstimationData {
     std::vector<PositionEstimationObject> objects;
+    uint64_t frame_index = 0;
+    uint64_t timestamp_qpc = 0;
 };
 
 struct NavigationDetectionData {

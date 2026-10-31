@@ -79,9 +79,10 @@ pair<float, float> NavigationDetection::get_lane_position(const vector<int>& lan
 }
 
 
-NavigationDetection::NavigationDetection(SharedData& shared_data):
+NavigationDetection::NavigationDetection(SharedData& shared_data, AR *ar):
 shared_data_(shared_data)
 {
+    draw_list_ = ar->get_draw_list("navigation_detection");
     controller_.gamepad_mode = true;
 
     input_.register_key_binding(

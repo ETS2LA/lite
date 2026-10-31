@@ -39,11 +39,6 @@ void AR::window_state_update_thread() {
                 window_width_,
                 window_height_
             );
-
-            glfwPollEvents();
-            glClear(GL_COLOR_BUFFER_BIT);
-            glfwSwapBuffers(window_);
-            glClear(GL_COLOR_BUFFER_BIT);
         }
 
         // when the target window is not the foreground window, hide the AR window

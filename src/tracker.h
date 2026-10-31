@@ -65,6 +65,8 @@ public:
         float center_x() const { return x; }
         float left_x() const { return x - width * 0.5f; }
         float right_x() const { return x + width * 0.5f; }
+        float half_left_x() const { return x - width * 0.25f; }
+        float half_right_x() const { return x + width * 0.25f; }
         float bottom_y() const { return y + height * 0.5f; }
     };
 

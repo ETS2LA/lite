@@ -265,16 +265,19 @@ void AR::polyline(
     vector<pair<float, float>> pts;
     pts.reserve(points.size());
     for (const auto& p : points) {
-        utils::ScreenCoordinates screen_p = utils::convert_to_screen_coordinate(
+        utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
             p,
             camera_coords,
             window_width_,
             window_height_
         );
-        if (screen_p.distance < 0) {
+        if (screen_proj.distance < 0) {
             continue;
         }
-        pts.emplace_back(static_cast<float>(screen_p.x), static_cast<float>(screen_p.y));
+        pts.emplace_back(
+            static_cast<float>(screen_proj.coordinates.x),
+            static_cast<float>(screen_proj.coordinates.y)
+        );
     }
 
     AR::polyline(
@@ -298,16 +301,19 @@ void AR::polyline(
     vector<pair<float, float>> pts;
     pts.reserve(points.size());
     for (const auto& p : points) {
-        utils::ScreenCoordinates screen_p = utils::convert_to_screen_coordinate(
+        utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
             p,
             camera_coords,
             window_width_,
             window_height_
         );
-        if (screen_p.distance < 0) {
+        if (screen_proj.distance < 0) {
             continue;
         }
-        pts.emplace_back(static_cast<float>(screen_p.x), static_cast<float>(screen_p.y));
+        pts.emplace_back(
+            static_cast<float>(screen_proj.coordinates.x),
+            static_cast<float>(screen_proj.coordinates.y)
+        );
     }
 
     AR::polyline(

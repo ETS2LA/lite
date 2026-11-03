@@ -235,7 +235,7 @@ void AR::rectangle(
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
-    utils::ScreenCoordinates top_left_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection top_left_screen = utils::convert_to_screen_coordinate(
         top_left,
         camera_coords,
         window_width_,
@@ -245,7 +245,7 @@ void AR::rectangle(
         return;
     }
 
-    utils::ScreenCoordinates bottom_right_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection bottom_right_screen = utils::convert_to_screen_coordinate(
         bottom_right,
         camera_coords,
         window_width_,
@@ -256,10 +256,10 @@ void AR::rectangle(
     }
 
     AR::rectangle(
-        static_cast<float>(top_left_screen.x),
-        static_cast<float>(top_left_screen.y),
-        static_cast<float>(bottom_right_screen.x),
-        static_cast<float>(bottom_right_screen.y),
+        static_cast<float>(top_left_screen.coordinates.x),
+        static_cast<float>(top_left_screen.coordinates.y),
+        static_cast<float>(bottom_right_screen.coordinates.x),
+        static_cast<float>(bottom_right_screen.coordinates.y),
         radius,
         thickness,
         color
@@ -275,7 +275,7 @@ void AR::rectangle(
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinates top_left_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection top_left_screen = utils::convert_to_screen_coordinate(
         top_left,
         camera_coords,
         window_width_,
@@ -285,7 +285,7 @@ void AR::rectangle(
         return;
     }
 
-    utils::ScreenCoordinates bottom_right_screen = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection bottom_right_screen = utils::convert_to_screen_coordinate(
         bottom_right,
         camera_coords,
         window_width_,
@@ -296,10 +296,10 @@ void AR::rectangle(
     }
 
     AR::rectangle(
-        static_cast<float>(top_left_screen.x),
-        static_cast<float>(top_left_screen.y),
-        static_cast<float>(bottom_right_screen.x),
-        static_cast<float>(bottom_right_screen.y),
+        static_cast<float>(top_left_screen.coordinates.x),
+        static_cast<float>(top_left_screen.coordinates.y),
+        static_cast<float>(bottom_right_screen.coordinates.x),
+        static_cast<float>(bottom_right_screen.coordinates.y),
         radius,
         thickness,
         color

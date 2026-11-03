@@ -107,19 +107,19 @@ void AR::circle(
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
-    utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
         center,
         camera_coords,
         window_width_,
         window_height_
     );
-    if (screen_coords.distance < 0) {
+    if (screen_proj.distance < 0) {
         return;
     }
 
     AR::circle(
-        static_cast<float>(screen_coords.x),
-        static_cast<float>(screen_coords.y),
+        static_cast<float>(screen_proj.coordinates.x),
+        static_cast<float>(screen_proj.coordinates.y),
         radius,
         thickness,
         color
@@ -134,19 +134,19 @@ void AR::circle(
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinates screen_coords = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
         center,
         camera_coords,
         window_width_,
         window_height_
     );
-    if (screen_coords.distance < 0) {
+    if (screen_proj.distance < 0) {
         return;
     }
 
     AR::circle(
-        static_cast<float>(screen_coords.x),
-        static_cast<float>(screen_coords.y),
+        static_cast<float>(screen_proj.coordinates.x),
+        static_cast<float>(screen_proj.coordinates.y),
         radius,
         thickness,
         color

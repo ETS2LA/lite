@@ -32,12 +32,12 @@ utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
     if (is_ground_projected_class(object.class_id)) {
         if (is_vehicle(object.class_id)) {
             const utils::Angles angles_left = utils::convert_to_angles(
-                {object.half_left_x(), object.bottom_y(), 0.0f},
+                {object.half_left_x(), object.bottom_y()},
                 window_width,
                 window_height
             );
             const utils::Angles angles_right = utils::convert_to_angles(
-                {object.half_right_x(), object.bottom_y(), 0.0f},
+                {object.half_right_x(), object.bottom_y()},
                 window_width,
                 window_height
             );
@@ -47,7 +47,7 @@ utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
         }
 
         const utils::Angles angles_center = utils::convert_to_angles(
-            {object.center_x(), object.bottom_y(), 0.0f},
+            {object.center_x(), object.bottom_y()},
             window_width,
             window_height
         );
@@ -219,6 +219,16 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
 
     draw_list_->publish();
 
-    cv::imshow("Position Estimation Debug", display_frame);
+    try {
+        cv::getWindowImageRect("Position Estimation");
+    } catch (...) {
+        cv::namedWindow("Position Estimation", cv::WINDOW_NORMAL);
+        cv::resizeWindow("Position Estimation", display_frame.cols, display_frame.rows);
+        auto target_window = utils::find_window(L"Position Estimation", {});
+        utils::set_icon(target_window, L"assets/lite_icon.ico");
+        utils::set_window_title_bar_color(target_window, RGB(0, 0, 0));
+    }
+
+    cv::imshow("Position Estimation", display_frame);
     cv::waitKey(1);
 }

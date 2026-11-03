@@ -49,11 +49,29 @@ struct Angles {
  * Screen coordinate structure.
  * @param x X coordinate on the screen.
  * @param y Y coordinate on the screen.
- * @param distance The distance from the camera to the point.
  */
 struct ScreenCoordinates {
     double x;
     double y;
+};
+
+/**
+ * Screen area structure.
+ * @param top_left Top left corner of the screen area.
+ * @param bottom_right Bottom right corner of the screen area.
+ */
+struct ScreenArea {
+    ScreenCoordinates top_left;
+    ScreenCoordinates bottom_right;
+};
+
+/**
+ * Screen projection structure.
+ * @param coordinates The screen coordinates.
+ * @param distance The distance from the camera to the point.
+ */
+struct ScreenProjection {
+    ScreenCoordinates coordinates;
     double distance;
 };
 
@@ -167,8 +185,12 @@ HWND find_window(
     const std::wstring& window_name,
     const std::vector<std::wstring>& blacklist
 );
-std::vector<int> get_window_position(HWND hwnd);
-
+ScreenArea get_window_position(HWND hwnd);
+ScreenArea get_route_advisor_position(
+    const int window_width,
+    const int window_height,
+    const bool side_right = true
+);
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right = true);
 
 double get_time_seconds();
@@ -184,7 +206,7 @@ float radians_to_degrees(float radians);
 double degrees_to_radians(double degrees);
 double radians_to_degrees(double radians);
 
-ScreenCoordinates convert_to_screen_coordinate(
+ScreenProjection convert_to_screen_coordinate(
     const Coordinates& world_coords,
     const CameraCoordinates& camera_coords,
     const int window_width,

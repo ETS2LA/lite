@@ -169,7 +169,7 @@ void AR::line(
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
-    utils::ScreenCoordinates screen_start = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_start = utils::convert_to_screen_coordinate(
         start,
         camera_coords,
         window_width_,
@@ -179,7 +179,7 @@ void AR::line(
         return;
     }
 
-    utils::ScreenCoordinates screen_end = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_end = utils::convert_to_screen_coordinate(
         end,
         camera_coords,
         window_width_,
@@ -190,10 +190,10 @@ void AR::line(
     }
 
     AR::line(
-        static_cast<float>(screen_start.x),
-        static_cast<float>(screen_start.y),
-        static_cast<float>(screen_end.x),
-        static_cast<float>(screen_end.y),
+        static_cast<float>(screen_start.coordinates.x),
+        static_cast<float>(screen_start.coordinates.y),
+        static_cast<float>(screen_end.coordinates.x),
+        static_cast<float>(screen_end.coordinates.y),
         roundness,
         thickness,
         color
@@ -209,7 +209,7 @@ void AR::line(
     const float thickness,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinates screen_start = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_start = utils::convert_to_screen_coordinate(
         start,
         camera_coords,
         window_width_,
@@ -219,7 +219,7 @@ void AR::line(
         return;
     }
 
-    utils::ScreenCoordinates screen_end = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_end = utils::convert_to_screen_coordinate(
         end,
         camera_coords,
         window_width_,
@@ -230,10 +230,10 @@ void AR::line(
     }
 
     AR::line(
-        static_cast<float>(screen_start.x),
-        static_cast<float>(screen_start.y),
-        static_cast<float>(screen_end.x),
-        static_cast<float>(screen_end.y),
+        static_cast<float>(screen_start.coordinates.x),
+        static_cast<float>(screen_start.coordinates.y),
+        static_cast<float>(screen_end.coordinates.x),
+        static_cast<float>(screen_end.coordinates.y),
         roundness,
         thickness,
         color

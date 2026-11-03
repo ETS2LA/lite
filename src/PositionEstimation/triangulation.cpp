@@ -16,7 +16,7 @@ pair<utils::Coordinates, float> triangulate(
     const int window_height
 ) {
     const utils::Angles ang1 = utils::convert_to_angles(
-        {x, y, 0.0f},
+        {x, y},
         window_width,
         window_height
     );

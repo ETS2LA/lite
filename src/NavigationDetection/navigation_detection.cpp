@@ -119,6 +119,8 @@ void NavigationDetection::update() {
         return;
     }
 
+    draw_list_->clear();
+
     indicator_left_ = telemetry_.truck.left_blinker;
     indicator_right_ = telemetry_.truck.right_blinker;
 
@@ -364,59 +366,89 @@ void NavigationDetection::update() {
     shared_data_.set("navigation_detection", navigation_detection_data);
 
 
+    utils::ScreenArea route_advisor = utils::get_route_advisor_position(
+        capture_frame_.width,
+        capture_frame_.height,
+        true
+    );
+
+    draw_list_->rectangle(
+        utils::ScreenCoordinates{
+            route_advisor.top_left.x - 1,
+            route_advisor.top_left.y - 1
+        },
+        utils::ScreenCoordinates{
+            route_advisor.bottom_right.x + 1,
+            route_advisor.bottom_right.y + 1
+        },
+        0,
+        1,
+        control_enabled_ ?utils::ColorFloat{0.0f, 1.0f, 0.0f, 1.0f} : utils::ColorFloat{1.0f, 0.0f, 0.0f, 1.0f}
+    );
+
     if (width_lane != 0) {
-        cv::line(
-            frame_,
-            cv::Point(left_x_lane, left_y_lane),
-            cv::Point(right_x_lane, right_y_lane),
-            cv::Scalar(0, 255, 0),
-            2
+        draw_list_->line(
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + left_x_lane,
+                route_advisor.top_left.y + left_y_lane
+            },
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + right_x_lane,
+                route_advisor.top_left.y + right_y_lane
+            },
+            1,
+            3,
+            {0.0f, 1.0f, 1.0f, 1.0f}
         );
     }
 
     if (width_turn != 0) {
-        cv::line(
-            frame_,
-            cv::Point(left_x_turn, y_coordinate_of_turn),
-            cv::Point(right_x_turn, y_coordinate_of_turn),
-            cv::Scalar(255, 255, 255),
-            2
+        draw_list_->line(
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + left_x_turn,
+                route_advisor.top_left.y + y_coordinate_of_turn
+            },
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + right_x_turn,
+                route_advisor.top_left.y + y_coordinate_of_turn
+            },
+            1,
+            3,
+            {0.0f, 1.0f, 1.0f, 1.0f}
         );
     }
 
     if (approve_lower_y_left != 0) {
-        cv::rectangle(
-            frame_,
-            cv::Point(approve_x_left, approve_upper_y_left),
-            cv::Point(approve_x_left, approve_lower_y_left),
-            turn_ahead_direction_ == TURN_LEFT ? cv::Scalar(0, 255, 0) : cv::Scalar(255, 255, 255),
-            2
+        draw_list_->line(
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + approve_x_left,
+                route_advisor.top_left.y + approve_upper_y_left
+            },
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + approve_x_left,
+                route_advisor.top_left.y + approve_lower_y_left
+            },
+            1,
+            3,
+            {0.0f, 1.0f, 1.0f, 1.0f}
         );
     }
 
     if (approve_lower_y_right != 0) {
-        cv::rectangle(
-            frame_,
-            cv::Point(approve_x_right, approve_upper_y_right),
-            cv::Point(approve_x_right, approve_lower_y_right),
-            turn_ahead_direction_ == TURN_RIGHT ? cv::Scalar(0, 255, 0) : cv::Scalar(255, 255, 255),
-            2
+        draw_list_->line(
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + approve_x_right,
+                route_advisor.top_left.y + approve_upper_y_right
+            },
+            utils::ScreenCoordinates{
+                route_advisor.top_left.x + approve_x_right,
+                route_advisor.top_left.y + approve_lower_y_right
+            },
+            1,
+            3,
+            {0.0f, 1.0f, 1.0f, 1.0f}
         );
     }
 
-
-    try {
-        cv::getWindowImageRect("Navigation Detection");
-    } catch (...) {
-        cv::namedWindow("Navigation Detection", cv::WINDOW_NORMAL);
-        cv::resizeWindow("Navigation Detection", frame_.cols, frame_.rows);
-        cv::setWindowProperty("Navigation Detection", cv::WND_PROP_TOPMOST, 1);
-        auto target_window = utils::find_window(L"Navigation Detection", {});
-        utils::set_icon(target_window, L"assets/lite_icon.ico");
-        utils::set_window_title_bar_color(target_window, RGB(0, 0, 0));
-        utils::set_window_outline_color(target_window, control_enabled_ ? RGB(0, 255, 0) : RGB(255, 0, 0));
-    }
-
-    cv::imshow("Navigation Detection", frame_);
-    cv::waitKey(1);
+    draw_list_->publish();
 }

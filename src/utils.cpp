@@ -241,8 +241,8 @@ HWND find_window(const wstring& window_name, const vector<wstring>& blacklist) {
  * @param hwnd The handle to the window.
  * @return A vector containing the x1, y1, x2, and y2 coordinates of the window.
  */
-vector<int> get_window_position(HWND hwnd) {
-    vector<int> position(4);
+ScreenArea get_window_position(HWND hwnd) {
+    ScreenArea position;
 
     if (hwnd == nullptr) {
         return position;
@@ -259,18 +259,54 @@ vector<int> get_window_position(HWND hwnd) {
         return position;
     }
 
-    position[0] = top_left.x;
-    position[1] = top_left.y;
-    position[2] = bottom_right.x;
-    position[3] = bottom_right.y;
+    position.top_left.x = top_left.x;
+    position.top_left.y = top_left.y;
+    position.bottom_right.x = bottom_right.x;
+    position.bottom_right.y = bottom_right.y;
 
     return position;
 }
 
 
 /**
+ * Get the position of the route advisor area in the window.
+ * @param window_width The width of the window.
+ * @param window_height The height of the window.
+ * @param side_right Whether the route advisor is on the right side or left side of the window.
+ */
+ScreenArea get_route_advisor_position(
+    const int window_width,
+    const int window_height,
+    const bool side_right
+) {
+    int distance_right = 24;
+    int distance_bottom = 51;
+    int width = 324;
+    int height = 228;
+    float scale = window_height / 1080.0f;
+
+    ScreenArea area;
+
+    if (side_right == false) {
+        area.top_left.x = static_cast<double>(round(distance_right * scale - 1.0f));
+        area.top_left.y = static_cast<double>(round(window_height - (distance_bottom * scale + height * scale)));
+        area.bottom_right.x = static_cast<double>(round(distance_right * scale + width * scale - 1.0f));
+        area.bottom_right.y = static_cast<double>(round(window_height - (distance_bottom * scale)));
+    } else {
+        area.top_left.x = static_cast<double>(round(window_width - (distance_right * scale + width * scale)));
+        area.top_left.y = static_cast<double>(round(window_height - (distance_bottom * scale + height * scale)));
+        area.bottom_right.x = static_cast<double>(round(window_width - (distance_right * scale)));
+        area.bottom_right.y = static_cast<double>(round(window_height - (distance_bottom * scale)));
+    }
+
+    return area;
+}
+
+
+/**
  * Applies a crop to the given frame to focus on the route advisor area.
  * @param frame The frame to apply the crop to.
+ * @param side_right Whether the route advisor is on the right side or left side of the frame.
  */
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
     float frame_width = static_cast<float>(frame.cols);
@@ -454,10 +490,10 @@ double radians_to_degrees(double radians) {
  * @param camera_coords The camera coordinates.
  * @param window_width The width of the window.
  * @param window_height The height of the window.
- * @return The screen coordinates.
+ * @return The screen projection.
  */
-ScreenCoordinates convert_to_screen_coordinate(const Coordinates& world_coords, const CameraCoordinates& camera_coords, const int window_width, const int window_height) {
-    ScreenCoordinates screen_coord;
+ScreenProjection convert_to_screen_coordinate(const Coordinates& world_coords, const CameraCoordinates& camera_coords, const int window_width, const int window_height) {
+    ScreenProjection screen_proj;
 
     double relative_x = world_coords.x - camera_coords.x;
     double relative_y = world_coords.y - camera_coords.y;
@@ -480,10 +516,10 @@ ScreenCoordinates convert_to_screen_coordinate(const Coordinates& world_coords, 
 
 
     if (final_z >= 0) {
-        screen_coord.x = -1;
-        screen_coord.y = -1;
-        screen_coord.distance = -1;
-        return screen_coord;
+        screen_proj.coordinates.x = -1;
+        screen_proj.coordinates.y = -1;
+        screen_proj.distance = -1;
+        return screen_proj;
     }
 
     // FOV for 6th cam is always 65 degrees
@@ -491,14 +527,14 @@ ScreenCoordinates convert_to_screen_coordinate(const Coordinates& world_coords, 
 
     double window_distance = (window_height * (4.0 / 3.0) / 2.0) / tan(fov_rad / 2.0);
 
-    screen_coord.x = (final_x / final_z) * window_distance + (window_width / 2.0);
-    screen_coord.y = (final_y / final_z) * window_distance + (window_height / 2.0);
+    screen_proj.coordinates.x = (final_x / final_z) * window_distance + (window_width / 2.0);
+    screen_proj.coordinates.y = (final_y / final_z) * window_distance + (window_height / 2.0);
 
-    screen_coord.x = window_width - screen_coord.x;
+    screen_proj.coordinates.x = window_width - screen_proj.coordinates.x;
 
-    screen_coord.distance = sqrt(relative_x * relative_x + relative_y * relative_y + relative_z * relative_z);
+    screen_proj.distance = sqrt(relative_x * relative_x + relative_y * relative_y + relative_z * relative_z);
 
-    return screen_coord;
+    return screen_proj;
 }
 
 

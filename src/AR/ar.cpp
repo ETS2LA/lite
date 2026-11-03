@@ -20,19 +20,19 @@ void AR::window_state_update_thread() {
             continue;
         }
 
-        vector<int> target_position = utils::get_window_position(target_hwnd);
+        utils::ScreenArea target_position = utils::get_window_position(target_hwnd);
 
-        if (target_position[2] - target_position[0] > 0 &&
-            target_position[3] - target_position[1] > 0
+        if (target_position.bottom_right.x - target_position.top_left.x > 0 &&
+            target_position.bottom_right.y - target_position.top_left.y > 0
         ) {
-            window_width_ = target_position[2] - target_position[0];
-            window_height_ = target_position[3] - target_position[1];
+            window_width_ = target_position.bottom_right.x - target_position.top_left.x;
+            window_height_ = target_position.bottom_right.y - target_position.top_left.y;
 
             // update AR window position and size to match target window
             glfwSetWindowPos(
                 window_,
-                target_position[0],
-                target_position[1]
+                target_position.top_left.x,
+                target_position.top_left.y
             );
             glfwSetWindowSize(
                 window_,

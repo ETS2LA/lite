@@ -271,7 +271,7 @@ void AR::text(
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
-    utils::ScreenCoordinates screen_position = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_position = utils::convert_to_screen_coordinate(
         position,
         camera_coords,
         window_width_,
@@ -283,8 +283,8 @@ void AR::text(
 
     AR::text(
         text,
-        screen_position.x,
-        screen_position.y,
+        screen_position.coordinates.x,
+        screen_position.coordinates.y,
         font_size,
         color
     );
@@ -298,7 +298,7 @@ void AR::text(
     float font_size,
     const utils::ColorFloat& color
 ) {
-    utils::ScreenCoordinates screen_position = utils::convert_to_screen_coordinate(
+    utils::ScreenProjection screen_position = utils::convert_to_screen_coordinate(
         position,
         camera_coords,
         window_width_,
@@ -310,8 +310,8 @@ void AR::text(
 
     AR::text(
         text,
-        screen_position.x,
-        screen_position.y,
+        screen_position.coordinates.x,
+        screen_position.coordinates.y,
         font_size,
         color
     );

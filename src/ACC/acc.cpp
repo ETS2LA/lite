@@ -355,8 +355,8 @@ bool ACC::update() {
     }
 
     draw_list_->rectangle(
-        utils::ScreenCoordinates{0, 0, 0},
-        utils::ScreenCoordinates(300, 110, 0),
+        utils::ScreenCoordinates{0, 0},
+        utils::ScreenCoordinates(300, 110),
         0,
         -1,
         utils::ColorFloat{0, 0, 0, 0.5}

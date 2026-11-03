@@ -54,7 +54,7 @@ void Tracker::apply_camera_rotation(
 ) {
     for (auto& obj : objects) {
         const utils::Angles angles = utils::convert_to_angles(
-            {obj.x, obj.y, 0.0},
+            {obj.x, obj.y},
             window_width,
             window_height
         );
@@ -82,7 +82,7 @@ void Tracker::apply_camera_rotation(
         current_rotation_only.y = 0.0;
         current_rotation_only.z = 0.0;
 
-        const utils::ScreenCoordinates projected = utils::convert_to_screen_coordinate(
+        const utils::ScreenProjection projected = utils::convert_to_screen_coordinate(
             ray_world,
             current_rotation_only,
             window_width,
@@ -94,8 +94,8 @@ void Tracker::apply_camera_rotation(
             continue;
         }
 
-        obj.x = static_cast<float>(projected.x);
-        obj.y = static_cast<float>(projected.y);
+        obj.x = static_cast<float>(projected.coordinates.x);
+        obj.y = static_cast<float>(projected.coordinates.y);
         obj.previous_camera_coords = camera_coords;
     }
 }
@@ -219,17 +219,17 @@ vector<Tracker::Object>& Tracker::update(
             obj.width = static_cast<float>(det.box.width);
             obj.height = static_cast<float>(det.box.height);
             obj.angles_left = utils::convert_to_angles(
-                {obj.left_x(), obj.bottom_y(), 0.0f},
+                {obj.left_x(), obj.bottom_y()},
                 window_width,
                 window_height
             );
             obj.angles_right = utils::convert_to_angles(
-                {obj.right_x(), obj.bottom_y(), 0.0f},
+                {obj.right_x(), obj.bottom_y()},
                 window_width,
                 window_height
             );
             obj.angles_center = utils::convert_to_angles(
-                {obj.center_x(), obj.bottom_y(), 0.0f},
+                {obj.center_x(), obj.bottom_y()},
                 window_width,
                 window_height
             );
@@ -489,17 +489,17 @@ vector<Tracker::Object>& Tracker::update(
         obj.width = static_cast<float>(det.box.width);
         obj.height = static_cast<float>(det.box.height);
         obj.angles_left = utils::convert_to_angles(
-            {obj.left_x(), obj.bottom_y(), 0.0f},
+            {obj.left_x(), obj.bottom_y()},
             window_width,
             window_height
         );
         obj.angles_right = utils::convert_to_angles(
-            {obj.right_x(), obj.bottom_y(), 0.0f},
+            {obj.right_x(), obj.bottom_y()},
             window_width,
             window_height
         );
         obj.angles_center = utils::convert_to_angles(
-            {obj.center_x(), obj.bottom_y(), 0.0f},
+            {obj.center_x(), obj.bottom_y()},
             window_width,
             window_height
         );

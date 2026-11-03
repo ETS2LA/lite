@@ -127,7 +127,7 @@ void NavigationDetection::update() {
     utils::apply_route_advisor_crop(frame_, true);
 
     // remove speed limit icon
-    const int inverse_roi_width = static_cast<int>(round(frame_.cols / 7.8f));
+    const int inverse_roi_width = static_cast<int>(round(frame_.cols / 7.7f));
     const int inverse_roi_height = static_cast<int>(round(frame_.rows / 3.95f));
     frame_(cv::Rect(0, 0, inverse_roi_width, inverse_roi_height)).setTo(cv::Scalar(0));
     frame_(cv::Rect(frame_.cols - inverse_roi_width, 0, inverse_roi_width, inverse_roi_height)).setTo(cv::Scalar(0));

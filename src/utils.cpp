@@ -279,26 +279,30 @@ ScreenArea get_route_advisor_position(
     const int window_height,
     const bool side_right
 ) {
-    int distance_right = 24;
-    int distance_bottom = 51;
-    int width = 324;
-    int height = 228;
-    float scale = window_height / 1080.0f;
+    const double margin_side = 24.0;
+    const double margin_bottom = 51.0;
+    const double map_width = 324.0;
+    const double map_height = 228.0;
+    const double narrowest_aspect_ratio = 1.6;
+
+    const double layout_height = std::fmin(
+        static_cast<double>(window_height),
+        window_width / narrowest_aspect_ratio
+    );
+
+    const double scale = layout_height / 1080.0;
+    const double offset_y = std::floor((window_height - layout_height) / 2.0 + 0.5);
+
+    const double width = std::floor(map_width * scale);
+    const double top = std::floor(offset_y + layout_height - (margin_bottom + map_height) * scale + 0.5);
+    const double height = std::floor(map_height * scale + 0.5);
+
+    const double right_side_left = std::floor(window_width - (margin_side + map_width) * scale);
+    const double left = side_right ? right_side_left : window_width - (right_side_left + width);
 
     ScreenArea area;
-
-    if (side_right == false) {
-        area.top_left.x = static_cast<double>(round(distance_right * scale - 1.0f));
-        area.top_left.y = static_cast<double>(round(window_height - (distance_bottom * scale + height * scale)));
-        area.bottom_right.x = static_cast<double>(round(distance_right * scale + width * scale - 1.0f));
-        area.bottom_right.y = static_cast<double>(round(window_height - (distance_bottom * scale)));
-    } else {
-        area.top_left.x = static_cast<double>(round(window_width - (distance_right * scale + width * scale)));
-        area.top_left.y = static_cast<double>(round(window_height - (distance_bottom * scale + height * scale)));
-        area.bottom_right.x = static_cast<double>(round(window_width - (distance_right * scale)));
-        area.bottom_right.y = static_cast<double>(round(window_height - (distance_bottom * scale)));
-    }
-
+    area.top_left = {left, top};
+    area.bottom_right = {left + width, top + height};
     return area;
 }
 
@@ -309,46 +313,14 @@ ScreenArea get_route_advisor_position(
  * @param side_right Whether the route advisor is on the right side or left side of the frame.
  */
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
-    float frame_width = static_cast<float>(frame.cols);
-    float frame_height = static_cast<float>(frame.rows);
-    int map_x1, map_y1, map_x2, map_y2;
+    const ScreenArea area = get_route_advisor_position(frame.cols, frame.rows, side_right);
 
-    int distance_right = 24;
-    int distance_bottom = 51;
-    int width = 324;
-    int height = 228;
-    float scale = frame_height / 1080.0f;
+    int map_x1 = std::max(0, std::min(static_cast<int>(area.top_left.x), frame.cols));
+    int map_y1 = std::max(0, std::min(static_cast<int>(area.top_left.y), frame.rows));
+    int map_x2 = std::max(0, std::min(static_cast<int>(area.bottom_right.x), frame.cols));
+    int map_y2 = std::max(0, std::min(static_cast<int>(area.bottom_right.y), frame.rows));
 
-    if (side_right == false) {
-        map_x1 = static_cast<int>(round(distance_right * scale - 1.0f));
-        map_y1 = static_cast<int>(round(frame_height - (distance_bottom * scale + height * scale)));
-        map_x2 = static_cast<int>(round(distance_right * scale + width * scale - 1.0f));
-        map_y2 = static_cast<int>(round(frame_height - (distance_bottom * scale)));
-    } else {
-        map_x1 = static_cast<int>(round(frame_width - (distance_right * scale + width * scale)));
-        map_y1 = static_cast<int>(round(frame_height - (distance_bottom * scale + height * scale)));
-        map_x2 = static_cast<int>(round(frame_width - (distance_right * scale)));
-        map_y2 = static_cast<int>(round(frame_height - (distance_bottom * scale)));
-    }
-
-    if (map_x1 > map_x2) {
-        map_x2 = map_x1 + 1;
-    }
-
-    if (map_y1 > map_y2) {
-        map_y2 = map_y1 + 1;
-    }
-
-    map_x1 = max(0, min(map_x1, frame.cols));
-    map_y1 = max(0, min(map_y1, frame.rows));
-    map_x2 = max(0, min(map_x2, frame.cols));
-    map_y2 = max(0, min(map_y2, frame.rows));
-
-    if (map_x1 == map_x2) {
-        return;
-    }
-
-    if (map_y1 == map_y2) {
+    if (map_x1 >= map_x2 || map_y1 >= map_y2) {
         return;
     }
 

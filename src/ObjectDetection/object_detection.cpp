@@ -233,5 +233,9 @@ void ObjectDetector::run() {
         cv::cvtColor(native, frame, cv::COLOR_BGRA2BGR);
     }
 
-    shared_data_.set("object_detection", infer(frame));
+    shared_data_.set("object_detection", ObjectDetectionData{
+        .objects = infer(frame),
+        .frame_index = capture_frame.frame_index,
+        .timestamp_qpc = capture_frame.timestamp_qpc
+    });
 }

@@ -114,8 +114,14 @@ void PositionEstimation::run() {
         return;
     }
 
-    auto detections = shared_data_.get<ObjectDetector::Detections>("object_detection");
-    if (!detections) return;
+    auto object_detection_data = shared_data_.get<ObjectDetectionData>("object_detection");
+    if (!object_detection_data ||
+        object_detection_data->frame_index == last_object_detection_frame_index
+    ) {
+        this_thread::sleep_for(chrono::milliseconds(1));
+        return;
+    }
+    last_object_detection_frame_index = object_detection_data->frame_index;
 
     draw_list_->clear();
     auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
@@ -123,10 +129,10 @@ void PositionEstimation::run() {
     ground_projection_.update(telemetry_);
 
     auto objects = tracker_.update(
-        detections->detections,
+        object_detection_data->objects.detections,
         camera_coords,
-        detections->frame_width,
-        detections->frame_height
+        object_detection_data->objects.frame_width,
+        object_detection_data->objects.frame_height
     );
     draw(objects);
 
@@ -158,8 +164,8 @@ void PositionEstimation::run() {
         auto position = estimate_position(
             camera_coords,
             obj,
-            detections->frame_width,
-            detections->frame_height
+            object_detection_data->objects.frame_width,
+            object_detection_data->objects.frame_height
         );
 
         const bool position_valid = obj.accuracy >= 0.1f;
@@ -244,4 +250,7 @@ void PositionEstimation::run() {
 
     cv::imshow("Position Estimation", display_frame);
     cv::waitKey(1);
+
+    auto fps = timer_.get_fps();
+    printf("PositionEstimation FPS: %.2f\n", fps);
 }

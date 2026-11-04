@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ObjectDetection/object_detection.h"
 #include "tracker.h"
 #include "utils.h"
 
@@ -11,6 +12,12 @@
 #include <mutex>
 #include <any>
 
+
+struct ObjectDetectionData {
+    ObjectDetector::Detections objects;
+    uint64_t frame_index = 0;
+    uint64_t timestamp_qpc = 0;
+};
 
 struct PositionEstimationObject {
     Tracker::Object tracking;

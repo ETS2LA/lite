@@ -39,6 +39,7 @@ private:
     std::shared_ptr<DrawList> draw_list_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;
+    utils::Timer timer_;
 
     WheelTrajectory wheel_trajectory_;
 
@@ -47,4 +48,6 @@ private:
 
     Tracker tracker_{Tracker::Config{}};
     GroundProjection ground_projection_;
+
+    uint64_t last_object_detection_frame_index;
 };

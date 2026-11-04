@@ -55,13 +55,9 @@ int main() {
 
     std::thread position_estimation_thread([&shared_data, ar]() {
         PositionEstimation position_estimation(shared_data, ar.get());
-        utils::Timer timer;
 
         while (true) {
             position_estimation.run();
-
-            auto fps = timer.get_fps();
-            printf("PositionEstimation FPS: %.2f\n", fps);
         }
     });
     position_estimation_thread.detach();

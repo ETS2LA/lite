@@ -35,21 +35,30 @@ int main() {
         }
     });
     ar_thread.detach();
-
     auto ar = ar_future.get();
+
+    std::thread object_detection_thread([&shared_data]() {
+        ObjectDetector object_detector(
+            shared_data,
+            ObjectDetector::Config{
+                .device = ObjectDetector::Device::DirectML,
+                .directml_adapter = 1,
+                .confidence_threshold = 0.01
+            }
+        );
+
+        while (true) {
+            object_detector.run();
+        }
+    });
+    object_detection_thread.detach();
+
     std::thread position_estimation_thread([&shared_data, ar]() {
         PositionEstimation position_estimation(shared_data, ar.get());
-        ObjectDetector object_detector(ObjectDetectionDevice::DirectML, 1);
         utils::Timer timer;
 
         while (true) {
-            auto detections = object_detector.run();
-
-            position_estimation.run(
-                detections,
-                object_detector.window_width,
-                object_detector.window_height
-            );
+            position_estimation.run();
 
             auto fps = timer.get_fps();
             printf("PositionEstimation FPS: %.2f\n", fps);

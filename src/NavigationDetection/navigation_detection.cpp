@@ -50,7 +50,7 @@ vector<int> get_lane_edges(const cv::Mat& frame, int y_coordinate, float tilt, i
     }
 
     if (lane_edges.size() < 2) {
-        lane_edges.push_back(frame.cols);
+        lane_edges.push_back(frame.cols - 1);
     }
 
     return lane_edges;

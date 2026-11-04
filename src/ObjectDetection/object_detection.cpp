@@ -1,10 +1,13 @@
 #include "ObjectDetection/object_detection.h"
+#include "shared_data.h"
+
 #include <ets2la_capture/frame_reader.h>
 #include <dml_provider_factory.h>
-#include <algorithm>
-#include <array>
 #include <filesystem>
+#include <algorithm>
 #include <stdexcept>
+#include <numeric>
+#include <array>
 
 using namespace std;
 
@@ -15,17 +18,47 @@ ets2la_capture::Frame capture_frame;
 ets2la_capture::FrameReader reader;
 cv::Mat frame;
 
-float confidence_threshold = 0.01f;
-float nms_threshold = 0.75f;
+std::vector<int> class_aware_nms(
+    const std::vector<cv::Rect>& boxes,
+    const std::vector<float>& scores,
+    const std::vector<int>& class_ids,
+    const float same_class_threshold,
+    const float different_class_threshold
+) {
+    std::vector<int> order(boxes.size());
+    std::iota(order.begin(), order.end(), 0);
+    std::sort(order.begin(), order.end(), [&](const int left, const int right) {
+        return scores[left] > scores[right];
+    });
+
+    std::vector<int> kept;
+    for (const int candidate : order) {
+        bool suppressed = false;
+        for (const int selected : kept) {
+            const cv::Rect intersection = boxes[candidate] & boxes[selected];
+            const float union_area = static_cast<float>(boxes[candidate].area() + boxes[selected].area() - intersection.area());
+            const float overlap = union_area > 0.0f  ? static_cast<float>(intersection.area()) / union_area : 0.0f;
+            const float threshold = class_ids[candidate] == class_ids[selected] ? same_class_threshold : different_class_threshold;
+            if (overlap > threshold) {
+                suppressed = true;
+                break;
+            }
+        }
+        if (!suppressed) {
+            kept.push_back(candidate);
+        }
+    }
+    return kept;
+}
 
 
 Ort::SessionOptions make_session_options(
-    const ObjectDetectionDevice device,
+    const ObjectDetector::Device device,
     const int directml_adapter
 ) {
     Ort::SessionOptions options;
     options.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED);
-    if (device == ObjectDetectionDevice::DirectML) {
+    if (device == ObjectDetector::Device::DirectML) {
         Ort::ThrowOnError(OrtSessionOptionsAppendExecutionProvider_DML(options, directml_adapter));
     }
     return options;
@@ -43,13 +76,13 @@ std::filesystem::path model_path() {
 }
 
 
-ObjectDetector::ObjectDetector(
-    const ObjectDetectionDevice device,
-    const int directml_adapter
-)
-    : environment_(ORT_LOGGING_LEVEL_WARNING, "ETS2LA-Lite object detection"),
-            session_options_(make_session_options(device, directml_adapter)),
-            session_(environment_, model_path().wstring().c_str(), session_options_) {
+ObjectDetector::ObjectDetector(SharedData& shared_data, const Config& config):
+    config_(config),
+    shared_data_(shared_data),
+    environment_(ORT_LOGGING_LEVEL_WARNING, "ETS2LA-Lite object detection"),
+    session_options_(make_session_options(config_.device, config_.directml_adapter)),
+    session_(environment_, model_path().wstring().c_str(), session_options_)
+{
     Ort::AllocatorWithDefaultOptions allocator;
     input_name_ = session_.GetInputNameAllocated(0, allocator).get();
     output_name_ = session_.GetOutputNameAllocated(0, allocator).get();
@@ -62,7 +95,7 @@ ObjectDetector::ObjectDetector(
 }
 
 
-std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
+ObjectDetector::Detections ObjectDetector::infer(const cv::Mat& frame) {
     const float scale = min(
         static_cast<float>(input_width_) / static_cast<float>(frame.cols),
         static_cast<float>(input_height_) / static_cast<float>(frame.rows)
@@ -123,7 +156,7 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
     const bool channels_first = !nms_output && output_shape[1] < output_shape[2];
     const size_t attributes = static_cast<size_t>(nms_output ? 6 : (channels_first ? output_shape[1] : output_shape[2]));
     const size_t candidates = static_cast<size_t>(channels_first ? output_shape[2] : output_shape[1]);
-    if (attributes < 5 || (!nms_output && attributes > kObjectClassNames.size() + 5)) {
+    if (attributes < 5 || (!nms_output && attributes > ObjectDetector::classes.size() + 5)) {
         throw std::runtime_error("Unsupported YOLO ONNX output attributes.");
     }
 
@@ -148,7 +181,7 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
                 }
             }
         }
-        if (best_score < confidence_threshold || best_class < 0 || best_class >= static_cast<int>(kObjectClassNames.size())) {
+        if (best_score < config_.confidence_threshold || best_class < 0 || best_class >= static_cast<int>(ObjectDetector::classes.size())) {
             continue;
         }
 
@@ -170,20 +203,27 @@ std::vector<ObjectDetection> ObjectDetector::infer(const cv::Mat& frame) {
         }
     }
 
-    std::vector<int> kept;
-    cv::dnn::NMSBoxes(boxes, scores, confidence_threshold, nms_threshold, kept);
-    std::vector<ObjectDetection> detections;
-    detections.reserve(kept.size());
+    const std::vector<int> kept = class_aware_nms(
+        boxes,
+        scores,
+        class_ids,
+        config_.same_class_nms_threshold,
+        config_.different_class_nms_threshold
+    );
+    ObjectDetector::Detections detections;
+    detections.frame_width = frame.cols;
+    detections.frame_height = frame.rows;
+    detections.detections.reserve(kept.size());
     for (const int index : kept) {
-        detections.push_back({boxes[index], class_ids[index], scores[index]});
+        detections.detections.push_back({boxes[index], class_ids[index], scores[index]});
     }
     return detections;
 }
 
 
-vector<ObjectDetection> ObjectDetector::run() {
+void ObjectDetector::run() {
     if (!reader.get_frame(capture_frame, 1000)) {
-        return {};
+        return;
     }
 
     cv::Mat native(int(capture_frame.height), int(capture_frame.width), CV_8UC4, capture_frame.data.data(), capture_frame.stride);
@@ -193,8 +233,5 @@ vector<ObjectDetection> ObjectDetector::run() {
         cv::cvtColor(native, frame, cv::COLOR_BGRA2BGR);
     }
 
-    window_width = frame.cols;
-    window_height = frame.rows;
-
-    return infer(frame);
+    shared_data_.set("object_detection", infer(frame));
 }

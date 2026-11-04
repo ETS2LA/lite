@@ -53,10 +53,10 @@ void Controller::steering_pid_loop() {
 }
 
 void Controller::speed_pid_loop() {
-    auto acceleration_pid = utils::PIDController(1.0f, 0.05f, 0.3f);
-    acceleration_pid.set_integral_limit(5.0f);
+    auto throttle_pid = utils::PIDController(1.0f, 0.05f, 0.3f);
+    throttle_pid.set_integral_limit(5.0f);
 
-    auto brake_pid = utils::PIDController(0.03f, 0.0f, 0.01f);
+    auto brake_pid = utils::PIDController(0.8f, 0.0f, 0.3f);
     brake_pid.set_integral_limit(1.0f);
 
     ets2la_telemetry::TelemetryReader telemetry_reader;
@@ -75,15 +75,10 @@ void Controller::speed_pid_loop() {
 
         if (speed_control_.load(memory_order_acquire)) {
             const float target = speed_target_.load(memory_order_acquire);
-            if (target < 0.75) {
-                acceleration_output_.store(0.0f, memory_order_release);
-                acceleration_pid.reset();
-                brake_output_.store(0.2f, memory_order_release);
-                brake_pid.reset();
-            } else if (target - telemetry.truck.speed > -0.1f) {
-                acceleration_output_.store(
+            if (target - telemetry.truck.speed > -0.1f) {
+                throttle_output_.store(
                     clamp(
-                        acceleration_pid.update(
+                        throttle_pid.update(
                             target,
                             telemetry.truck.speed
                         ),
@@ -95,7 +90,7 @@ void Controller::speed_pid_loop() {
                 brake_output_.store(0.0f, memory_order_release);
                 brake_pid.reset();
             } else {
-                acceleration_output_.store(0.0f, memory_order_release);
+                throttle_output_.store(0.0f, memory_order_release);
                 brake_output_.store(
                     clamp(
                         -brake_pid.update(
@@ -107,7 +102,16 @@ void Controller::speed_pid_loop() {
                     ),
                     memory_order_release
                 );
-                acceleration_pid.reset();
+                throttle_pid.reset();
+            }
+            if (target < 0.75) {
+                brake_output_.store(
+                    max(
+                        0.2f,
+                        brake_output_.load(memory_order_acquire)
+                    ),
+                    memory_order_release
+                );
             }
         }
     }
@@ -138,7 +142,7 @@ void Controller::update() {
     float throttle = 0.0f;
     float brake = 0.0f;
 
-    if (gamepad_mode && enabled_.load(memory_order_acquire)) {
+    if (gamepad_mode && steering.has_value() && enabled_.load(memory_order_acquire)) {
         gamepad_mode_.store(gamepad_mode, memory_order_release);
 
         if (steering_pid_running_.load(memory_order_acquire) == false) {
@@ -146,10 +150,9 @@ void Controller::update() {
             steering_pid_thread_ = thread(&Controller::steering_pid_loop, this);
         }
 
-        steering_target_.store(steering, memory_order_release);
-        steering = steering_output_.load(memory_order_acquire);
+        steering_target_.store(*steering, memory_order_release);
 
-        controller_.set(ets2la_controller::Axis::steering, steering);
+        controller_.set(ets2la_controller::Axis::steering, steering_output_.load(memory_order_acquire));
     } else if (steering_pid_running_.load(memory_order_acquire)) {
         steering_pid_running_.store(false, memory_order_release);
         if (steering_pid_thread_.joinable()) {
@@ -201,7 +204,7 @@ void Controller::update() {
         }
 
         speed_target_.store(*target_speed, memory_order_release);
-        throttle = acceleration_output_.load(memory_order_acquire);
+        throttle = throttle_output_.load(memory_order_acquire);
         brake = brake_output_.load(memory_order_acquire);
 
         controller_.set(ets2la_controller::Axis::throttle, throttle);
@@ -220,7 +223,7 @@ void Controller::enabled(bool enabled) {
     enabled_.store(enabled, memory_order_release);
 
     if (!enabled) {
-        steering = 0.0f;
+        steering.reset();
         target_speed.reset();
         controller_.release_all();
     }

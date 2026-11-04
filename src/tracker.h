@@ -22,6 +22,45 @@ enum class MatchingMode {
 
 class Tracker {
 public:
+    /**
+     * Object structure representing a tracked object.
+     * @param x X coordinate of the object's center.
+     * @param y Y coordinate of the object's center.
+     * @param width Width of the object's bounding box.
+     * @param height Height of the object's bounding box.
+     * @param vx Velocity in the X direction.
+     * @param vy Velocity in the Y direction.
+     * @param ax Acceleration in the X direction.
+     * @param ay Acceleration in the Y direction.
+     * @param has_velocity Flag indicating if the object has velocity information.
+     * @param vwidth Velocity of the width change.
+     * @param vheight Velocity of the height change.
+     * @param angles_left Angles representing the left side of the object.
+     * @param angles_right Angles representing the right side of the object.
+     * @param angles_center Angles representing the center of the object.
+     * @param first_camera_coords Camera coordinates when the object was first detected.
+     * @param previous_camera_coords Camera coordinates from the previous frame.
+     * @param id Unique identifier for the object.
+     * @param unseen_time_seconds Time since the object was last seen.
+     * @param age_seconds Total time the object has been tracked.
+     * @param total_tracked_seconds Total time the object has been successfully tracked.
+     * @param total_hits Total number of successful detections for the object.
+     * @param confidence Confidence score of the object's detection.
+     * @param confidence_sum Sum of confidence scores for averaging.
+     * @param confidence_hit_count Count of successful detections for averaging confidence.
+     * @param quality Quality score of the object based on tracking performance.
+     * @param is_coasting Flag indicating if the object is currently being coasting (not detected).
+     * @param class_id Class ID of the object.
+     * @param pending_class_id Class ID that is pending confirmation for the object.
+     * @param pending_class_seconds Time spent with the pending class ID before confirmation.
+     * @param accuracy Accuracy score of the object's position estimation.
+     * @param center_x Returns the X coordinate of the object's center.
+     * @param left_x Returns the X coordinate of the left edge of the object's bounding box.
+     * @param right_x Returns the X coordinate of the right edge of the object's bounding box.
+     * @param half_left_x Returns the X coordinate of the left half of the object's bounding box.
+     * @param half_right_x Returns the X coordinate of the right half of the object's bounding box.
+     * @param bottom_y Returns the Y coordinate of the bottom edge of the object's bounding box.
+     */
     struct Object {
         float x;
         float y;
@@ -70,6 +109,28 @@ public:
         float bottom_y() const { return y + height * 0.5f; }
     };
 
+    /**
+     * Configuration structure for the Tracker class.
+     * @param distance_threshold_fraction Fraction of the window height used for distance thresholding.
+     * @param matching_mode Matching mode for object association.
+     * @param cost_iou_weight Weight for IoU in the matching cost calculation.
+     * @param cost_distance_weight Weight for distance in the matching cost calculation.
+     * @param gating_radius_factor Factor for gating radius in the matching process.
+     * @param max_match_cost Maximum allowed cost for matching objects.
+     * @param motion_model Motion model used for predicting object positions.
+     * @param base_max_unseen_time_seconds Base time a track may be coasted with no quality bonus.
+     * @param max_unseen_time_bonus_seconds Extra coasting time at quality = 1.
+     * @param quality_time_for_max_seconds Real match time needed to reach quality = 1.
+     * @param max_unseen_time_hard_cap_seconds Cap on total allowed unseen time regardless of quality in seconds, <0 means no hard cap.
+     * @param use_confidence_weighted_quality If true, quality also factors in the average detection confidence of past hits.
+     * @param enable_class_tracking If true, the tracker will include class IDs in the matching cost.
+     * @param class_mismatch_cost Cost of matching a detection to a track with a different class ID than the tracks confirmed class ID.
+     * @param class_switch_confirm_seconds Time of real matches to the same new class required before the tracks confirmed class is switched over.
+     * @param enable_size_consistency_check If true, the tracker will check for size consistency between detections and tracks.
+     * @param size_consistency_max_ratio A detection is rejected if its bbox area differs from the tracks expected area by more than this ratio.
+     * @param registration_confidence_threshold Required confidence of a detection to register a new track.
+     * @param continuation_hits_affect_confidence_quality If true, the confidence of detections that are part of a continuation will also affect the tracks quality score.
+     */
     struct Config {
         // fraction of the window height
         float distance_threshold_fraction = 0.2f;
@@ -118,7 +179,7 @@ public:
     explicit Tracker(const Config& config = Config());
 
     std::vector<Object>& update(
-        const std::vector<ObjectDetection>& detections,
+        const std::vector<ObjectDetector::Detection> detections,
         const utils::CameraCoordinates& camera_coords,
         const int window_width,
         const int window_height

@@ -39,8 +39,8 @@ public:
     }
 
     bool gamepad_mode = false;
+    std::optional<float> steering;
     std::optional<float> target_speed;
-    float steering = 0.0f;
 
 private:
     void steering_pid_loop();
@@ -57,7 +57,7 @@ private:
     std::atomic<float> steering_target_{0.0f};
     std::atomic<float> steering_output_{0.0f};
     std::atomic<float> speed_target_{0.0f};
-    std::atomic<float> acceleration_output_{0.0f};
+    std::atomic<float> throttle_output_{0.0f};
     std::atomic<float> brake_output_{0.0f};
     std::atomic<bool> gamepad_mode_{false};
     std::atomic<bool> speed_control_{false};

@@ -65,7 +65,7 @@ utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
 }
 
 
-void PositionEstimation::draw(const std::vector<Tracker::Object>& objects) const {
+void PositionEstimation::draw(const vector<Tracker::Object>& objects) const {
     for (const auto& obj : objects) {
         const utils::ColorFloat color = obj.is_coasting
             ? utils::ColorFloat(1.0f, 0.0f, 0.0f, 1.0f)
@@ -78,13 +78,13 @@ void PositionEstimation::draw(const std::vector<Tracker::Object>& objects) const
 
         draw_list_->rectangle(left, top, right, bottom, 3.0f, 1.0f, color);
 
-        const std::string class_name = (obj.class_id >= 0 && obj.class_id < static_cast<int>(kObjectClassNames.size()))
-            ? kObjectClassNames[obj.class_id]
+        const string class_name = (obj.class_id >= 0 && obj.class_id < static_cast<int>(ObjectDetector::classes.size()))
+            ? ObjectDetector::classes[obj.class_id]
             : "unknown";
-        const std::string label = obj.is_coasting
-            ? std::format("{} (coasting)", class_name)
-            : std::format("{} {:.2f}", class_name, obj.confidence);
-        const std::wstring wide_label(label.begin(), label.end());
+        const string label = obj.is_coasting
+            ? format("{} (coasting)", class_name)
+            : format("{} {:.2f}", class_name, obj.confidence);
+        const wstring wide_label(label.begin(), label.end());
         draw_list_->text(wide_label, left, top - 14, 13.0f, color);
     }
 }
@@ -109,17 +109,25 @@ cv::Point top_down_view_point(
 }
 
 
-void PositionEstimation::run(std::vector<ObjectDetection> detections, int window_width, int window_height) {
+void PositionEstimation::run() {
     if (!telemetry_reader_.get_latest_telemetry(telemetry_)) {
         return;
     }
+
+    auto detections = shared_data_.get<ObjectDetector::Detections>("object_detection");
+    if (!detections) return;
 
     draw_list_->clear();
     auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     ground_projection_.update(telemetry_);
 
-    auto objects = tracker_.update(detections, camera_coords, window_width, window_height);
+    auto objects = tracker_.update(
+        detections->detections,
+        camera_coords,
+        detections->frame_width,
+        detections->frame_height
+    );
     draw(objects);
 
     cv::Mat display_frame(500, 500, CV_8UC3, cv::Scalar(0, 0, 0));
@@ -147,7 +155,12 @@ void PositionEstimation::run(std::vector<ObjectDetection> detections, int window
     position_estimation_data.timestamp_qpc = telemetry_.timestamp_qpc;
 
     for (auto& obj : objects) {
-        auto position = estimate_position(camera_coords, obj, window_width, window_height);
+        auto position = estimate_position(
+            camera_coords,
+            obj,
+            detections->frame_width,
+            detections->frame_height
+        );
 
         const bool position_valid = obj.accuracy >= 0.1f;
 

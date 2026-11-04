@@ -14,14 +14,13 @@
 #include <ets2la_telemetry/telemetry_reader.h>
 #include <opencv2/opencv.hpp>
 #include <functional>
-#include <windows.h>
 #include <thread>
 
 
 class PositionEstimation {
 public:
     PositionEstimation(SharedData& shared_data, AR *ar);
-    void run(std::vector<ObjectDetection> detections, int window_width, int window_height);
+    void run();
 
 private:
     void draw(const std::vector<Tracker::Object>& objects) const;

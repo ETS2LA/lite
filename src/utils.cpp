@@ -285,19 +285,19 @@ ScreenArea get_route_advisor_position(
     const double map_height = 228.0;
     const double narrowest_aspect_ratio = 1.6;
 
-    const double layout_height = std::fmin(
+    const double layout_height = fmin(
         static_cast<double>(window_height),
         window_width / narrowest_aspect_ratio
     );
 
     const double scale = layout_height / 1080.0;
-    const double offset_y = std::floor((window_height - layout_height) / 2.0 + 0.5);
+    const double offset_y = floor((window_height - layout_height) / 2.0 + 0.5);
 
-    const double width = std::floor(map_width * scale);
-    const double top = std::floor(offset_y + layout_height - (margin_bottom + map_height) * scale + 0.5);
-    const double height = std::floor(map_height * scale + 0.5);
+    const double width = floor(map_width * scale);
+    const double top = floor(offset_y + layout_height - (margin_bottom + map_height) * scale + 0.5);
+    const double height = floor(map_height * scale + 0.5);
 
-    const double right_side_left = std::floor(window_width - (margin_side + map_width) * scale);
+    const double right_side_left = floor(window_width - (margin_side + map_width) * scale);
     const double left = side_right ? right_side_left : window_width - (right_side_left + width);
 
     ScreenArea area;
@@ -315,10 +315,10 @@ ScreenArea get_route_advisor_position(
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
     const ScreenArea area = get_route_advisor_position(frame.cols, frame.rows, side_right);
 
-    int map_x1 = std::max(0, std::min(static_cast<int>(area.top_left.x), frame.cols));
-    int map_y1 = std::max(0, std::min(static_cast<int>(area.top_left.y), frame.rows));
-    int map_x2 = std::max(0, std::min(static_cast<int>(area.bottom_right.x), frame.cols));
-    int map_y2 = std::max(0, std::min(static_cast<int>(area.bottom_right.y), frame.rows));
+    int map_x1 = max(0, min(static_cast<int>(area.top_left.x), frame.cols));
+    int map_y1 = max(0, min(static_cast<int>(area.top_left.y), frame.rows));
+    int map_x2 = max(0, min(static_cast<int>(area.bottom_right.x), frame.cols));
+    int map_y2 = max(0, min(static_cast<int>(area.bottom_right.y), frame.rows));
 
     if (map_x1 >= map_x2 || map_y1 >= map_y2) {
         return;

@@ -53,7 +53,7 @@ bool AR::initialize_text_renderer() {
     glGetIntegerv(GL_UNPACK_ALIGNMENT, &old_unpack_alignment);
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
-    for (std::uint32_t c = 32; c < 127; ++c) {
+    for (uint32_t c = 32; c < 127; ++c) {
         load_glyph(c);
     }
 
@@ -85,7 +85,7 @@ void AR::cleanup_text_renderer() {
 }
 
 
-bool AR::load_glyph(std::uint32_t codepoint) {
+bool AR::load_glyph(uint32_t codepoint) {
     if (!freetype_face_ || glyphs_.find(codepoint) != glyphs_.end()) {
         return glyphs_.find(codepoint) != glyphs_.end();
     }
@@ -138,13 +138,13 @@ bool AR::load_glyph(std::uint32_t codepoint) {
 }
 
 
-std::uint32_t AR::read_codepoint(const std::wstring& text, std::size_t& index) const {
+uint32_t AR::read_codepoint(const wstring& text, size_t& index) const {
     const wchar_t first = text[index++];
 
     if (sizeof(wchar_t) == 2) {
-        const std::uint32_t first_value = static_cast<std::uint32_t>(first);
+        const uint32_t first_value = static_cast<uint32_t>(first);
         if (first_value >= 0xD800 && first_value <= 0xDBFF && index < text.size()) {
-            const std::uint32_t second_value = static_cast<std::uint32_t>(text[index]);
+            const uint32_t second_value = static_cast<uint32_t>(text[index]);
             if (second_value >= 0xDC00 && second_value <= 0xDFFF) {
                 ++index;
                 return ((first_value - 0xD800) << 10) + (second_value - 0xDC00) + 0x10000;
@@ -152,7 +152,7 @@ std::uint32_t AR::read_codepoint(const std::wstring& text, std::size_t& index) c
         }
     }
 
-    return static_cast<std::uint32_t>(first);
+    return static_cast<uint32_t>(first);
 }
 
 
@@ -181,7 +181,7 @@ void AR::text(
     const float line_height = font_size * 1.1f;
 
     for (size_t i = 0; i < text.size();) {
-        const std::uint32_t codepoint = read_codepoint(text, i);
+        const uint32_t codepoint = read_codepoint(text, i);
 
         if (codepoint == L'\r') {
             continue;
@@ -200,7 +200,7 @@ void AR::text(
 
         auto glyph_it = glyphs_.find(codepoint);
         if (glyph_it == glyphs_.end()) {
-            glyph_it = glyphs_.find(static_cast<std::uint32_t>(L'?'));
+            glyph_it = glyphs_.find(static_cast<uint32_t>(L'?'));
             if (glyph_it == glyphs_.end()) {
                 cursor_x += font_size * 0.5f;
                 continue;

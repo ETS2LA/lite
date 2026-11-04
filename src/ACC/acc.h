@@ -9,8 +9,9 @@
 #include <ets2la_telemetry/telemetry_reader.h>
 #include <unordered_map>
 #include <cstdint>
-#include <deque>
 #include <memory>
+#include <vector>
+#include <deque>
 
 
 struct ObjectPositionSample {
@@ -30,6 +31,21 @@ public:
     bool update();
 
 private:
+    struct LeadVehicle;
+
+    static void update_lead(
+        const std::vector<utils::Coordinates>& left,
+        const std::vector<utils::Coordinates>& right,
+        const utils::Coordinates& object_position,
+        int object_id,
+        LeadVehicle& lead
+    );
+
+    void draw_overlay(
+        const float target_speed,
+        const LeadVehicle lead
+    );
+
     SharedData& shared_data_;
     std::shared_ptr<DrawList> draw_list_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;

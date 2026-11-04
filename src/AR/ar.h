@@ -8,7 +8,6 @@
 #include <GLFW/glfw3.h>
 #include <functional>
 #include <windows.h>
-#include <cstddef>
 #include <cstdint>
 #include <memory>
 #include <string>

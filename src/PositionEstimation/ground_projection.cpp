@@ -40,7 +40,7 @@ utils::Coordinates GroundProjection::project_to_ground(
     const utils::Coordinates direction = utils::camera_ray_direction(angles, camera_coords);
 
     const double denom = utils::dot_product(direction, plane_.normal);
-    if (std::abs(denom) < 1e-6) {
+    if (abs(denom) < 1e-6) {
         return origin;
     }
 

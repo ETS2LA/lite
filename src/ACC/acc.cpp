@@ -14,7 +14,7 @@ constexpr float restart_distance = 7.5f;
 constexpr float max_distance = 60.0f;
 constexpr float following_time = 1.5f;
 
-struct LeadVehicle {
+struct ACC::LeadVehicle {
     float distance = numeric_limits<float>::max();
     float speed = 0.0f;
     utils::Coordinates heading{0.0, 0.0, 0.0};
@@ -115,7 +115,7 @@ float cross_product(
     );
 }
 
-void update_lead(
+void ACC::update_lead(
     const vector<utils::Coordinates>& left,
     const vector<utils::Coordinates>& right,
     const utils::Coordinates& object_position,
@@ -210,17 +210,103 @@ shared_data_(shared_data)
 }
 
 
+void ACC::draw_overlay(
+    const float target_speed,
+    const LeadVehicle lead
+) {
+    draw_list_->rectangle(
+        utils::ScreenCoordinates{0, 0},
+        utils::ScreenCoordinates(250, 145),
+        0,
+        -1,
+        utils::ColorFloat{0, 0, 0, 0.5}
+    );
+
+    draw_list_->rectangle(
+        utils::ScreenCoordinates{
+            10,
+            120
+        },
+        utils::ScreenCoordinates{
+            10 + controller_.get(ets2la_controller::Axis::throttle) * 200,
+            125
+        },
+        0,
+        -1,
+        utils::ColorFloat{0, 1.0, 0, 1.0}
+    );
+    draw_list_->rectangle(
+        utils::ScreenCoordinates{
+            10,
+            120
+        },
+        utils::ScreenCoordinates{
+            210,
+            125
+        },
+        0,
+        -1,
+        utils::ColorFloat{0, 1.0, 0, 0.2}
+    );
+
+    draw_list_->rectangle(
+        utils::ScreenCoordinates{
+            10,
+            130
+        },
+        utils::ScreenCoordinates{
+            10 + controller_.get(ets2la_controller::Axis::brake) * 200,
+            135
+        },
+        0,
+        -1,
+        utils::ColorFloat{1.0, 0, 0, 1.0}
+    );
+    draw_list_->rectangle(
+        utils::ScreenCoordinates{
+            10,
+            130
+        },
+        utils::ScreenCoordinates{
+            210,
+            135
+        },
+        0,
+        -1,
+        utils::ColorFloat{1.0, 0, 0, 0.2}
+    );
+
+    draw_list_->text(
+        format(L"ACC: {}\nCurrent Speed: {:.2f} km/h\nTarget Speed: {:.2f} km/h\nLead Vehicle: {}\nDistance: {:.2f} m\nRelative Speed: {:.2f} km/h",
+            enabled_ ? L"Enabled" : L"Disabled",
+            telemetry_.truck.speed * 3.6f,
+            target_speed * 3.6f,
+            lead.id >= 0 ? to_wstring(lead.id) : L"None",
+            lead.distance < 10e3 ? lead.distance : 0.0f,
+            lead.speed * 3.6f
+        ),
+        10.0f,
+        26.0f,
+        16.0f,
+        utils::ColorFloat(1.0f, 1.0f, 1.0f, 1.0f)
+    );
+    draw_list_->publish();
+}
+
+
 bool ACC::update() {
     input_.update();
 
     controller_.enabled(enabled_);
     if (!enabled_) {
+        draw_overlay(0, {});
         return false;
     }
 
     if (!telemetry_reader_.get_telemetry(telemetry_, 0)) {
         controller_.target_speed.reset();
         controller_.update();
+        draw_overlay(0, {});
         return false;
     }
 
@@ -329,7 +415,7 @@ bool ACC::update() {
     if (telemetry_.game.paused) {
         controller_.target_speed.reset();
     } else {
-        if (isfinite(lead.distance) && !telemetry_.game.paused) {
+        if (lead.id >= 0 && !telemetry_.game.paused) {
             const float desired_distance = clamp(
                 min_distance + (telemetry_.truck.speed - lead.speed) * following_time,
                 min_distance,
@@ -354,27 +440,7 @@ bool ACC::update() {
         controller_.target_speed = target_speed;
     }
 
-    draw_list_->rectangle(
-        utils::ScreenCoordinates{0, 0},
-        utils::ScreenCoordinates(300, 110),
-        0,
-        -1,
-        utils::ColorFloat{0, 0, 0, 0.5}
-    );
-    draw_list_->text(
-        format(L"ACC: {}\nTarget Speed: {:.2f} km/h\nLead Vehicle: {}\nDistance: {:.2f} m\nRelative Speed: {:.2f} km/h",
-            enabled_ ? L"Enabled" : L"Disabled",
-            target_speed * 3.6f,
-            lead.id >= 0 ? to_wstring(lead.id) : L"None",
-            lead.distance < 10e3 ? lead.distance : 0.0f,
-            lead.speed * 3.6f
-        ),
-        10.0f,
-        26.0f,
-        16.0f,
-        utils::ColorFloat(1.0f, 1.0f, 1.0f, 1.0f)
-    );
-    draw_list_->publish();
+    draw_overlay(target_speed, lead);
 
     controller_.update();
     return true;

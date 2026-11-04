@@ -1,39 +1,12 @@
 #pragma once
 
-#include <opencv2/opencv.hpp>
 #include <onnxruntime_cxx_api.h>
+#include <opencv2/opencv.hpp>
 
 #include <string>
 #include <vector>
 
-
-struct ObjectDetection {
-    cv::Rect box;
-    int class_id;
-    float confidence;
-};
-
-enum class ObjectDetectionDevice {
-    CPU,
-    DirectML
-};
-
-inline const std::vector<std::string> kObjectClassNames = {
-    "car",
-    "bus",
-    "truck",
-    "stoplight",
-    "streetlamp",
-    "sign",
-    "short post",
-    "long pole",
-    "curved pole",
-    "lane line",
-    "tree trunk",
-    "bridge pier",
-    "traffic cone",
-    "traffic delineator"
-};
+class SharedData;
 
 
 /**
@@ -48,17 +21,82 @@ inline bool is_vehicle(const int class_id) {
 
 class ObjectDetector {
 public:
-    explicit ObjectDetector(
-        ObjectDetectionDevice device = ObjectDetectionDevice::CPU,
-        int directml_adapter = 0
-    );
-    std::vector<ObjectDetection> run();
+    /**
+     * Detection struct.
+     * @param box The bounding box of the detection.
+     * @param class_id The class ID of the detection.
+     * @param confidence The confidence of the detection.
+     */
+    struct Detection {
+        cv::Rect box;
+        int class_id;
+        float confidence;
+    };
 
-    size_t window_width = 100;
-    size_t window_height = 100;
+    /**
+     * Detections struct.
+     * @param detections The list of detections.
+     * @param frame_width The width of the frame in which the detections were made.
+     * @param frame_height The height of the frame in which the detections were made.
+     */
+    struct Detections {
+        std::vector<Detection> detections;
+        size_t frame_width;
+        size_t frame_height;
+    };
+
+    enum class Device {
+        CPU,
+        DirectML
+    };
+
+    // The classes that the object detection model can detect.
+    inline static const std::vector<std::string> classes = {
+        "car",
+        "bus",
+        "truck",
+        "stoplight",
+        "streetlamp",
+        "sign",
+        "short post",
+        "long pole",
+        "curved pole",
+        "lane line",
+        "tree trunk",
+        "bridge pier",
+        "traffic cone",
+        "traffic delineator"
+    };
+
+    /**
+     * Configuration struct for the ObjectDetector.
+     * @param device The type of device to run the object detection model on.
+     * @param directml_adapter The index of the DirectML adapter to use, if device is DirectML.
+     * @param confidence_threshold The minimum confidence of a detection to be considered valid.
+     * @param same_class_nms_threshold The NMS threshold for detections of the same class.
+     * @param different_class_nms_threshold The NMS threshold for detections of different classes.
+     */
+    struct Config{
+        // the type of device to run the object detection model on
+        Device device = Device::CPU;
+        // the index of the DirectML adapter to use, if device is DirectML
+        int directml_adapter = 0;
+        // minimum confidence of a detection to be considered valid
+        float confidence_threshold = 0.2f;
+        // NMS thresholds for detections of the same class
+        float same_class_nms_threshold = 0.3f;
+        // NMS thresholds for detections of different classes
+        float different_class_nms_threshold = 0.75f;
+    };
+
+    void run();
+    explicit ObjectDetector(SharedData& shared_data, const Config& config = Config());
 
 private:
-    std::vector<ObjectDetection> infer(const cv::Mat& frame);
+    Detections infer(const cv::Mat& frame);
+
+    Config config_;
+    SharedData& shared_data_;
 
     Ort::Env environment_;
     Ort::SessionOptions session_options_;

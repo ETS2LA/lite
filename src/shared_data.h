@@ -1,7 +1,5 @@
 #pragma once
 
-#include "NavigationDetection/navigation_detection.h"
-#include "ObjectDetection/object_detection.h"
 #include "tracker.h"
 #include "utils.h"
 

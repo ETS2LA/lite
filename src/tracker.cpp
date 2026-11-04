@@ -1,7 +1,6 @@
 #include "tracker.h"
 #include <algorithm>
 #include <cmath>
-#include <limits>
 
 using namespace std;
 
@@ -150,7 +149,7 @@ float Tracker::compute_max_unseen_time(const Object& obj) const {
 
 
 vector<Tracker::Object>& Tracker::update(
-    const vector<ObjectDetection>& detections,
+    const vector<ObjectDetector::Detection> detections,
     const utils::CameraCoordinates& camera_coords,
     const int window_width,
     const int window_height

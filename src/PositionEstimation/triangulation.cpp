@@ -36,10 +36,10 @@ pair<utils::Coordinates, float> triangulate(
 
     double t = 0.0;
     double s = 0.0;
-    if (std::abs(denom) > 1e-6) {
+    if (abs(denom) > 1e-6) {
         t = (b * e - c * d) / denom;
         s = (a * e - b * d) / denom;
-    } else if (std::abs(b) > 1e-6) {
+    } else if (abs(b) > 1e-6) {
         t = 0.0;
         s = d / b;
     }
@@ -54,8 +54,8 @@ pair<utils::Coordinates, float> triangulate(
     const utils::Coordinates c0{p0.x + d0.x * t, p0.y + d0.y * t, p0.z + d0.z * t};
     const utils::Coordinates c1{p1.x + d1.x * s, p1.y + d1.y * s, p1.z + d1.z * s};
 
-    const double baseline = std::sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
-    const double sin_angle = std::sqrt(std::max(0.0, 1.0 - b * b));
+    const double baseline = sqrt(r.x * r.x + r.y * r.y + r.z * r.z);
+    const double sin_angle = sqrt(max(0.0, 1.0 - b * b));
     float accuracy = baseline * sin_angle;
 
     utils::Coordinates mid{

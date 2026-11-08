@@ -1,20 +1,14 @@
 #pragma once
 
 #include "PositionEstimation/ground_projection.h"
-#include "ObjectDetection/object_detection.h"
-#include "PositionEstimation/triangulation.h"
 #include "WheelTrajectory/wheel_trajectory.h"
 #include "shared_data.h"
 #include "tracker.h"
-#include "camera.h"
 #include "AR/ar.h"
-#include "input.h"
 #include "utils.h"
 
 #include <ets2la_telemetry/telemetry_reader.h>
-#include <opencv2/opencv.hpp>
-#include <functional>
-#include <thread>
+#include <ets2la_capture/frame_reader.h>
 
 
 class PositionEstimation {
@@ -39,6 +33,8 @@ private:
     std::shared_ptr<DrawList> draw_list_;
     ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;
+    ets2la_capture::FrameReader route_advisor_reader_;
+    ets2la_capture::Frame route_advisor_capture_frame_;
     utils::Timer timer_;
 
     WheelTrajectory wheel_trajectory_;

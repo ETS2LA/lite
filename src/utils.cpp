@@ -376,6 +376,179 @@ void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
 
 
 /**
+ * Determine whether a route is planned from the size of the cropped route advisor frame.
+ * @param frame_width The width of the cropped route advisor frame in pixels.
+ * @param frame_height The height of the cropped route advisor frame in pixels.
+ * @return True if a route is planned.
+ */
+static bool is_route_planned_from_frame_size(
+    const int frame_width,
+    const int frame_height
+) {
+    const double map_width = 324.0;
+    const double map_height_with_route = 228.0;
+    const double map_height_without_route = 255.0;
+
+    const double aspect_ratio = static_cast<double>(frame_width) / static_cast<double>(frame_height);
+    const double aspect_ratio_with_route = map_width / map_height_with_route;
+    const double aspect_ratio_without_route = map_width / map_height_without_route;
+
+    return abs(aspect_ratio - aspect_ratio_with_route) <= abs(aspect_ratio - aspect_ratio_without_route);
+}
+
+
+/**
+ * Convert a route advisor pixel to a ground position relative to the truck.
+ * The camera values were measured with RenderDoc and the help of Claude at the closest route advisor zoom.
+ * @param pixel The pixel in the frame.
+ * @param frame_width The width of the frame in pixels.
+ * @param frame_height The height of the frame in pixels.
+ * @return The ground position relative to the truck.
+ */
+static Coordinates convert_route_advisor_pixel_to_truck_ground(
+    const ScreenCoordinates& pixel,
+    const int frame_width,
+    const int frame_height
+) {
+    const bool route_planned = is_route_planned_from_frame_size(frame_width, frame_height);
+    const double camera_pitch_degrees = 40.0;
+    const double camera_distance = 50.0;
+    const double vertical_projection_scale = route_planned ? 1.58904 : 1.51780;
+    const double ground_below_truck_arrow = 1.0;
+
+    const double camera_pitch = degrees_to_radians(camera_pitch_degrees);
+    const double sin_pitch = sin(camera_pitch);
+    const double cos_pitch = cos(camera_pitch);
+    const double tan_half_vertical_fov = 1.0 / vertical_projection_scale;
+    const double aspect_ratio = static_cast<double>(frame_width) / static_cast<double>(frame_height);
+
+    const double normalized_x = 2.0 * pixel.x / frame_width - 1.0;
+    const double normalized_y = 1.0 - 2.0 * pixel.y / frame_height;
+    const double ray_right = normalized_x * aspect_ratio * tan_half_vertical_fov;
+    const double ray_up = normalized_y * tan_half_vertical_fov;
+
+    const double ray_y = -sin_pitch + ray_up * cos_pitch;
+    const double ray_z = -cos_pitch - ray_up * sin_pitch;
+    if (ray_y >= 0.0) {
+        return Coordinates{};
+    }
+
+    const double camera_height = camera_distance * sin_pitch + ground_below_truck_arrow;
+    const double camera_behind = camera_distance * cos_pitch;
+    const double ray_length = -camera_height / ray_y;
+
+    return Coordinates{
+        ray_right * ray_length,
+        0.0,
+        camera_behind + ray_z * ray_length
+    };
+}
+
+
+/**
+ * Convert a pixel of the route advisor to a world coordinate.
+ * @param pixel The pixel in the frame.
+ * @param frame_width The width of the cropped route advisor frame in pixels.
+ * @param frame_height The height of the cropped route advisor frame in pixels.
+ * @param telemetry The telemetry data of the same moment as the frame.
+ * @return The world coordinates of the pixel.
+ */
+Coordinates convert_route_advisor_pixel_to_world(
+    const ScreenCoordinates& pixel,
+    const int frame_width,
+    const int frame_height,
+    const ets2la_telemetry::Telemetry& telemetry
+) {
+    const Coordinates ground_offset = convert_route_advisor_pixel_to_truck_ground(pixel, frame_width, frame_height);
+    if (isnan(ground_offset.x)) {
+        return ground_offset;
+    }
+
+    const Rotations truck_heading{
+        0.0f,
+        telemetry.truck.world.orientation.heading * 360.0f,
+        0.0f
+    };
+    const Coordinates rotated_offset = rotate_vector(ground_offset, truck_heading);
+
+    return Coordinates{
+        telemetry.truck.world.position.x + rotated_offset.x,
+        telemetry.truck.world.position.y + rotated_offset.y,
+        telemetry.truck.world.position.z + rotated_offset.z
+    };
+}
+
+
+/**
+ * Warp the cropped route advisor frame to a top down view.
+ * @param frame The cropped route advisor frame.
+ * @param output_width The width of the top down view in pixels.
+ * @param output_height The height of the top down view in pixels.
+ * @param meters_per_pixel The size of one pixel of the top down view in meters.
+ * @param truck_output_position The position of the truck in the top down view.
+ * @return The top down view, or an empty image if the frame or the parameters are invalid.
+ */
+cv::Mat warp_route_advisor_to_top_down(
+    const cv::Mat& frame,
+    const int output_width,
+    const int output_height,
+    const double meters_per_pixel,
+    const ScreenCoordinates& truck_output_position
+) {
+    if (frame.empty() || output_width <= 0 || output_height <= 0 || meters_per_pixel <= 0.0) {
+        return cv::Mat();
+    }
+
+    const double frame_width = static_cast<double>(frame.cols);
+    const double frame_height = static_cast<double>(frame.rows);
+    const ScreenCoordinates frame_corners[4] = {
+        {0.0, 0.0},
+        {frame_width, 0.0},
+        {frame_width, frame_height},
+        {0.0, frame_height}
+    };
+
+    cv::Point2f source_points[4];
+    cv::Point2f destination_points[4];
+    for (int corner_index = 0; corner_index < 4; corner_index++) {
+        const Coordinates ground_offset = convert_route_advisor_pixel_to_truck_ground(
+            frame_corners[corner_index],
+            frame.cols,
+            frame.rows
+        );
+        if (isnan(ground_offset.x)) {
+            return cv::Mat();
+        }
+
+        const double destination_x = truck_output_position.x + ground_offset.x / meters_per_pixel;
+        const double destination_y = truck_output_position.y + ground_offset.z / meters_per_pixel;
+        source_points[corner_index] = cv::Point2f(
+            static_cast<float>(frame_corners[corner_index].x - 0.5),
+            static_cast<float>(frame_corners[corner_index].y - 0.5)
+        );
+        destination_points[corner_index] = cv::Point2f(
+            static_cast<float>(destination_x - 0.5),
+            static_cast<float>(destination_y - 0.5)
+        );
+    }
+
+    const cv::Mat homography = cv::getPerspectiveTransform(source_points, destination_points);
+
+    cv::Mat top_down;
+    cv::warpPerspective(
+        frame,
+        top_down,
+        homography,
+        cv::Size(output_width, output_height),
+        cv::INTER_LINEAR,
+        cv::BORDER_CONSTANT,
+        cv::Scalar()
+    );
+    return top_down;
+}
+
+
+/**
  * Get the current time in seconds with nanosecond precision.
  * @return The current time in seconds.
  */

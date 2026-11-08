@@ -192,6 +192,21 @@ ScreenArea get_route_advisor_position(
 );
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right);
 
+Coordinates convert_route_advisor_pixel_to_world(
+    const ScreenCoordinates& pixel,
+    const int frame_width,
+    const int frame_height,
+    const ets2la_telemetry::Telemetry& telemetry
+);
+
+cv::Mat warp_route_advisor_to_top_down(
+    const cv::Mat& frame,
+    const int output_width,
+    const int output_height,
+    const double meters_per_pixel,
+    const ScreenCoordinates& truck_output_position
+);
+
 double get_time_seconds();
 
 void set_icon(HWND hwnd, const std::wstring& icon_path);

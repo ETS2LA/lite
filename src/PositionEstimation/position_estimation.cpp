@@ -1,4 +1,5 @@
 #include "PositionEstimation/position_estimation.h"
+#include "triangulation.h"
 #include <format>
 #include <cmath>
 
@@ -137,6 +138,41 @@ void PositionEstimation::run() {
     draw(objects);
 
     cv::Mat display_frame(500, 500, CV_8UC3, cv::Scalar(0, 0, 0));
+
+    if (route_advisor_reader_.get_frame(route_advisor_capture_frame_, 1000)) {
+        cv::Mat native(
+            static_cast<int>(route_advisor_capture_frame_.height),
+            static_cast<int>(route_advisor_capture_frame_.width),
+            CV_8UC4,
+            route_advisor_capture_frame_.data.data(),
+            route_advisor_capture_frame_.stride
+        );
+        if (route_advisor_capture_frame_.layout() == ets2la_capture::PixelLayout::RGBA8) {
+            cv::cvtColor(native, frame_, cv::COLOR_RGBA2BGR);
+        } else {
+            cv::cvtColor(native, frame_, cv::COLOR_BGRA2BGR);
+        }
+
+        utils::apply_route_advisor_crop(frame_, true);
+
+        const cv::Mat route_advisor = utils::warp_route_advisor_to_top_down(
+            frame_,
+            display_frame.cols,
+            display_frame.rows,
+            0.1,
+            {display_frame.cols / 2.0, static_cast<double>(display_frame.rows)}
+        );
+        if (!route_advisor.empty()) {
+            cv::Mat route_advisor_mask;
+            cv::inRange(
+                route_advisor,
+                cv::Scalar(1, 1, 1),
+                cv::Scalar(255, 255, 255),
+                route_advisor_mask
+            );
+            route_advisor.copyTo(display_frame, route_advisor_mask);
+        }
+    }
 
     vector<cv::Scalar> class_colors = {
         cv::Scalar{0, 255, 0}, // car

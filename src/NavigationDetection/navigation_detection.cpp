@@ -124,6 +124,11 @@ void NavigationDetection::update() {
     indicator_left_ = telemetry_.truck.left_blinker;
     indicator_right_ = telemetry_.truck.right_blinker;
 
+    utils::ScreenArea route_advisor = utils::get_route_advisor_position(
+        frame_,
+        true
+    );
+
     utils::apply_route_advisor_crop(frame_, true);
 
     // remove speed limit icon
@@ -365,12 +370,6 @@ void NavigationDetection::update() {
     };
     shared_data_.set("navigation_detection", navigation_detection_data);
 
-
-    utils::ScreenArea route_advisor = utils::get_route_advisor_position(
-        capture_frame_.width,
-        capture_frame_.height,
-        true
-    );
 
     draw_list_->rectangle(
         utils::ScreenCoordinates{

@@ -269,40 +269,87 @@ ScreenArea get_window_position(HWND hwnd) {
 
 
 /**
- * Get the position of the route advisor area in the window.
- * @param window_width The width of the window.
- * @param window_height The height of the window.
- * @param side_right Whether the route advisor is on the right side or left side of the window.
+ * Get the position of the route advisor area in the frame.
+ * @param frame The full game frame.
+ * @param side_right Whether the route advisor is on the right side or left side of the frame.
+ * @return A ScreenArea structure containing the coordinates of the route advisor area.
  */
 ScreenArea get_route_advisor_position(
-    const int window_width,
-    const int window_height,
+    const cv::Mat& frame,
     const bool side_right
 ) {
     const double margin_side = 24.0;
-    const double margin_bottom = 51.0;
+    const double margin_bottom_with_route = 51.0;
+    const double margin_bottom_without_route = 24.0;
     const double map_width = 324.0;
-    const double map_height = 228.0;
+    const double map_height_with_route = 228.0;
     const double narrowest_aspect_ratio = 1.6;
 
-    const double layout_height = fmin(
-        static_cast<double>(window_height),
-        window_width / narrowest_aspect_ratio
+    const double layout_height = std::fmin(
+        static_cast<double>(frame.rows),
+        frame.cols / narrowest_aspect_ratio
     );
 
     const double scale = layout_height / 1080.0;
-    const double offset_y = floor((window_height - layout_height) / 2.0 + 0.5);
+    const double offset_y = std::floor((frame.rows - layout_height) / 2.0 + 0.5);
+    const double layout_bottom = offset_y + layout_height;
 
-    const double width = floor(map_width * scale);
-    const double top = floor(offset_y + layout_height - (margin_bottom + map_height) * scale + 0.5);
-    const double height = floor(map_height * scale + 0.5);
+    const double width = std::floor(map_width * scale);
+    const double top = std::floor(layout_bottom - (margin_bottom_with_route + map_height_with_route) * scale + 0.5);
 
-    const double right_side_left = floor(window_width - (margin_side + map_width) * scale);
-    const double left = side_right ? right_side_left : window_width - (right_side_left + width);
+    const double right_side_left = std::floor(frame.cols - (margin_side + map_width) * scale);
+    const double left = side_right ? right_side_left : frame.cols - (right_side_left + width);
+
+    const double bottom_with_route = top + std::floor(map_height_with_route * scale + 0.5);
+    const double bottom_without_route = std::floor(layout_bottom - margin_bottom_without_route * scale);
+
+    bool has_route = true;
+    const int sample_row = static_cast<int>(bottom_without_route) - 2;
+    const int sample_left = std::max(0, static_cast<int>(left));
+    const int sample_right = std::min(frame.cols, static_cast<int>(left + width));
+
+    if (!frame.empty() && frame.depth() == CV_8U && frame.channels() >= 3
+        && sample_row >= 0 && sample_row < frame.rows && sample_right > sample_left) {
+        const int tolerance = 5;
+        const int channel_count = frame.channels();
+        const uchar* row = frame.ptr<uchar>(sample_row);
+
+        int road_pixel_count = 0;
+        int sample_count = 0;
+        for (int x = sample_left; x < sample_right; x += 2) {
+            const uchar* pixel = row + x * channel_count;
+            const int first = pixel[0];
+            const int second = pixel[1];
+            const int third = pixel[2];
+
+            const bool discovered_rgb = (
+                std::abs(first - 255) <= tolerance &&
+                std::abs(second - 198) <= tolerance &&
+                std::abs(third - 76) <= tolerance
+            );
+            const bool discovered_bgr = (
+                std::abs(first - 76) <= tolerance &&
+                std::abs(second - 198) <= tolerance &&
+                std::abs(third - 255) <= tolerance
+            );
+            const bool undiscovered = (
+                std::abs(first - 112) <= tolerance &&
+                std::abs(second - 112) <= tolerance &&
+                std::abs(third - 112) <= tolerance
+            );
+
+            if (discovered_rgb || discovered_bgr || undiscovered) {
+                road_pixel_count++;
+            }
+            sample_count++;
+        }
+
+        has_route = road_pixel_count * 100 <= sample_count * 15;
+    }
 
     ScreenArea area;
     area.top_left = {left, top};
-    area.bottom_right = {left + width, top + height};
+    area.bottom_right = {left + width, has_route ? bottom_with_route : bottom_without_route};
     return area;
 }
 
@@ -313,7 +360,7 @@ ScreenArea get_route_advisor_position(
  * @param side_right Whether the route advisor is on the right side or left side of the frame.
  */
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right) {
-    const ScreenArea area = get_route_advisor_position(frame.cols, frame.rows, side_right);
+    const ScreenArea area = get_route_advisor_position(frame, side_right);
 
     int map_x1 = max(0, min(static_cast<int>(area.top_left.x), frame.cols));
     int map_y1 = max(0, min(static_cast<int>(area.top_left.y), frame.rows));

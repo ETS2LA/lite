@@ -187,11 +187,10 @@ HWND find_window(
 );
 ScreenArea get_window_position(HWND hwnd);
 ScreenArea get_route_advisor_position(
-    const int window_width,
-    const int window_height,
-    const bool side_right = true
+    const cv::Mat& frame,
+    const bool side_right
 );
-void apply_route_advisor_crop(cv::Mat& frame, const bool side_right = true);
+void apply_route_advisor_crop(cv::Mat& frame, const bool side_right);
 
 double get_time_seconds();
 

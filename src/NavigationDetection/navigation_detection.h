@@ -38,14 +38,14 @@ private:
     Controller controller_;
 
     cv::Mat frame_;
-    cv::Mat mask_red_green_;
     cv::Mat mask_red_;
     cv::Mat mask_green_;
+    cv::Mat mask_red_green_;
 
-    const cv::Scalar lower_red_{2, 2, 197, 0};
-    const cv::Scalar upper_red_{119, 133, 238, 255};
-    const cv::Scalar lower_green_{0, 241, 07, 0};
-    const cv::Scalar upper_green_{119, 255, 120, 255};
+    const cv::Scalar lower_red_{7, 7, 202, 0};
+    const cv::Scalar upper_red_{114, 114, 220, 255};
+    const cv::Scalar lower_green_{1, 246, 12, 0};
+    const cv::Scalar upper_green_{114, 255, 115, 255};
 
     bool control_enabled_ = true;
     float last_correction_ = 0.0f;

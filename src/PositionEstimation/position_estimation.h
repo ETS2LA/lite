@@ -26,8 +26,6 @@ private:
         int window_height
     );
 
-    static bool is_ground_projected_class(int class_id);
-
     AR* ar_;
     SharedData& shared_data_;
     std::shared_ptr<DrawList> draw_list_;
@@ -46,4 +44,5 @@ private:
     GroundProjection ground_projection_;
 
     uint64_t last_object_detection_frame_index;
+    uint64_t last_capture_qpc_;
 };

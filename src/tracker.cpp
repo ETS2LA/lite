@@ -124,6 +124,17 @@ void Tracker::predict_motion(vector<Object>& objects, float dt_seconds) {
 }
 
 
+bool Tracker::same_tracking_class(int class_id_a, int class_id_b) const {
+    if (class_id_a == class_id_b) {
+        return true;
+    }
+    if (!config_.enable_class_groups || !object_classes::is_valid(class_id_a) || !object_classes::is_valid(class_id_b)) {
+        return false;
+    }
+    return object_classes::group(class_id_a) == object_classes::group(class_id_b);
+}
+
+
 float Tracker::compute_quality(const Object& obj) const {
     const float time_ratio = min(
         1.0f,
@@ -152,10 +163,9 @@ vector<Tracker::Object>& Tracker::update(
     const vector<ObjectDetector::Detection> detections,
     const utils::CameraCoordinates& camera_coords,
     const int window_width,
-    const int window_height
+    const int window_height,
+    const float dt_seconds
 ) {
-    const float dt = static_cast<float>(max(timer_.get_delta_time(), 1e-6));
-
     const float effective_distance_threshold = max(
         1.0f,
         config_.distance_threshold_fraction * static_cast<float>(window_height)
@@ -170,7 +180,7 @@ vector<Tracker::Object>& Tracker::update(
         compensated_y[i] = objects_[i].y;
     }
 
-    predict_motion(objects_, dt);
+    predict_motion(objects_, dt_seconds);
 
     {
         vector<Object> kept;
@@ -179,7 +189,6 @@ vector<Tracker::Object>& Tracker::update(
         for (size_t i = 0; i < objects_.size(); ++i) {
             if (predicted_x_[i] < 0 || predicted_x_[i] >= window_width ||
                 predicted_y_[i] < 0 || predicted_y_[i] >= window_height) {
-                free_ids_.push_back(objects_[i].id);
                 continue;
             }
             kept.push_back(objects_[i]);
@@ -205,13 +214,7 @@ vector<Tracker::Object>& Tracker::update(
                 continue;
             }
 
-            int new_id;
-            if (!free_ids_.empty()) {
-                new_id = free_ids_.back();
-                free_ids_.pop_back();
-            } else {
-                new_id = next_id_++;
-            }
+            const int new_id = next_id_++;
             Object obj{};
             obj.x = box_center_x(det.box);
             obj.y = box_center_y(det.box);
@@ -240,8 +243,8 @@ vector<Tracker::Object>& Tracker::update(
             obj.confidence_sum = det.confidence;
             obj.confidence_hit_count = 1;
             obj.total_hits = 1;
-            obj.total_tracked_seconds = dt;
-            obj.age_seconds = dt;
+            obj.total_tracked_seconds = dt_seconds;
+            obj.age_seconds = dt_seconds;
             obj.quality = compute_quality(obj);
             objects_.push_back(obj);
         }
@@ -327,8 +330,7 @@ vector<Tracker::Object>& Tracker::update(
 
                     float overlap = 0.0f;
                     if (use_iou) {
-                        overlap = iou(predicted_x_[oi], predicted_y_[oi], predicted_w_[oi], predicted_h_[oi],
-                                      det_cx, det_cy, det_w, det_h);
+                        overlap = iou(predicted_x_[oi], predicted_y_[oi], predicted_w_[oi], predicted_h_[oi], det_cx, det_cy, det_w, det_h);
                         if (overlap <= 0.0f && dist > gating_radius) {
                             continue;
                         }
@@ -342,7 +344,7 @@ vector<Tracker::Object>& Tracker::update(
                         ? (config_.cost_iou_weight * (1.0f - overlap) + config_.cost_distance_weight * (dist / effective_distance_threshold))
                         : (dist / effective_distance_threshold);
 
-                    if (config_.enable_class_tracking && obj.class_id >= 0 && det.class_id != obj.class_id) {
+                    if (config_.enable_class_tracking && !same_tracking_class(det.class_id, obj.class_id)) {
                         cost += config_.class_mismatch_cost;
                     }
 
@@ -381,18 +383,22 @@ vector<Tracker::Object>& Tracker::update(
         const float det_w = static_cast<float>(det.box.width);
         const float det_h = static_cast<float>(det.box.height);
 
-        const float new_vx = (det_cx - compensated_x[c.object_index]) / dt;
-        const float new_vy = (det_cy - compensated_y[c.object_index]) / dt;
+        const float raw_vx = (det_cx - compensated_x[c.object_index]) / dt_seconds;
+        const float raw_vy = (det_cy - compensated_y[c.object_index]) / dt_seconds;
+        const float raw_vwidth = (det_w - obj.width) / dt_seconds;
+        const float raw_vheight = (det_h - obj.height) / dt_seconds;
+        const float smoothing = (obj.has_velocity && config_.velocity_smoothing_seconds > 0.0f)
+            ? 1.0f - exp(-dt_seconds / config_.velocity_smoothing_seconds)
+            : 1.0f;
         if (config_.motion_model == MotionModel::ConstantAcceleration && obj.has_velocity) {
-            obj.ax = (new_vx - obj.vx) / dt;
-            obj.ay = (new_vy - obj.vy) / dt;
+            obj.ax = (raw_vx - obj.vx) / dt_seconds;
+            obj.ay = (raw_vy - obj.vy) / dt_seconds;
         }
-        obj.vx = new_vx;
-        obj.vy = new_vy;
+        obj.vx += smoothing * (raw_vx - obj.vx);
+        obj.vy += smoothing * (raw_vy - obj.vy);
+        obj.vwidth += smoothing * (raw_vwidth - obj.vwidth);
+        obj.vheight += smoothing * (raw_vheight - obj.vheight);
         obj.has_velocity = true;
-
-        obj.vwidth = (det_w - obj.width) / dt;
-        obj.vheight = (det_h - obj.height) / dt;
 
         obj.x = det_cx;
         obj.y = det_cy;
@@ -400,8 +406,8 @@ vector<Tracker::Object>& Tracker::update(
         obj.height = det_h;
 
         obj.unseen_time_seconds = 0.0f;
-        obj.age_seconds += dt;
-        obj.total_tracked_seconds += dt;
+        obj.age_seconds += dt_seconds;
+        obj.total_tracked_seconds += dt_seconds;
         obj.total_hits++;
         obj.confidence = det.confidence;
 
@@ -415,21 +421,22 @@ vector<Tracker::Object>& Tracker::update(
         if (config_.enable_class_tracking) {
             if (obj.class_id < 0) {
                 obj.class_id = det.class_id;
-            } else if (det.class_id != obj.class_id) {
+            } else if (same_tracking_class(det.class_id, obj.class_id)) {
+                obj.class_id = det.class_id;
+                obj.pending_class_id = -1;
+                obj.pending_class_seconds = 0.0f;
+            } else {
                 if (det.class_id == obj.pending_class_id) {
-                    obj.pending_class_seconds += dt;
+                    obj.pending_class_seconds += dt_seconds;
                 } else {
                     obj.pending_class_id = det.class_id;
-                    obj.pending_class_seconds = dt;
+                    obj.pending_class_seconds = dt_seconds;
                 }
                 if (obj.pending_class_seconds >= config_.class_switch_confirm_seconds) {
                     obj.class_id = obj.pending_class_id;
                     obj.pending_class_id = -1;
                     obj.pending_class_seconds = 0.0f;
                 }
-            } else {
-                obj.pending_class_id = -1;
-                obj.pending_class_seconds = 0.0f;
             }
         } else {
             obj.class_id = det.class_id;
@@ -452,12 +459,11 @@ vector<Tracker::Object>& Tracker::update(
             obj.y = predicted_y_[oi];
             obj.width = predicted_w_[oi];
             obj.height = predicted_h_[oi];
-            obj.unseen_time_seconds += dt;
-            obj.age_seconds += dt;
+            obj.unseen_time_seconds += dt_seconds;
+            obj.age_seconds += dt_seconds;
             obj.is_coasting = true;
 
             if (obj.unseen_time_seconds > compute_max_unseen_time(obj)) {
-                free_ids_.push_back(obj.id);
                 continue;
             }
             kept.push_back(obj);
@@ -474,13 +480,7 @@ vector<Tracker::Object>& Tracker::update(
             continue;
         }
 
-        int new_id;
-        if (!free_ids_.empty()) {
-            new_id = free_ids_.back();
-            free_ids_.pop_back();
-        } else {
-            new_id = next_id_++;
-        }
+        const int new_id = next_id_++;
 
         Object obj{};
         obj.x = box_center_x(det.box);
@@ -510,8 +510,8 @@ vector<Tracker::Object>& Tracker::update(
         obj.confidence_sum = det.confidence;
         obj.confidence_hit_count = 1;
         obj.total_hits = 1;
-        obj.total_tracked_seconds = dt;
-        obj.age_seconds = dt;
+        obj.total_tracked_seconds = dt_seconds;
+        obj.age_seconds = dt_seconds;
         obj.quality = compute_quality(obj);
         objects_.push_back(obj);
     }

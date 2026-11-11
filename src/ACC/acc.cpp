@@ -347,7 +347,7 @@ bool ACC::update() {
 
         unordered_set<int> current_vehicle_ids;
         for (const auto& object : position_estimation->objects) {
-            if (!object.position_valid || object.tracking.is_coasting || !is_vehicle(object.tracking.class_id)) {
+            if (!object.position_valid || object.tracking.is_coasting || !object_classes::is_vehicle(object.tracking.class_id)) {
                 continue;
             }
             current_vehicle_ids.insert(object.tracking.id);
@@ -364,7 +364,7 @@ bool ACC::update() {
         }
 
         for (const auto& object : position_estimation->objects) {
-            if (!object.position_valid || object.tracking.is_coasting || !is_vehicle(object.tracking.class_id)) {
+            if (!object.position_valid || object.tracking.is_coasting || !object_classes::is_vehicle(object.tracking.class_id)) {
                 continue;
             }
             if (is_new_position_snapshot) {

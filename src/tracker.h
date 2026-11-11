@@ -118,6 +118,7 @@ public:
      * @param gating_radius_factor Factor for gating radius in the matching process.
      * @param max_match_cost Maximum allowed cost for matching objects.
      * @param motion_model Motion model used for predicting object positions.
+     * @param velocity_smoothing_seconds Time constant of the smoothing of the pixel velocity of a track, 0 means no smoothing.
      * @param base_max_unseen_time_seconds Base time a track may be coasted with no quality bonus.
      * @param max_unseen_time_bonus_seconds Extra coasting time at quality = 1.
      * @param quality_time_for_max_seconds Real match time needed to reach quality = 1.
@@ -126,6 +127,7 @@ public:
      * @param enable_class_tracking If true, the tracker will include class IDs in the matching cost.
      * @param class_mismatch_cost Cost of matching a detection to a track with a different class ID than the tracks confirmed class ID.
      * @param class_switch_confirm_seconds Time of real matches to the same new class required before the tracks confirmed class is switched over.
+     * @param enable_class_groups If true (and class tracking is on), classes of the same general group (for example car, bus and truck are all "vehicle") count as the same class: no matching cost and no confirm time, the track simply takes the class of the latest detection.
      * @param enable_size_consistency_check If true, the tracker will check for size consistency between detections and tracks.
      * @param size_consistency_max_ratio A detection is rejected if its bbox area differs from the tracks expected area by more than this ratio.
      * @param registration_confidence_threshold Required confidence of a detection to register a new track.
@@ -146,9 +148,11 @@ public:
 
         // motion model used for predicting object positions
         MotionModel motion_model = MotionModel::ConstantVelocity;
+        // time constant of the smoothing of the pixel velocity of a track (0 = no smoothing, the velocity of the last frame)
+        float velocity_smoothing_seconds = 0.1f;
 
         // base time a track may be coasted with no quality bonus.
-        float base_max_unseen_time_seconds = 0.0f;
+        float base_max_unseen_time_seconds = 0.15f;
         // extra coasting time at quality = 1
         float max_unseen_time_bonus_seconds = 0.0f;
         // real match time needed to reach quality = 1
@@ -160,6 +164,8 @@ public:
 
         // if true, the tracker will include class IDs in the matching cost
         bool enable_class_tracking = true;
+        // if true (and class tracking is true), classes of the same general group count as the same class, no matching cost and no confirm time
+        bool enable_class_groups = true;
         // cost of matching a detection to a track with a different class ID than the tracks confirmed class ID
         float class_mismatch_cost = 0.5f;
         // time of real matches to the same new class required before the tracks confirmed class is switched over
@@ -178,11 +184,20 @@ public:
 
     explicit Tracker(const Config& config = Config());
 
+    /**
+     * Updates the tracker and returns the list of tracked objects.
+     * @param detections The list of all detections from the object detector.
+     * @param camera_coords The current camera coordinates.
+     * @param window_width The width of the window in which the detections were made.
+     * @param window_height The height of the window in which the detections were made.
+     * @param dt_seconds The frame time delta in seconds.
+     */
     std::vector<Object>& update(
         const std::vector<ObjectDetector::Detection> detections,
         const utils::CameraCoordinates& camera_coords,
         const int window_width,
-        const int window_height
+        const int window_height,
+        const float dt_seconds
     );
 
 private:
@@ -201,6 +216,8 @@ private:
 
     void predict_motion(std::vector<Object>& objects, float dt_seconds);
 
+    bool same_tracking_class(int class_id_a, int class_id_b) const;
+
     float compute_max_unseen_time(const Object& obj) const;
     float compute_quality(const Object& obj) const;
 
@@ -209,8 +226,8 @@ private:
     utils::Timer timer_;
 
     std::vector<Object> objects_;
+
     int next_id_ = 0;
-    std::vector<int> free_ids_;
 
     std::vector<float> predicted_x_;
     std::vector<float> predicted_y_;

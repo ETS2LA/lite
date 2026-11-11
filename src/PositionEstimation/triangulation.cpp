@@ -84,7 +84,7 @@ utils::PositionEstimationCoordinates triangulate_position(
 ) {
     const utils::CameraCoordinates& cam0 = object.first_camera_coords;
 
-    if (is_vehicle(object.class_id)) {
+    if (object_classes::is_vehicle(object.class_id)) {
         auto coord_left = triangulate(
             camera_coords,
             cam0,

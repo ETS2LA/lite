@@ -1,5 +1,7 @@
 #pragma once
 
+#include "ObjectDetection/object_classes.h"
+
 #include <onnxruntime_cxx_api.h>
 #include <opencv2/opencv.hpp>
 
@@ -7,16 +9,6 @@
 #include <vector>
 
 class SharedData;
-
-
-/**
- * Check if the class is a vehicle.
- * @param class_id The class ID to check.
- * @return True if the class is a vehicle, false otherwise.
- */
-inline bool is_vehicle(const int class_id) {
-    return class_id >= 0 && class_id <= 2;
-}
 
 
 class ObjectDetector {
@@ -48,24 +40,6 @@ public:
     enum class Device {
         CPU,
         DirectML
-    };
-
-    // The classes that the object detection model can detect.
-    inline static const std::vector<std::string> classes = {
-        "car",
-        "bus",
-        "truck",
-        "stoplight",
-        "streetlamp",
-        "sign",
-        "short post",
-        "long pole",
-        "curved pole",
-        "lane line",
-        "tree trunk",
-        "bridge pier",
-        "traffic cone",
-        "traffic delineator"
     };
 
     /**

@@ -156,7 +156,7 @@ ObjectDetector::Detections ObjectDetector::infer(const cv::Mat& frame) {
     const bool channels_first = !nms_output && output_shape[1] < output_shape[2];
     const size_t attributes = static_cast<size_t>(nms_output ? 6 : (channels_first ? output_shape[1] : output_shape[2]));
     const size_t candidates = static_cast<size_t>(channels_first ? output_shape[2] : output_shape[1]);
-    if (attributes < 5 || (!nms_output && attributes > ObjectDetector::classes.size() + 5)) {
+    if (attributes < 5 || (!nms_output && attributes > object_classes::Count + 5)) {
         throw std::runtime_error("Unsupported YOLO ONNX output attributes.");
     }
 
@@ -181,7 +181,7 @@ ObjectDetector::Detections ObjectDetector::infer(const cv::Mat& frame) {
                 }
             }
         }
-        if (best_score < config_.confidence_threshold || best_class < 0 || best_class >= static_cast<int>(ObjectDetector::classes.size())) {
+        if (best_score < config_.confidence_threshold || !object_classes::is_valid(best_class)) {
             continue;
         }
 

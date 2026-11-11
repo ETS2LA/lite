@@ -15,11 +15,6 @@ shared_data_(shared_data)
 }
 
 
-bool PositionEstimation::is_ground_projected_class(int class_id) {
-    return class_id == 0 || class_id == 1 || class_id == 2 || class_id == 6 || class_id == 9;
-}
-
-
 utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
     const utils::CameraCoordinates& camera_coords,
     Tracker::Object& object,
@@ -30,8 +25,8 @@ utils::PositionEstimationCoordinates PositionEstimation::estimate_position(
     utils::Coordinates position_right{0.0, 0.0, 0.0};
     bool ok = false;
 
-    if (is_ground_projected_class(object.class_id)) {
-        if (is_vehicle(object.class_id)) {
+    if (object_classes::is_ground_projected(object.class_id)) {
+        if (object_classes::is_vehicle(object.class_id)) {
             const utils::Angles angles_left = utils::convert_to_angles(
                 {object.half_left_x(), object.bottom_y()},
                 window_width,
@@ -79,9 +74,7 @@ void PositionEstimation::draw(const vector<Tracker::Object>& objects) const {
 
         draw_list_->rectangle(left, top, right, bottom, 3.0f, 1.0f, color);
 
-        const string class_name = (obj.class_id >= 0 && obj.class_id < static_cast<int>(ObjectDetector::classes.size()))
-            ? ObjectDetector::classes[obj.class_id]
-            : "unknown";
+        const string class_name = object_classes::name(obj.class_id);
         const string label = obj.is_coasting
             ? format("{} (coasting)", class_name)
             : format("{} {:.2f}", class_name, obj.confidence);
@@ -125,15 +118,22 @@ void PositionEstimation::run() {
     last_object_detection_frame_index = object_detection_data->frame_index;
 
     draw_list_->clear();
-    auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
+    const auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     ground_projection_.update(telemetry_);
+
+    const uint64_t capture_qpc = object_detection_data->timestamp_qpc;
+    const float capture_dt_seconds = static_cast<float>(
+        telemetry_reader_.ticks_to_ms(capture_qpc - last_capture_qpc_) / 1000.0
+    );
+    last_capture_qpc_ = capture_qpc;
 
     auto objects = tracker_.update(
         object_detection_data->objects.detections,
         camera_coords,
         object_detection_data->objects.frame_width,
-        object_detection_data->objects.frame_height
+        object_detection_data->objects.frame_height,
+        capture_dt_seconds
     );
     draw(objects);
 
@@ -174,23 +174,6 @@ void PositionEstimation::run() {
         }
     }
 
-    vector<cv::Scalar> class_colors = {
-        cv::Scalar{0, 255, 0}, // car
-        cv::Scalar{255, 255, 0},  // bus
-        cv::Scalar{0, 0, 255},  // truck
-        cv::Scalar{0, 255, 255},  // stoplight
-        cv::Scalar{128, 128, 128},  // streetlamp
-        cv::Scalar{255, 75, 75},  // sign
-        cv::Scalar{128, 128, 128},  // short post
-        cv::Scalar{128, 128, 128},  // long pole
-        cv::Scalar{128, 128, 128},  // curved pole
-        cv::Scalar{255, 255, 255},  // lane line
-        cv::Scalar{0, 25, 50},  // tree trunk
-        cv::Scalar{128, 128, 128},  // bridge pier
-        cv::Scalar{0, 75, 255},  // traffic cone
-        cv::Scalar{0, 75, 255},  // traffic delineator
-    };
-
     PositionEstimationData position_estimation_data;
     position_estimation_data.objects.reserve(objects.size());
     position_estimation_data.frame_index = telemetry_.frame_index;
@@ -216,7 +199,7 @@ void PositionEstimation::run() {
             continue;
         }
 
-        if (is_vehicle(obj.class_id)) {
+        if (object_classes::is_vehicle(obj.class_id)) {
             const cv::Point pt1 = top_down_view_point(position.left, camera_coords, display_frame.size(), 25);
             const cv::Point pt2 = top_down_view_point(position.right, camera_coords, display_frame.size(), 25);
 
@@ -224,9 +207,7 @@ void PositionEstimation::run() {
                 display_frame,
                 pt1,
                 pt2,
-                (obj.class_id >= 0 && obj.class_id < static_cast<int>(class_colors.size()))
-                    ? class_colors[obj.class_id]
-                    : cv::Scalar{255, 255, 255},
+                object_classes::color(obj.class_id),
                 2
             );
         } else {
@@ -236,9 +217,7 @@ void PositionEstimation::run() {
                 display_frame,
                 pt,
                 2,
-                (obj.class_id >= 0 && obj.class_id < static_cast<int>(class_colors.size()))
-                    ? class_colors[obj.class_id]
-                    : cv::Scalar{255, 255, 255},
+                object_classes::color(obj.class_id),
                 -1
             );
         }

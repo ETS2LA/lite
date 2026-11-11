@@ -11,7 +11,6 @@
 #include <cstdint>
 #include <memory>
 #include <vector>
-#include <deque>
 
 
 struct ObjectPositionSample {

@@ -96,12 +96,9 @@ struct CameraCoordinates {
 
 /**
  * PositionEstimation coordinate structure.
- * @param x X coordinate of the camera.
- * @param y Y coordinate of the camera.
- * @param z Z coordinate of the camera.
- * @param pitch Pitch angle of the camera in degrees.
- * @param yaw Yaw angle of the camera in degrees.
- * @param roll Roll angle of the camera in degrees.
+ * @param left The left world coordinate of the object.
+ * @param right The right world coordinate of the object.
+ * @param center The center world coordinate of the object.
  */
 struct PositionEstimationCoordinates {
     utils::Coordinates left;

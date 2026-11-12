@@ -103,6 +103,69 @@ cv::Point top_down_view_point(
 }
 
 
+void dim_outside_camera_fov(
+    cv::Mat& display_frame,
+    const utils::CameraCoordinates& camera_coords,
+    int frame_width,
+    int frame_height
+) {
+    if (frame_width <= 0 || frame_height <= 0) {
+        return;
+    }
+
+    const auto left_angles = utils::convert_to_angles(
+        {0.0, frame_height / 2.0},
+        frame_width,
+        frame_height
+    );
+    const auto right_angles = utils::convert_to_angles(
+        {static_cast<double>(frame_width), frame_height / 2.0},
+        frame_width,
+        frame_height
+    );
+    const auto left_ray = utils::camera_ray_direction(left_angles, camera_coords);
+    const auto right_ray = utils::camera_ray_direction(right_angles, camera_coords);
+
+    if (hypot(left_ray.x, left_ray.z) <= 1e-6 ||
+        hypot(right_ray.x, right_ray.z) <= 1e-6
+    ) {
+        return;
+    }
+
+    const auto point_at_range = [&](const utils::Coordinates& ray) {
+        const double horizontal_length = hypot(ray.x, ray.z);
+        const double scale = 100.0 / horizontal_length;
+        return utils::Coordinates{
+            camera_coords.x + ray.x * scale,
+            camera_coords.y,
+            camera_coords.z + ray.z * scale
+        };
+    };
+
+    const utils::Coordinates left_edge = point_at_range(left_ray);
+    const utils::Coordinates right_edge = point_at_range(right_ray);
+
+    vector<cv::Point> fov_polygon{
+        top_down_view_point(
+            utils::Coordinates{camera_coords.x, camera_coords.y, camera_coords.z},
+            camera_coords,
+            display_frame.size(),
+            25
+        ),
+        top_down_view_point(left_edge, camera_coords, display_frame.size(), 25),
+        top_down_view_point(right_edge, camera_coords, display_frame.size(), 25)
+    };
+
+    cv::Mat fov_mask(display_frame.size(), CV_8UC1, cv::Scalar(0));
+    cv::fillConvexPoly(fov_mask, fov_polygon, cv::Scalar(255));
+
+    cv::Mat dimmed;
+    display_frame.convertTo(dimmed, -1, 0.5);
+    cv::bitwise_not(fov_mask, fov_mask);
+    dimmed.copyTo(display_frame, fov_mask);
+}
+
+
 void PositionEstimation::run() {
     if (!telemetry_reader_.get_latest_telemetry(telemetry_)) {
         return;
@@ -173,6 +236,13 @@ void PositionEstimation::run() {
             route_advisor.copyTo(display_frame, route_advisor_mask);
         }
     }
+
+    dim_outside_camera_fov(
+        display_frame,
+        camera_coords,
+        object_detection_data->objects.frame_width,
+        object_detection_data->objects.frame_height
+    );
 
     PositionEstimationData position_estimation_data;
     position_estimation_data.objects.reserve(objects.size());

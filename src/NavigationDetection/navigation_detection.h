@@ -43,7 +43,7 @@ private:
     cv::Mat mask_red_green_;
 
     const cv::Scalar lower_red_{7, 7, 202, 0};
-    const cv::Scalar upper_red_{114, 114, 220, 255};
+    const cv::Scalar upper_red_{114, 128, 233, 255};
     const cv::Scalar lower_green_{1, 246, 12, 0};
     const cv::Scalar upper_green_{114, 255, 115, 255};
 

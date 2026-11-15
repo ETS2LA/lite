@@ -181,6 +181,7 @@ void PositionEstimation::run() {
     last_object_detection_frame_index = object_detection_data->frame_index;
 
     draw_list_->clear();
+
     const auto camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     ground_projection_.update(telemetry_);

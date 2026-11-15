@@ -4,6 +4,7 @@
 #include "tracker.h"
 #include "utils.h"
 
+#include <ets2la_telemetry/telemetry_reader.h>
 #include <unordered_map>
 #include <cstdint>
 #include <utility>
@@ -15,6 +16,7 @@
 
 struct ObjectDetectionData {
     ObjectDetector::Detections objects;
+    ets2la_telemetry::Telemetry telemetry;
     uint64_t frame_index = 0;
     uint64_t timestamp_qpc = 0;
 };

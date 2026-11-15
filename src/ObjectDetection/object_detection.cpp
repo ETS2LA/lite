@@ -1,7 +1,7 @@
 #include "ObjectDetection/object_detection.h"
 #include "shared_data.h"
 
-#include <ets2la_capture/frame_reader.h>
+#include <ets2la_capture/synced_reader.h>
 #include <dml_provider_factory.h>
 #include <filesystem>
 #include <algorithm>
@@ -14,8 +14,8 @@ using namespace std;
 
 namespace {
 
-ets2la_capture::Frame capture_frame;
-ets2la_capture::FrameReader reader;
+ets2la_capture::SyncedFrame capture_frame;
+ets2la_capture::SyncedReader reader;
 cv::Mat frame;
 
 std::vector<int> class_aware_nms(
@@ -222,12 +222,13 @@ ObjectDetector::Detections ObjectDetector::infer(const cv::Mat& frame) {
 
 
 void ObjectDetector::run() {
-    if (!reader.get_frame(capture_frame, 1000)) {
+    if (!reader.get(capture_frame, 1000)) {
         return;
     }
 
-    cv::Mat native(int(capture_frame.height), int(capture_frame.width), CV_8UC4, capture_frame.data.data(), capture_frame.stride);
-    if (capture_frame.layout() == ets2la_capture::PixelLayout::RGBA8) {
+    auto& frame_data = capture_frame.frame;
+    cv::Mat native(int(frame_data.height), int(frame_data.width), CV_8UC4, frame_data.data.data(), frame_data.stride);
+    if (frame_data.layout() == ets2la_capture::PixelLayout::RGBA8) {
         cv::cvtColor(native, frame, cv::COLOR_RGBA2BGR);
     } else {
         cv::cvtColor(native, frame, cv::COLOR_BGRA2BGR);
@@ -235,7 +236,8 @@ void ObjectDetector::run() {
 
     shared_data_.set("object_detection", ObjectDetectionData{
         .objects = infer(frame),
-        .frame_index = capture_frame.frame_index,
-        .timestamp_qpc = capture_frame.timestamp_qpc
+        .telemetry = capture_frame.telemetry,
+        .frame_index = frame_data.frame_index,
+        .timestamp_qpc = frame_data.timestamp_qpc
     });
 }

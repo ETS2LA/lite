@@ -104,20 +104,22 @@ shared_data_(shared_data)
 void NavigationDetection::update() {
     double current_time = utils::get_time_seconds();
 
-    if (!reader_.get_frame(capture_frame_, 1000)) {
+    if (!reader_.get(capture_frame_, 1000)) {
         return;
     }
 
-    cv::Mat native(int(capture_frame_.height), int(capture_frame_.width), CV_8UC4, capture_frame_.data.data(), capture_frame_.stride);
-    if (capture_frame_.layout() == ets2la_capture::PixelLayout::RGBA8) {
+    auto& frame_data = capture_frame_.frame;
+    cv::Mat native(int(frame_data.height), int(frame_data.width), CV_8UC4, frame_data.data.data(), frame_data.stride);
+    if (frame_data.layout() == ets2la_capture::PixelLayout::RGBA8) {
         cv::cvtColor(native, frame_, cv::COLOR_RGBA2BGR);
     } else {
         cv::cvtColor(native, frame_, cv::COLOR_BGRA2BGR);
     }
 
-    if (!telemetry_reader_.get_latest_telemetry(telemetry_)) {
+    if (!capture_frame_.telemetry.valid) {
         return;
     }
+    telemetry_ = capture_frame_.telemetry;
 
     draw_list_->clear();
 

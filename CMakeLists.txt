@@ -17,7 +17,7 @@ include(FetchContent)
 FetchContent_Declare(
     ets2la_capture
     GIT_REPOSITORY https://github.com/ETS2LA/capture.git
-    GIT_TAG main
+    GIT_TAG synced-capture
 )
 FetchContent_Declare(
     ets2la_controller

@@ -11,7 +11,6 @@ wheel_trajectory_(ar),
 shared_data_(shared_data)
 {
     draw_list_ = ar->get_draw_list("position_estimation");
-    telemetry_reader_.get_latest_telemetry(telemetry_);
 }
 
 
@@ -167,18 +166,15 @@ void dim_outside_camera_fov(
 
 
 void PositionEstimation::run() {
-    if (!telemetry_reader_.get_latest_telemetry(telemetry_)) {
-        return;
-    }
-
     auto object_detection_data = shared_data_.get<ObjectDetectionData>("object_detection");
-    if (!object_detection_data ||
+    if (!object_detection_data || !object_detection_data->telemetry.valid ||
         object_detection_data->frame_index == last_object_detection_frame_index
     ) {
         this_thread::sleep_for(chrono::milliseconds(1));
         return;
     }
     last_object_detection_frame_index = object_detection_data->frame_index;
+    telemetry_ = object_detection_data->telemetry;
 
     draw_list_->clear();
 

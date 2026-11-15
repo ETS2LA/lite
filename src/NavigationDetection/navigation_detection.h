@@ -1,7 +1,6 @@
 #pragma once
 
-#include <ets2la_telemetry/telemetry_reader.h>
-#include <ets2la_capture/frame_reader.h>
+#include <ets2la_capture/synced_reader.h>
 #include <opencv2/opencv.hpp>
 
 #include "controller.h"
@@ -27,12 +26,11 @@ private:
         int y_coordinate
     );
 
-    ets2la_capture::Frame capture_frame_;
-    ets2la_capture::FrameReader reader_;
+    ets2la_capture::SyncedFrame capture_frame_;
+    ets2la_capture::SyncedReader reader_;
 
     SharedData& shared_data_;
     std::shared_ptr<DrawList> draw_list_;
-    ets2la_telemetry::TelemetryReader telemetry_reader_;
     ets2la_telemetry::Telemetry telemetry_;
     InputHandler input_;
     Controller controller_;

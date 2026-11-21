@@ -17,17 +17,17 @@ include(FetchContent)
 FetchContent_Declare(
     ets2la_capture
     GIT_REPOSITORY https://github.com/ETS2LA/capture.git
-    GIT_TAG synced-capture
+    GIT_TAG synced-v1.1.2
 )
 FetchContent_Declare(
     ets2la_controller
     GIT_REPOSITORY https://github.com/ETS2LA/controller.git
-    GIT_TAG main
+    GIT_TAG v1.1.0
 )
 FetchContent_Declare(
     ets2la_telemetry
     GIT_REPOSITORY https://github.com/ETS2LA/telemetry.git
-    GIT_TAG main
+    GIT_TAG v1.0.2
 )
 cmake_policy(SET CMP0169 OLD)
 FetchContent_Populate(ets2la_capture)

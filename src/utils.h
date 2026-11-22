@@ -3,6 +3,7 @@
 #include <ets2la_telemetry/telemetry_reader.h>
 #include <opencv2/opencv.hpp>
 #include <windows.h>
+#include <optional>
 #include <chrono>
 #include <string>
 #include <vector>
@@ -189,8 +190,15 @@ ScreenArea get_route_advisor_position(
 );
 void apply_route_advisor_crop(cv::Mat& frame, const bool side_right);
 
-Coordinates convert_route_advisor_pixel_to_world(
+std::optional<Coordinates> convert_route_advisor_pixel_to_world(
     const ScreenCoordinates& pixel,
+    const int frame_width,
+    const int frame_height,
+    const ets2la_telemetry::Telemetry& telemetry
+);
+
+std::optional<ScreenCoordinates> convert_world_to_route_advisor_pixel(
+    const Coordinates& world,
     const int frame_width,
     const int frame_height,
     const ets2la_telemetry::Telemetry& telemetry

@@ -198,6 +198,8 @@ void PositionEstimation::run() {
     draw(objects);
 
     cv::Mat display_frame(500, 500, CV_8UC3, cv::Scalar(0, 0, 0));
+    utils::ScreenArea route_advisor_area{};
+    bool route_advisor_available = false;
 
     if (route_advisor_reader_.get_frame(route_advisor_capture_frame_, 1000)) {
         cv::Mat native(
@@ -213,7 +215,9 @@ void PositionEstimation::run() {
             cv::cvtColor(native, frame_, cv::COLOR_BGRA2BGR);
         }
 
+        route_advisor_area = utils::get_route_advisor_position(frame_, true);
         utils::apply_route_advisor_crop(frame_, true);
+        route_advisor_available = !frame_.empty();
 
         const cv::Mat route_advisor = utils::warp_route_advisor_to_top_down(
             frame_,
@@ -247,6 +251,8 @@ void PositionEstimation::run() {
     position_estimation_data.timestamp_qpc = telemetry_.timestamp_qpc;
 
     for (auto& obj : objects) {
+        const utils::ColorFloat color = object_classes::color_float(obj.class_id);
+
         auto position = estimate_position(
             camera_coords,
             obj,
@@ -274,9 +280,50 @@ void PositionEstimation::run() {
                 display_frame,
                 pt1,
                 pt2,
-                object_classes::color(obj.class_id),
+                object_classes::color_cv(obj.class_id),
                 2
             );
+
+            if (route_advisor_available) {
+                const std::optional<utils::ScreenCoordinates> route_left = utils::convert_world_to_route_advisor_pixel(
+                    position.left,
+                    frame_.cols,
+                    frame_.rows,
+                    telemetry_
+                );
+                const std::optional<utils::ScreenCoordinates> route_right = utils::convert_world_to_route_advisor_pixel(
+                    position.right,
+                    frame_.cols,
+                    frame_.rows,
+                    telemetry_
+                );
+
+                if (route_left && route_right) {
+                    const bool left_in_route = route_left->x >= 0.0 &&
+                        route_left->x <= frame_.cols &&
+                        route_left->y >= 0.0 &&
+                        route_left->y <= frame_.rows;
+                    const bool right_in_route = route_right->x >= 0.0 &&
+                        route_right->x <= frame_.cols &&
+                        route_right->y >= 0.0 &&
+                        route_right->y <= frame_.rows;
+                    if (left_in_route && right_in_route) {
+                        draw_list_->line(
+                            utils::ScreenCoordinates{
+                                route_advisor_area.top_left.x + route_left->x,
+                                route_advisor_area.top_left.y + route_left->y
+                            },
+                            utils::ScreenCoordinates{
+                                route_advisor_area.top_left.x + route_right->x,
+                                route_advisor_area.top_left.y + route_right->y
+                            },
+                            1.0f,
+                            2.0f,
+                            color
+                        );
+                    }
+                }
+            }
         } else {
             const cv::Point pt = top_down_view_point(position.center, camera_coords, display_frame.size(), 25);
 
@@ -284,9 +331,33 @@ void PositionEstimation::run() {
                 display_frame,
                 pt,
                 2,
-                object_classes::color(obj.class_id),
+                object_classes::color_cv(obj.class_id),
                 -1
             );
+
+            if (route_advisor_available) {
+                const std::optional<utils::ScreenCoordinates> route_point = utils::convert_world_to_route_advisor_pixel(
+                    position.center,
+                    frame_.cols,
+                    frame_.rows,
+                    telemetry_
+                );
+
+                if (route_point &&
+                    route_point->x >= 0.0 && route_point->x <= frame_.cols &&
+                    route_point->y >= 0.0 && route_point->y <= frame_.rows
+                ) {
+                    draw_list_->circle(
+                        utils::ScreenCoordinates{
+                            route_advisor_area.top_left.x + route_point->x,
+                            route_advisor_area.top_left.y + route_point->y
+                        },
+                        2.0f,
+                        -1.0f,
+                        color
+                    );
+                }
+            }
         }
     }
 

@@ -398,15 +398,27 @@ static bool is_route_planned_from_frame_size(
 
 
 /**
- * Convert a route advisor pixel to a ground position relative to the truck.
- * The camera values were measured with RenderDoc and the help of Claude at the closest route advisor zoom.
- * @param pixel The pixel in the frame.
- * @param frame_width The width of the frame in pixels.
- * @param frame_height The height of the frame in pixels.
- * @return The ground position relative to the truck.
+ * Camera model of the route advisor at the closest zoom level.
+ * The values were measured with RenderDoc and the help of Claude.
  */
-static Coordinates convert_route_advisor_pixel_to_truck_ground(
-    const ScreenCoordinates& pixel,
+namespace {
+struct RouteAdvisorCamera {
+    double sin_pitch;
+    double cos_pitch;
+    double tan_half_vertical_fov;
+    double aspect_ratio;
+    double height_above_ground;
+    double distance_behind_truck;
+};
+}
+
+/**
+ * Get the route advisor camera model for a cropped route advisor frame.
+ * @param frame_width The width of the cropped route advisor frame in pixels, must be greater than zero.
+ * @param frame_height The height of the cropped route advisor frame in pixels, must be greater than zero.
+ * @return The camera model.
+ */
+static RouteAdvisorCamera get_route_advisor_camera(
     const int frame_width,
     const int frame_height
 ) {
@@ -417,30 +429,92 @@ static Coordinates convert_route_advisor_pixel_to_truck_ground(
     const double ground_below_truck_arrow = 1.0;
 
     const double camera_pitch = degrees_to_radians(camera_pitch_degrees);
-    const double sin_pitch = sin(camera_pitch);
-    const double cos_pitch = cos(camera_pitch);
-    const double tan_half_vertical_fov = 1.0 / vertical_projection_scale;
-    const double aspect_ratio = static_cast<double>(frame_width) / static_cast<double>(frame_height);
+
+    RouteAdvisorCamera camera;
+    camera.sin_pitch = sin(camera_pitch);
+    camera.cos_pitch = cos(camera_pitch);
+    camera.tan_half_vertical_fov = 1.0 / vertical_projection_scale;
+    camera.aspect_ratio = static_cast<double>(frame_width) / static_cast<double>(frame_height);
+    camera.height_above_ground = camera_distance * camera.sin_pitch + ground_below_truck_arrow;
+    camera.distance_behind_truck = camera_distance * camera.cos_pitch;
+    return camera;
+}
+
+
+/**
+ * Convert a route advisor pixel to a ground position relative to the truck.
+ * @param pixel The pixel in the frame.
+ * @param frame_width The width of the cropped route advisor frame in pixels.
+ * @param frame_height The height of the cropped route advisor frame in pixels.
+ * @return The ground position relative to the truck, or nullopt if the frame is invalid or the pixel does not hit the ground.
+ */
+static optional<Coordinates> convert_route_advisor_pixel_to_truck_ground(
+    const ScreenCoordinates& pixel,
+    const int frame_width,
+    const int frame_height
+) {
+    if (frame_width <= 0 || frame_height <= 0) {
+        return nullopt;
+    }
+
+    const RouteAdvisorCamera camera = get_route_advisor_camera(frame_width, frame_height);
 
     const double normalized_x = 2.0 * pixel.x / frame_width - 1.0;
     const double normalized_y = 1.0 - 2.0 * pixel.y / frame_height;
-    const double ray_right = normalized_x * aspect_ratio * tan_half_vertical_fov;
-    const double ray_up = normalized_y * tan_half_vertical_fov;
+    const double ray_right = normalized_x * camera.aspect_ratio * camera.tan_half_vertical_fov;
+    const double ray_up = normalized_y * camera.tan_half_vertical_fov;
 
-    const double ray_y = -sin_pitch + ray_up * cos_pitch;
-    const double ray_z = -cos_pitch - ray_up * sin_pitch;
+    const double ray_y = -camera.sin_pitch + ray_up * camera.cos_pitch;
+    const double ray_z = -camera.cos_pitch - ray_up * camera.sin_pitch;
     if (ray_y >= 0.0) {
-        return Coordinates{};
+        return nullopt;
     }
 
-    const double camera_height = camera_distance * sin_pitch + ground_below_truck_arrow;
-    const double camera_behind = camera_distance * cos_pitch;
-    const double ray_length = -camera_height / ray_y;
+    const double ray_length = -camera.height_above_ground / ray_y;
 
     return Coordinates{
         ray_right * ray_length,
         0.0,
-        camera_behind + ray_z * ray_length
+        camera.distance_behind_truck + ray_z * ray_length
+    };
+}
+
+
+/**
+ * Convert a ground position relative to the truck to a pixel of the route advisor.
+ * @param ground_offset The ground position relative to the truck, the y coordinate is ignored.
+ * @param frame_width The width of the cropped route advisor frame in pixels.
+ * @param frame_height The height of the cropped route advisor frame in pixels.
+ * @return The pixel coordinates, or nullopt if the frame is invalid or the position is behind the camera.
+ */
+static optional<ScreenCoordinates> convert_truck_ground_to_route_advisor_pixel(
+    const Coordinates& ground_offset,
+    const int frame_width,
+    const int frame_height
+) {
+    if (frame_width <= 0 || frame_height <= 0) {
+        return nullopt;
+    }
+
+    const RouteAdvisorCamera camera = get_route_advisor_camera(frame_width, frame_height);
+
+    const double camera_to_point_y = -camera.height_above_ground;
+    const double camera_to_point_z = ground_offset.z - camera.distance_behind_truck;
+
+    const double depth = -camera_to_point_y * camera.sin_pitch - camera_to_point_z * camera.cos_pitch;
+    if (depth <= 0.0) {
+        return nullopt;
+    }
+    const double up_distance = camera_to_point_y * camera.cos_pitch - camera_to_point_z * camera.sin_pitch;
+
+    const double ray_right = ground_offset.x / depth;
+    const double ray_up = up_distance / depth;
+    const double normalized_x = ray_right / (camera.aspect_ratio * camera.tan_half_vertical_fov);
+    const double normalized_y = ray_up / camera.tan_half_vertical_fov;
+
+    return ScreenCoordinates{
+        (normalized_x + 1.0) * frame_width / 2.0,
+        (1.0 - normalized_y) * frame_height / 2.0
     };
 }
 
@@ -451,17 +525,17 @@ static Coordinates convert_route_advisor_pixel_to_truck_ground(
  * @param frame_width The width of the cropped route advisor frame in pixels.
  * @param frame_height The height of the cropped route advisor frame in pixels.
  * @param telemetry The telemetry data of the same moment as the frame.
- * @return The world coordinates of the pixel.
+ * @return The world coordinates of the pixel, or nullopt if the frame is invalid or the pixel does not hit the ground.
  */
-Coordinates convert_route_advisor_pixel_to_world(
+optional<Coordinates> convert_route_advisor_pixel_to_world(
     const ScreenCoordinates& pixel,
     const int frame_width,
     const int frame_height,
     const ets2la_telemetry::Telemetry& telemetry
 ) {
-    const Coordinates ground_offset = convert_route_advisor_pixel_to_truck_ground(pixel, frame_width, frame_height);
-    if (isnan(ground_offset.x)) {
-        return ground_offset;
+    const optional<Coordinates> ground_offset = convert_route_advisor_pixel_to_truck_ground(pixel, frame_width, frame_height);
+    if (!ground_offset) {
+        return nullopt;
     }
 
     const Rotations truck_heading{
@@ -469,13 +543,44 @@ Coordinates convert_route_advisor_pixel_to_world(
         telemetry.truck.world.orientation.heading * 360.0f,
         0.0f
     };
-    const Coordinates rotated_offset = rotate_vector(ground_offset, truck_heading);
+    const Coordinates rotated_offset = rotate_vector(*ground_offset, truck_heading);
 
     return Coordinates{
         telemetry.truck.world.position.x + rotated_offset.x,
         telemetry.truck.world.position.y + rotated_offset.y,
         telemetry.truck.world.position.z + rotated_offset.z
     };
+}
+
+
+/**
+ * Convert a world coordinate to a pixel of the route advisor.
+ * @param world The world coordinate.
+ * @param frame_width The width of the cropped route advisor frame in pixels.
+ * @param frame_height The height of the cropped route advisor frame in pixels.
+ * @param telemetry The telemetry data of the same moment as the frame.
+ * @return The pixel coordinates, or nullopt if the frame is invalid or the world coordinate is behind the camera.
+ */
+optional<ScreenCoordinates> convert_world_to_route_advisor_pixel(
+    const Coordinates& world,
+    const int frame_width,
+    const int frame_height,
+    const ets2la_telemetry::Telemetry& telemetry
+) {
+    const Coordinates world_offset{
+        world.x - telemetry.truck.world.position.x,
+        0.0,
+        world.z - telemetry.truck.world.position.z
+    };
+
+    const Rotations inverse_truck_heading{
+        0.0f,
+        -telemetry.truck.world.orientation.heading * 360.0f,
+        0.0f
+    };
+    const Coordinates ground_offset = rotate_vector(world_offset, inverse_truck_heading);
+
+    return convert_truck_ground_to_route_advisor_pixel(ground_offset, frame_width, frame_height);
 }
 
 
@@ -511,17 +616,17 @@ cv::Mat warp_route_advisor_to_top_down(
     cv::Point2f source_points[4];
     cv::Point2f destination_points[4];
     for (int corner_index = 0; corner_index < 4; corner_index++) {
-        const Coordinates ground_offset = convert_route_advisor_pixel_to_truck_ground(
+        const optional<Coordinates> ground_offset = convert_route_advisor_pixel_to_truck_ground(
             frame_corners[corner_index],
             frame.cols,
             frame.rows
         );
-        if (isnan(ground_offset.x)) {
+        if (!ground_offset) {
             return cv::Mat();
         }
 
-        const double destination_x = truck_output_position.x + ground_offset.x / meters_per_pixel;
-        const double destination_y = truck_output_position.y + ground_offset.z / meters_per_pixel;
+        const double destination_x = truck_output_position.x + ground_offset->x / meters_per_pixel;
+        const double destination_y = truck_output_position.y + ground_offset->z / meters_per_pixel;
         source_points[corner_index] = cv::Point2f(
             static_cast<float>(frame_corners[corner_index].x - 0.5),
             static_cast<float>(frame_corners[corner_index].y - 0.5)

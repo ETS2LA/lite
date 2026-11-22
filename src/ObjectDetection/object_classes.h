@@ -1,5 +1,7 @@
 #pragma once
 
+#include "utils.h"
+
 #include <opencv2/opencv.hpp>
 #include <string>
 #include <array>
@@ -101,12 +103,42 @@ inline std::string name(const int class_id) {
 }
 
 /**
- * Get the display color of a class.
+ * Get the cv::Scalar display color of a class.
  * @param class_id The class ID to get the color for.
- * @return The display color of the class, or white if the class ID is invalid.
+ * @return The cv::Scalar display color of the class, or white if the class ID is invalid.
  */
-inline cv::Scalar color(const int class_id) {
+inline cv::Scalar color_cv(const int class_id) {
     return is_valid(class_id) ? table()[class_id].color : cv::Scalar{255, 255, 255};
+}
+
+/**
+ * Get the utils::ColorFloat display color of a class.
+ * @param class_id The class ID to get the color for.
+ * @return The utils::ColorFloat display color of the class, or white if the class ID is invalid.
+ */
+inline utils::ColorFloat color_float(const int class_id) {
+    const cv::Scalar color = color_cv(class_id);
+    return utils::ColorFloat{
+        static_cast<float>(color[2]) / 255.0f,
+        static_cast<float>(color[1]) / 255.0f,
+        static_cast<float>(color[0]) / 255.0f,
+        1.0f
+    };
+}
+
+/**
+ * Get the utils::ColorInt display color of a class.
+ * @param class_id The class ID to get the color for.
+ * @return The utils::ColorInt display color of the class, or white if the class ID is invalid.
+ */
+inline utils::ColorInt color_int(const int class_id) {
+    const cv::Scalar color = color_cv(class_id);
+    return utils::ColorInt{
+        static_cast<int>(color[2]),
+        static_cast<int>(color[1]),
+        static_cast<int>(color[0]),
+        255
+    };
 }
 
 /**

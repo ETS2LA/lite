@@ -3,11 +3,11 @@
 #include "utils.h"
 
 #include <functional>
-#include <memory>
-#include <mutex>
-#include <string>
 #include <utility>
+#include <memory>
+#include <string>
 #include <vector>
+#include <mutex>
 
 class AR;
 
@@ -77,12 +77,14 @@ public:
      * @param position World coordinate.
      * @param font_size Font size in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void text(
         const std::wstring& text,
         const utils::Coordinates& position,
         float font_size,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw text at a world coordinate using a given camera.
@@ -91,13 +93,15 @@ public:
      * @param camera_coords Camera position and rotation.
      * @param font_size Font size in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void text(
         const std::wstring& text,
         const utils::Coordinates& position,
         const utils::CameraCoordinates& camera_coords,
         float font_size,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: line
@@ -142,13 +146,15 @@ public:
      * @param roundness Roundness of the line in pixels.
      * @param thickness Line thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void line(
         const utils::Coordinates& start,
         const utils::Coordinates& end,
         const float roundness,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a line between world coordinates using a given camera.
@@ -158,6 +164,7 @@ public:
      * @param roundness Roundness of the line in pixels.
      * @param thickness Line thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void line(
         const utils::Coordinates& start,
@@ -165,7 +172,8 @@ public:
         const utils::CameraCoordinates& camera_coords,
         const float roundness,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: circle
@@ -203,12 +211,14 @@ public:
      * @param radius Circle radius in pixels.
      * @param thickness Circle outline thickness in pixels, zero or less fills the circle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void circle(
         const utils::Coordinates& center,
         const float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a circle at a world coordinate using a given camera.
@@ -217,13 +227,15 @@ public:
      * @param radius Circle radius in pixels.
      * @param thickness Circle outline thickness in pixels, zero or less fills the circle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void circle(
         const utils::Coordinates& center,
         const utils::CameraCoordinates& camera_coords,
         const float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: rectangle
@@ -268,13 +280,15 @@ public:
      * @param radius Corner radius in pixels.
      * @param thickness Rectangle outline thickness in pixels, zero or less fills the rectangle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void rectangle(
         const utils::Coordinates& top_left,
         const utils::Coordinates& bottom_right,
         float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a rectangle between world coordinates using a given camera.
@@ -284,6 +298,7 @@ public:
      * @param radius Corner radius in pixels.
      * @param thickness Rectangle outline thickness in pixels, zero or less fills the rectangle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void rectangle(
         const utils::Coordinates& top_left,
@@ -291,7 +306,8 @@ public:
         const utils::CameraCoordinates& camera_coords,
         float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: polyline
@@ -332,13 +348,15 @@ public:
      * @param rounded Draw rounded vertices and joints.
      * @param thickness Polyline thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void polyline(
         const std::vector<utils::Coordinates>& points,
         const bool closed,
         const bool rounded,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a polyline from world coordinates using a given camera.
@@ -348,6 +366,7 @@ public:
      * @param rounded Draw rounded vertices and joints.
      * @param thickness Polyline thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void polyline(
         const std::vector<utils::Coordinates>& points,
@@ -355,7 +374,8 @@ public:
         const bool closed,
         const bool rounded,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
 private:

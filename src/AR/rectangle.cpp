@@ -13,7 +13,23 @@ void AR::rectangle(
     const float thickness,
     const utils::ColorFloat& color
 ) {
+    AR::rectangle_pixels(x1, y1, x2, y2, radius, thickness, color, nullptr);
+}
+
+
+void AR::rectangle_pixels(
+    const float x1,
+    const float y1,
+    const float x2,
+    const float y2,
+    float radius,
+    const float thickness,
+    const utils::ColorFloat& color,
+    const OcclusionDepth* occlusion
+) {
     if (window_width_ <= 0 || window_height_ <= 0) return;
+
+    OcclusionScope occlusion_scope(*this, occlusion);
 
     const float left = min(x1, x2);
     const float right = max(x1, x2);
@@ -231,7 +247,8 @@ void AR::rectangle(
     const utils::Coordinates& bottom_right,
     float radius,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
@@ -255,14 +272,16 @@ void AR::rectangle(
         return;
     }
 
-    AR::rectangle(
+    const OcclusionDepth depth = segment_depth(top_left_screen, bottom_right_screen);
+    AR::rectangle_pixels(
         static_cast<float>(top_left_screen.coordinates.x),
         static_cast<float>(top_left_screen.coordinates.y),
         static_cast<float>(bottom_right_screen.coordinates.x),
         static_cast<float>(bottom_right_screen.coordinates.y),
         radius,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }
 
@@ -273,7 +292,8 @@ void AR::rectangle(
     const utils::CameraCoordinates& camera_coords,
     float radius,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::ScreenProjection top_left_screen = utils::convert_to_screen_coordinate(
         top_left,
@@ -295,13 +315,15 @@ void AR::rectangle(
         return;
     }
 
-    AR::rectangle(
+    const OcclusionDepth depth = segment_depth(top_left_screen, bottom_right_screen);
+    AR::rectangle_pixels(
         static_cast<float>(top_left_screen.coordinates.x),
         static_cast<float>(top_left_screen.coordinates.y),
         static_cast<float>(bottom_right_screen.coordinates.x),
         static_cast<float>(bottom_right_screen.coordinates.y),
         radius,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }

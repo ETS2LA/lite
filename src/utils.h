@@ -70,10 +70,12 @@ struct ScreenArea {
  * Screen projection structure.
  * @param coordinates The screen coordinates.
  * @param distance The distance from the camera to the point.
+ * @param view_depth The depth of the point along the camera viewing direction in meters, this is what the game's depth map stores.
  */
 struct ScreenProjection {
     ScreenCoordinates coordinates;
     double distance;
+    double view_depth;
 };
 
 /**

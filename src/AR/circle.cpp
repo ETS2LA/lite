@@ -11,7 +11,21 @@ void AR::circle(
     const float thickness,
     const utils::ColorFloat& color
 ) {
+    AR::circle_pixels(x, y, radius, thickness, color, nullptr);
+}
+
+
+void AR::circle_pixels(
+    const float x,
+    const float y,
+    const float radius,
+    const float thickness,
+    const utils::ColorFloat& color,
+    const OcclusionDepth* occlusion
+) {
     if (window_width_ <= 0 || window_height_ <= 0) return;
+
+    OcclusionScope occlusion_scope(*this, occlusion);
 
     const int segments = max(ceil(2.0f * numbers::pi_v<float> * sqrt(radius)), 4.0f);
 
@@ -103,7 +117,8 @@ void AR::circle(
     const utils::Coordinates& center,
     const float radius,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
@@ -117,12 +132,14 @@ void AR::circle(
         return;
     }
 
-    AR::circle(
+    const OcclusionDepth depth = constant_depth(screen_proj);
+    AR::circle_pixels(
         static_cast<float>(screen_proj.coordinates.x),
         static_cast<float>(screen_proj.coordinates.y),
         radius,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }
 
@@ -132,7 +149,8 @@ void AR::circle(
     const utils::CameraCoordinates& camera_coords,
     const float radius,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
         center,
@@ -144,11 +162,13 @@ void AR::circle(
         return;
     }
 
-    AR::circle(
+    const OcclusionDepth depth = constant_depth(screen_proj);
+    AR::circle_pixels(
         static_cast<float>(screen_proj.coordinates.x),
         static_cast<float>(screen_proj.coordinates.y),
         radius,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }

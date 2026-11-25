@@ -65,7 +65,8 @@ window_height_(0),
 freetype_library_(nullptr),
 freetype_face_(nullptr),
 text_font_pixel_size_(48),
-text_ready_(false) {
+text_ready_(false),
+occlusion_state_(nullptr) {
     glfwInit();
 
     // make black pixels transparent
@@ -87,6 +88,7 @@ text_ready_(false) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     initialize_text_renderer();
+    initialize_occlusion();
 
     HWND hwnd = glfwGetWin32Window(window_);
     utils::set_icon(hwnd, L"assets/ar_icon.ico");
@@ -132,6 +134,7 @@ AR::~AR() {
     if (window_) {
         glfwMakeContextCurrent(window_);
         cleanup_text_renderer();
+        cleanup_occlusion();
     }
     glfwDestroyWindow(window_);
     glfwTerminate();
@@ -176,6 +179,8 @@ void AR::run() {
             draw_lists.push_back(draw_list);
         }
     }
+
+    begin_occlusion_frame();
 
     for (const auto& draw_list : draw_lists) {
         const auto commands = draw_list->snapshot();

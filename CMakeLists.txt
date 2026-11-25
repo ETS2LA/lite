@@ -20,6 +20,11 @@ FetchContent_Declare(
     GIT_TAG synced-v1.1.2
 )
 FetchContent_Declare(
+    ets2la_depth
+    GIT_REPOSITORY https://github.com/ETS2LA/depth.git
+    GIT_TAG v1.0.1
+)
+FetchContent_Declare(
     ets2la_controller
     GIT_REPOSITORY https://github.com/ETS2LA/controller.git
     GIT_TAG v1.1.0
@@ -31,6 +36,7 @@ FetchContent_Declare(
 )
 cmake_policy(SET CMP0169 OLD)
 FetchContent_Populate(ets2la_capture)
+FetchContent_Populate(ets2la_depth)
 FetchContent_Populate(ets2la_controller)
 FetchContent_Populate(ets2la_telemetry)
 
@@ -65,6 +71,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 target_include_directories(${PROJECT_NAME} PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}/src
     ${ets2la_capture_SOURCE_DIR}/include
+    ${ets2la_depth_SOURCE_DIR}/include
     ${ets2la_controller_SOURCE_DIR}/include
     ${ets2la_telemetry_SOURCE_DIR}/include
 )

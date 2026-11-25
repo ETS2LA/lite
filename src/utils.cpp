@@ -816,6 +816,7 @@ ScreenProjection convert_to_screen_coordinate(const Coordinates& world_coords, c
         screen_proj.coordinates.x = -1;
         screen_proj.coordinates.y = -1;
         screen_proj.distance = -1;
+        screen_proj.view_depth = -1;
         return screen_proj;
     }
 
@@ -830,6 +831,7 @@ ScreenProjection convert_to_screen_coordinate(const Coordinates& world_coords, c
     screen_proj.coordinates.x = window_width - screen_proj.coordinates.x;
 
     screen_proj.distance = sqrt(relative_x * relative_x + relative_y * relative_y + relative_z * relative_z);
+    screen_proj.view_depth = -final_z;
 
     return screen_proj;
 }

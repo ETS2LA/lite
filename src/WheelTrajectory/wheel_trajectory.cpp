@@ -321,7 +321,7 @@ Trajectories WheelTrajectory::calculate_front(
                 const double distance = i / resolution;
                 point = {
                     start.x + distance * forwards[side].x / forward_lengths[side],
-                    start.y + distance * forwards[side].y / forward_lengths[side],
+                    start.y + distance * forwards[side].y / forward_lengths[side] + 0.05,
                     start.z + distance * forwards[side].z / forward_lengths[side]
                 };
             } else {
@@ -349,7 +349,7 @@ Trajectories WheelTrajectory::calculate_front(
                 const double angle = direction * i / resolution / radius;
                 point = {
                     circle_centers[side].x + radius * (radial.x * cos(angle) + tangent.x * sin(angle)),
-                    circle_centers[side].y + radius * (radial.y * cos(angle) + tangent.y * sin(angle)),
+                    circle_centers[side].y + radius * (radial.y * cos(angle) + tangent.y * sin(angle)) + 0.05,
                     circle_centers[side].z + radius * (radial.z * cos(angle) + tangent.z * sin(angle))
                 };
                 if (i == 0) {
@@ -674,7 +674,7 @@ Trajectories WheelTrajectory::calculate_rear(
                 const double distance = -i / resolution;
                 point = {
                     start.x + distance * forwards[side].x / forward_lengths[side],
-                    start.y + distance * forwards[side].y / forward_lengths[side],
+                    start.y + distance * forwards[side].y / forward_lengths[side] + 0.05,
                     start.z + distance * forwards[side].z / forward_lengths[side]
                 };
             } else {
@@ -702,7 +702,7 @@ Trajectories WheelTrajectory::calculate_rear(
                 const double angle = direction * i / resolution / radius;
                 point = {
                     circle_centers[side].x + radius * (radial.x * cos(angle) + tangent.x * sin(angle)),
-                    circle_centers[side].y + radius * (radial.y * cos(angle) + tangent.y * sin(angle)),
+                    circle_centers[side].y + radius * (radial.y * cos(angle) + tangent.y * sin(angle)) + 0.05,
                     circle_centers[side].z + radius * (radial.z * cos(angle) + tangent.z * sin(angle))
                 };
                 if (i == 0) {
@@ -746,14 +746,16 @@ void WheelTrajectory::draw_front(
         false,
         false,
         thickness,
-        color
+        color,
+        true
     );
     draw_list_->polyline(
         front_trajectories_.right_trajectory,
         false,
         false,
         thickness,
-        color
+        color,
+        true
     );
 }
 
@@ -772,14 +774,16 @@ void WheelTrajectory::draw_rear(
         false,
         false,
         thickness,
-        color
+        color,
+        true
     );
     draw_list_->polyline(
         rear_trajectories_.right_trajectory,
         false,
         false,
         thickness,
-        color
+        color,
+        true
     );
 }
 

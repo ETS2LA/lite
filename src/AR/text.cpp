@@ -1,9 +1,9 @@
 #include "AR/ar.h"
 
-#include <cstdio>
 #include <filesystem>
-#include <vector>
 #include <cstdint>
+#include <cstdio>
+#include <vector>
 
 using namespace std;
 
@@ -163,11 +163,25 @@ void AR::text(
     float font_size,
     const utils::ColorFloat& color
 ) {
+    AR::text_pixels(text, x, y, font_size, color, nullptr);
+}
+
+
+void AR::text_pixels(
+    const wstring& text,
+    float x,
+    float y,
+    float font_size,
+    const utils::ColorFloat& color,
+    const OcclusionDepth* occlusion
+) {
     if (!text_ready_ || window_width_ <= 0 || window_height_ <= 0 || font_size <= 0.0f || text_font_pixel_size_ <= 0) {
         return;
     }
 
     const float scale = font_size / static_cast<float>(text_font_pixel_size_);
+
+    OcclusionScope occlusion_scope(*this, occlusion, true);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -267,7 +281,8 @@ void AR::text(
     const wstring& text,
     const utils::Coordinates& position,
     float font_size,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
@@ -281,12 +296,14 @@ void AR::text(
         return;
     }
 
-    AR::text(
+    const OcclusionDepth depth = constant_depth(screen_position);
+    AR::text_pixels(
         text,
-        screen_position.coordinates.x,
-        screen_position.coordinates.y,
+        static_cast<float>(screen_position.coordinates.x),
+        static_cast<float>(screen_position.coordinates.y),
         font_size,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }
 
@@ -296,7 +313,8 @@ void AR::text(
     const utils::Coordinates& position,
     const utils::CameraCoordinates& camera_coords,
     float font_size,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::ScreenProjection screen_position = utils::convert_to_screen_coordinate(
         position,
@@ -308,11 +326,13 @@ void AR::text(
         return;
     }
 
-    AR::text(
+    const OcclusionDepth depth = constant_depth(screen_position);
+    AR::text_pixels(
         text,
-        screen_position.coordinates.x,
-        screen_position.coordinates.y,
+        static_cast<float>(screen_position.coordinates.x),
+        static_cast<float>(screen_position.coordinates.y),
         font_size,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }

@@ -152,7 +152,7 @@ public:
         float velocity_smoothing_seconds = 0.1f;
 
         // base time a track may be coasted with no quality bonus.
-        float base_max_unseen_time_seconds = 0.15f;
+        float base_max_unseen_time_seconds = 0.0f;
         // extra coasting time at quality = 1
         float max_unseen_time_bonus_seconds = 0.0f;
         // real match time needed to reach quality = 1

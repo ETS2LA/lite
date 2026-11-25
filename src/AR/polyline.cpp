@@ -1,5 +1,4 @@
 #include "AR/ar.h"
-#include <numbers>
 
 using namespace std;
 
@@ -11,19 +10,56 @@ void AR::polyline(
     const float thickness,
     const utils::ColorFloat& color
 ) {
+    AR::polyline_pixels(points, closed, rounded, thickness, color, nullptr);
+}
+
+
+void AR::polyline_pixels(
+    const vector<pair<float, float>>& points,
+    const bool closed,
+    const bool rounded,
+    const float thickness,
+    const utils::ColorFloat& color,
+    const OcclusionDepth* occlusion
+) {
     if (window_width_ <= 0 || window_height_ <= 0) return;
+
+    const vector<float>* inverse_depths = nullptr;
+    if (
+        occlusion &&
+        occlusion->mode == OcclusionDepth::Mode::Vertices &&
+        occlusion->vertex_inverse_depths &&
+        occlusion->vertex_inverse_depths->size() == points.size()
+    ) {
+        inverse_depths = occlusion->vertex_inverse_depths;
+    }
+    const OcclusionDepth* active_occlusion = inverse_depths ? occlusion : nullptr;
+
+    auto set_vertex_depth = [&](const size_t point_index) {
+        if (inverse_depths) {
+            glTexCoord1f((*inverse_depths)[point_index]);
+        }
+    };
 
     if (thickness > 0.0f) {
         if (rounded) {
-            for (const auto& [px, py] : points) {
-                AR::circle(
-                    px,
-                    py,
+            for (size_t i = 0; i < points.size(); ++i) {
+                OcclusionDepth point_depth;
+                if (inverse_depths) {
+                    point_depth.mode = OcclusionDepth::Mode::Constant;
+                    point_depth.inverse_depth_a = (*inverse_depths)[i];
+                }
+                AR::circle_pixels(
+                    points[i].first,
+                    points[i].second,
                     thickness * 0.5f,
                     -1.0f,
-                    color
+                    color,
+                    inverse_depths ? &point_depth : nullptr
                 );
             }
+
+            OcclusionScope occlusion_scope(*this, active_occlusion);
 
             glColor4f(color.r, color.g, color.b, color.a);
             for (size_t i = 0; i < points.size() - (closed ? 0 : 1); ++i) {
@@ -43,11 +79,16 @@ void AR::polyline(
                 float px = -uy * half_thickness;
                 float py = ux * half_thickness;
 
+                const size_t start_index = i;
+                const size_t end_index = (i + 1) % points.size();
+
                 glBegin(GL_QUADS);
+                set_vertex_depth(start_index);
                 glVertex2f(
                     ((x1 + px) / static_cast<float>(window_width_)) * 2.0f - 1.0f,
                     1.0f - ((y1 + py) / static_cast<float>(window_height_)) * 2.0f
                 );
+                set_vertex_depth(end_index);
                 glVertex2f(
                     ((x2 + px) / static_cast<float>(window_width_)) * 2.0f - 1.0f,
                     1.0f - ((y2 + py) / static_cast<float>(window_height_)) * 2.0f
@@ -56,6 +97,7 @@ void AR::polyline(
                     ((x2 - px) / static_cast<float>(window_width_)) * 2.0f - 1.0f,
                     1.0f - ((y2 - py) / static_cast<float>(window_height_)) * 2.0f
                 );
+                set_vertex_depth(start_index);
                 glVertex2f(
                     ((x1 - px) / static_cast<float>(window_width_)) * 2.0f - 1.0f,
                     1.0f - ((y1 - py) / static_cast<float>(window_height_)) * 2.0f
@@ -65,6 +107,8 @@ void AR::polyline(
         } else {
             const size_t n = points.size();
             if (n < 2) return;
+
+            OcclusionScope occlusion_scope(*this, active_occlusion);
 
             const float half_thickness = thickness * 0.5f;
 
@@ -161,12 +205,17 @@ void AR::polyline(
                 auto [rx2, ry2] = to_ndc(right[i2].first, right[i2].second);
                 auto [rx1, ry1] = to_ndc(right[i].first, right[i].second);
 
+                set_vertex_depth(i);
                 glVertex2f(lx1, ly1);
+                set_vertex_depth(i2);
                 glVertex2f(lx2, ly2);
                 glVertex2f(rx2, ry2);
 
+                set_vertex_depth(i);
                 glVertex2f(lx1, ly1);
+                set_vertex_depth(i2);
                 glVertex2f(rx2, ry2);
+                set_vertex_depth(i);
                 glVertex2f(rx1, ry1);
             }
             glEnd();
@@ -183,6 +232,7 @@ void AR::polyline(
                     auto [re0x, re0y] = to_ndc(right[0].first + ex, right[0].second + ey);
 
                     glBegin(GL_TRIANGLES);
+                    set_vertex_depth(0);
                     glVertex2f(le0x, le0y);
                     glVertex2f(l0x, l0y);
                     glVertex2f(r0x, r0y);
@@ -204,6 +254,7 @@ void AR::polyline(
                     auto [rex, rey] = to_ndc(right[last_i].first + ex, right[last_i].second + ey);
 
                     glBegin(GL_TRIANGLES);
+                    set_vertex_depth(last_i);
                     glVertex2f(lnx, lny);
                     glVertex2f(lex, ley);
                     glVertex2f(rnx, rny);
@@ -216,13 +267,15 @@ void AR::polyline(
             }
         }
     } else {
-        // simply filled polygon, thickness, closed and rounded parameters are ignored
+        OcclusionScope occlusion_scope(*this, active_occlusion);
+
         glColor4f(color.r, color.g, color.b, color.a);
         glBegin(GL_POLYGON);
-        for (const auto& [px, py] : points) {
+        for (size_t i = 0; i < points.size(); ++i) {
+            set_vertex_depth(i);
             glVertex2f(
-                (px / static_cast<float>(window_width_)) * 2.0f - 1.0f,
-                1.0f - (py / static_cast<float>(window_height_)) * 2.0f
+                (points[i].first / static_cast<float>(window_width_)) * 2.0f - 1.0f,
+                1.0f - (points[i].second / static_cast<float>(window_height_)) * 2.0f
             );
         }
         glEnd();
@@ -258,12 +311,15 @@ void AR::polyline(
     const bool closed,
     const bool rounded,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
     vector<pair<float, float>> pts;
+    vector<float> inverse_depths;
     pts.reserve(points.size());
+    inverse_depths.reserve(points.size());
     for (const auto& p : points) {
         utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
             p,
@@ -278,14 +334,19 @@ void AR::polyline(
             static_cast<float>(screen_proj.coordinates.x),
             static_cast<float>(screen_proj.coordinates.y)
         );
+        inverse_depths.push_back(inverse_depth(screen_proj));
     }
 
-    AR::polyline(
+    OcclusionDepth depth;
+    depth.mode = OcclusionDepth::Mode::Vertices;
+    depth.vertex_inverse_depths = &inverse_depths;
+    AR::polyline_pixels(
         pts,
         closed,
         rounded,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }
 
@@ -296,10 +357,13 @@ void AR::polyline(
     const bool closed,
     const bool rounded,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     vector<pair<float, float>> pts;
+    vector<float> inverse_depths;
     pts.reserve(points.size());
+    inverse_depths.reserve(points.size());
     for (const auto& p : points) {
         utils::ScreenProjection screen_proj = utils::convert_to_screen_coordinate(
             p,
@@ -314,13 +378,18 @@ void AR::polyline(
             static_cast<float>(screen_proj.coordinates.x),
             static_cast<float>(screen_proj.coordinates.y)
         );
+        inverse_depths.push_back(inverse_depth(screen_proj));
     }
 
-    AR::polyline(
+    OcclusionDepth depth;
+    depth.mode = OcclusionDepth::Mode::Vertices;
+    depth.vertex_inverse_depths = &inverse_depths;
+    AR::polyline_pixels(
         pts,
         closed,
         rounded,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }

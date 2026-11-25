@@ -13,7 +13,23 @@ void AR::line(
     const float thickness,
     const utils::ColorFloat& color
 ) {
+    AR::line_pixels(x1, y1, x2, y2, roundness, thickness, color, nullptr);
+}
+
+
+void AR::line_pixels(
+    const float x1,
+    const float y1,
+    const float x2,
+    const float y2,
+    const float roundness,
+    const float thickness,
+    const utils::ColorFloat& color,
+    const OcclusionDepth* occlusion
+) {
     if (window_width_ <= 0 || window_height_ <= 0) return;
+
+    OcclusionScope occlusion_scope(*this, occlusion);
 
     glColor4f(color.r, color.g, color.b, color.a);
     vector<pair<float, float>> points;
@@ -78,7 +94,7 @@ void AR::line(
         radius = min(radius, half_thickness);
         radius = min(radius, expanded_length * 0.5f);
         if (radius <= 0.0f) {
-            AR::line(x1, y1, x2, y2, 0.0f, thickness, color);
+            AR::line_pixels(x1, y1, x2, y2, 0.0f, thickness, color, occlusion);
             return;
         }
 
@@ -165,7 +181,8 @@ void AR::line(
     const utils::Coordinates& end,
     const float roundness,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::CameraCoordinates camera_coords = utils::get_6th_camera_coordinate(telemetry_);
 
@@ -189,14 +206,16 @@ void AR::line(
         return;
     }
 
-    AR::line(
+    const OcclusionDepth depth = segment_depth(screen_start, screen_end);
+    AR::line_pixels(
         static_cast<float>(screen_start.coordinates.x),
         static_cast<float>(screen_start.coordinates.y),
         static_cast<float>(screen_end.coordinates.x),
         static_cast<float>(screen_end.coordinates.y),
         roundness,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }
 
@@ -207,7 +226,8 @@ void AR::line(
     const utils::CameraCoordinates& camera_coords,
     const float roundness,
     const float thickness,
-    const utils::ColorFloat& color
+    const utils::ColorFloat& color,
+    const bool occlusion
 ) {
     utils::ScreenProjection screen_start = utils::convert_to_screen_coordinate(
         start,
@@ -229,13 +249,15 @@ void AR::line(
         return;
     }
 
-    AR::line(
+    const OcclusionDepth depth = segment_depth(screen_start, screen_end);
+    AR::line_pixels(
         static_cast<float>(screen_start.coordinates.x),
         static_cast<float>(screen_start.coordinates.y),
         static_cast<float>(screen_end.coordinates.x),
         static_cast<float>(screen_end.coordinates.y),
         roundness,
         thickness,
-        color
+        color,
+        occlusion ? &depth : nullptr
     );
 }

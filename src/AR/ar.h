@@ -12,6 +12,7 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <vector>
 #include <mutex>
 
 #include <ft2build.h>
@@ -83,12 +84,14 @@ public:
      * @param position World coordinate.
      * @param font_size Font size in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void text(
         const std::wstring& text,
         const utils::Coordinates& position,
         float font_size,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw text at a world coordinate using a given camera.
@@ -97,13 +100,15 @@ public:
      * @param camera_coords Camera position and rotation.
      * @param font_size Font size in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objectsh map of ets2la_depth.
      */
     void text(
         const std::wstring& text,
         const utils::Coordinates& position,
         const utils::CameraCoordinates& camera_coords,
         float font_size,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: line
@@ -148,13 +153,15 @@ public:
      * @param roundness Roundness of the line in pixels.
      * @param thickness Line thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objectsh map of ets2la_depth.
      */
     void line(
         const utils::Coordinates& start,
         const utils::Coordinates& end,
         const float roundness,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a line between world coordinates using a given camera.
@@ -164,6 +171,7 @@ public:
      * @param roundness Roundness of the line in pixels.
      * @param thickness Line thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects usingthe depth map of ets2la_depth.
      */
     void line(
         const utils::Coordinates& start,
@@ -171,7 +179,8 @@ public:
         const utils::CameraCoordinates& camera_coords,
         const float roundness,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: circle
@@ -209,12 +218,14 @@ public:
      * @param radius Circle radius in pixels.
      * @param thickness Circle outline thickness in pixels, zero or less fills the circle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void circle(
         const utils::Coordinates& center,
         const float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a circle at a world coordinate using a given camera.
@@ -223,13 +234,15 @@ public:
      * @param radius Circle radius in pixels.
      * @param thickness Circle outline thickness in pixels, zero or less fills the circle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void circle(
         const utils::Coordinates& center,
         const utils::CameraCoordinates& camera_coords,
         const float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: rectangle
@@ -274,13 +287,15 @@ public:
      * @param radius Corner radius in pixels.
      * @param thickness Rectangle outline thickness in pixels, zero or less fills the rectangle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void rectangle(
         const utils::Coordinates& top_left,
         const utils::Coordinates& bottom_right,
         float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a rectangle between world coordinates using a given camera.
@@ -290,6 +305,7 @@ public:
      * @param radius Corner radius in pixels.
      * @param thickness Rectangle outline thickness in pixels, zero or less fills the rectangle.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void rectangle(
         const utils::Coordinates& top_left,
@@ -297,7 +313,8 @@ public:
         const utils::CameraCoordinates& camera_coords,
         float radius,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
     // MARK: polyline
@@ -338,13 +355,15 @@ public:
      * @param rounded Draw rounded vertices and joints.
      * @param thickness Polyline thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void polyline(
         const std::vector<utils::Coordinates>& points,
         const bool closed,
         const bool rounded,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
     /**
      * Draw a polyline from world coordinates using a given camera.
@@ -354,6 +373,7 @@ public:
      * @param rounded Draw rounded vertices and joints.
      * @param thickness Polyline thickness in pixels.
      * @param color RGBA color with components from 0.0 to 1.0.
+     * @param occlusion Hide the parts of the drawing that are behind in-game objects using the depth map of ets2la_depth.
      */
     void polyline(
         const std::vector<utils::Coordinates>& points,
@@ -361,10 +381,99 @@ public:
         const bool closed,
         const bool rounded,
         const float thickness,
-        const utils::ColorFloat& color
+        const utils::ColorFloat& color,
+        const bool occlusion = false
     );
 
 private:
+    // MARK: occlusion
+    /**
+     * Describes how the depth of a drawing is found for the occlusion test, depths are stored as 1 / meters.
+     * Constant: the whole drawing has the depth inverse_depth_a.
+     * Segment: the depth is interpolated along the screen space segment from point a to point b (inverse_depth_a to inverse_depth_b).
+     * Vertices: every vertex carries its own depth, vertex_inverse_depths has one value per input point.
+     */
+    struct OcclusionDepth {
+        enum class Mode { Constant, Segment, Vertices };
+        Mode mode = Mode::Constant;
+        float inverse_depth_a = 0.0f;
+        float inverse_depth_b = 0.0f;
+        float point_ax = 0.0f;
+        float point_ay = 0.0f;
+        float point_bx = 0.0f;
+        float point_by = 0.0f;
+        const std::vector<float>* vertex_inverse_depths = nullptr;
+    };
+
+    struct OcclusionScope {
+        OcclusionScope(AR& ar, const OcclusionDepth* depth, const bool uses_glyph_texture = false);
+        ~OcclusionScope();
+        OcclusionScope(const OcclusionScope&) = delete;
+        OcclusionScope& operator=(const OcclusionScope&) = delete;
+
+        bool active;
+
+    private:
+        AR& ar_;
+    };
+
+    struct OcclusionState;
+
+    void initialize_occlusion();
+    void cleanup_occlusion();
+    void begin_occlusion_frame();
+    bool begin_occlusion(const OcclusionDepth* depth, const bool uses_glyph_texture);
+    void end_occlusion();
+    bool update_depth_map();
+    static OcclusionDepth constant_depth(const utils::ScreenProjection& projection);
+    static OcclusionDepth segment_depth(const utils::ScreenProjection& start, const utils::ScreenProjection& end);
+    static float inverse_depth(const utils::ScreenProjection& projection);
+
+    void text_pixels(
+        const std::wstring& text,
+        float x,
+        float y,
+        float font_size,
+        const utils::ColorFloat& color,
+        const OcclusionDepth* occlusion
+    );
+    void line_pixels(
+        const float x1,
+        const float y1,
+        const float x2,
+        const float y2,
+        const float roundness,
+        const float thickness,
+        const utils::ColorFloat& color,
+        const OcclusionDepth* occlusion
+    );
+    void circle_pixels(
+        const float x,
+        const float y,
+        const float radius,
+        const float thickness,
+        const utils::ColorFloat& color,
+        const OcclusionDepth* occlusion
+    );
+    void rectangle_pixels(
+        const float x1,
+        const float y1,
+        const float x2,
+        const float y2,
+        float radius,
+        const float thickness,
+        const utils::ColorFloat& color,
+        const OcclusionDepth* occlusion
+    );
+    void polyline_pixels(
+        const std::vector<std::pair<float, float>>& points,
+        const bool closed,
+        const bool rounded,
+        const float thickness,
+        const utils::ColorFloat& color,
+        const OcclusionDepth* occlusion
+    );
+
     // MARK: private
     void window_state_update_thread();
     void update_window_state();
@@ -400,4 +509,6 @@ private:
     std::unordered_map<std::uint32_t, Glyph> glyphs_;
     int text_font_pixel_size_;
     bool text_ready_;
+
+    OcclusionState* occlusion_state_;
 };
